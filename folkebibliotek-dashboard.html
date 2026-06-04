@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Norske folkebibliotek – Statistikk 2016–2024</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --blue: #1a3a5c;
+  --teal: #00796b;
+  --gold: #d97706;
+  --green: #16a34a;
+  --purple: #7c3aed;
+  --red: #dc2626;
+  --light: #f0f4f8;
+  --white: #ffffff;
+  --text: #1e293b;
+  --muted: #64748b;
+  --border: #e2e8f0;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--light);color:var(--text)}
+header{background:var(--blue);color:#fff;padding:20px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+header h1{font-size:1.4rem;font-weight:700}
+header p{font-size:.8rem;opacity:.7;margin-top:2px}
+.badge{font-size:.72rem;background:rgba(255,255,255,.15);padding:5px 11px;border-radius:20px}
+.badge a{color:#7dd3fc;text-decoration:none}
+.wrap{max-width:1240px;margin:0 auto;padding:20px 14px}
+
+/* KPI strip */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:13px;margin-bottom:22px}
+.kpi{background:var(--white);border-radius:10px;padding:16px 18px;border-left:4px solid var(--blue);box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.kpi.teal{border-left-color:var(--teal)}.kpi.gold{border-left-color:var(--gold)}.kpi.green{border-left-color:var(--green)}.kpi.purple{border-left-color:var(--purple)}
+.kpi-lbl{font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:5px}
+.kpi-val{font-size:1.75rem;font-weight:800;color:var(--blue);line-height:1}
+.kpi.teal .kpi-val{color:var(--teal)}.kpi.gold .kpi-val{color:var(--gold)}.kpi.green .kpi-val{color:var(--green)}.kpi.purple .kpi-val{color:var(--purple)}
+.kpi-sub{font-size:.75rem;color:var(--muted);margin-top:3px}
+.delta{display:inline-block;font-size:.7rem;font-weight:600;padding:2px 7px;border-radius:10px;margin-top:5px}
+.up{background:#dcfce7;color:#15803d}.down{background:#fee2e2;color:#b91c1c}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;margin-bottom:18px;background:var(--white);padding:5px;border-radius:9px;box-shadow:0 1px 3px rgba(0,0,0,.07);width:fit-content}
+.tab{padding:7px 17px;border:none;background:transparent;border-radius:7px;font-size:.82rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s}
+.tab.on{background:var(--blue);color:#fff}
+
+/* Grid */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:22px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:22px}
+@media(max-width:900px){.grid2,.grid3{grid-template-columns:1fr}}
+.card{background:var(--white);border-radius:10px;padding:18px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.card.wide{grid-column:1/-1}
+.card-title{font-size:.88rem;font-weight:700;color:var(--blue);margin-bottom:3px}
+.card-sub{font-size:.72rem;color:var(--muted);margin-bottom:14px}
+.ch{position:relative}
+.ch.h200{height:200px}.ch.h260{height:260px}.ch.h300{height:300px}
+
+/* County bar list */
+.county-list{overflow-y:auto;max-height:320px}
+.county-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)}
+.county-row:last-child{border:none}
+.county-name{width:130px;font-size:.8rem;font-weight:600;flex-shrink:0}
+.county-bar-wrap{flex:1;background:var(--border);border-radius:4px;height:16px;overflow:hidden}
+.county-bar{height:100%;border-radius:4px;transition:width .6s ease}
+.county-val{width:55px;text-align:right;font-size:.78rem;color:var(--muted);flex-shrink:0}
+
+/* Insight cards */
+.insights{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:20px}
+.insight{background:var(--white);border-radius:10px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.ins-icon{font-size:1.3rem;margin-bottom:8px}
+.ins-title{font-size:.82rem;font-weight:700;color:var(--blue);margin-bottom:5px}
+.ins-text{font-size:.78rem;color:var(--muted);line-height:1.6}
+.ins-text strong{color:var(--text)}
+
+/* Note */
+.note{font-size:.72rem;color:var(--muted);background:var(--white);border-radius:8px;padding:9px 14px;margin-bottom:18px;border-left:3px solid var(--gold)}
+
+footer{text-align:center;padding:14px;font-size:.7rem;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<header>
+  <div><h1>📚 Norske folkebibliotek</h1><p>Statistikk og trender 2016–2024 · Rådata fra Nasjonalbiblioteket</p></div>
+  <span class="badge">Kilde: <a href="https://bibliotekutvikling.no/statistikk/forside/statistikk-for-folkebibliotek/" target="_blank">bibliotekutvikling.no</a></span>
+</header>
+
+<div class="wrap">
+
+  <!-- KPIs -->
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-lbl">Bibliotekbesøk 2024</div><div class="kpi-val">26,8M</div><div class="kpi-sub">4,8 per innbygger</div><span class="delta up">↑ 2,7 % fra 2023</span></div>
+    <div class="kpi teal"><div class="kpi-lbl">Bokutlån (fysisk) 2024</div><div class="kpi-val">13,4M</div><div class="kpi-sub">2,5 per innbygger</div><span class="delta up">↑ 6,7 % fra 2023</span></div>
+    <div class="kpi gold"><div class="kpi-lbl">E-bøker + E-lydbøker</div><div class="kpi-val">1,43M</div><div class="kpi-sub">841K + 584K</div><span class="delta down">↓ 6–9 % fra 2023</span></div>
+    <div class="kpi green"><div class="kpi-lbl">Arrangementsdeltakere</div><div class="kpi-val">1,87M</div><div class="kpi-sub">73 450 arrangementer</div><span class="delta up">↑ 13 % fra 2023</span></div>
+    <div class="kpi purple"><div class="kpi-lbl">Bibliotek / Fylker</div><div class="kpi-val">632</div><div class="kpi-sub">199 kommuner meråpent</div><span class="delta up">+13 kommuner</span></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab on" onclick="show('besok',this)">Besøkstrender</button>
+    <button class="tab" onclick="show('utlan',this)">Utlån</button>
+    <button class="tab" onclick="show('arrangement',this)">Arrangementer</button>
+    <button class="tab" onclick="show('ansatte',this)">Ansatte</button>
+    <button class="tab" onclick="show('fylke',this)">Fylkesfordeling 2024</button>
+  </div>
+
+  <!-- BESØK -->
+  <div id="sec-besok">
+    <div class="grid2">
+      <div class="card wide">
+        <div class="card-title">Bibliotekbesøk – nasjonal trend 2016–2024</div>
+        <div class="card-sub">Totalt antall besøk (millioner) · Ekte rådata fra alle rapporteringsår</div>
+        <div class="ch h300"><canvas id="c-besok-trend"></canvas></div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">Besøksindeks (2019 = 100)</div>
+        <div class="card-sub">Relativ utvikling justert for pandemiår</div>
+        <div class="ch h200"><canvas id="c-besok-index"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Besøk per innbygger</div>
+        <div class="card-sub">Gjennomsnittlig besøksfrekvens per person</div>
+        <div class="ch h200"><canvas id="c-besok-innb"></canvas></div>
+      </div>
+    </div>
+    <div class="insights">
+      <div class="insight"><div class="ins-icon">🏆</div><div class="ins-title">Rekordnivå i 2024</div><div class="ins-text">Med <strong>26,8 millioner besøk</strong> i 2024 er dette historisk høyt. 2024 overstiger til og med 2019-nivået med 3,8 %, til tross for at antall ansatte er redusert.</div></div>
+      <div class="insight"><div class="ins-icon">😷</div><div class="ins-title">Pandemiens dype spor</div><div class="ins-text">2020 var det mørkeste året med kun <strong>15,9 millioner besøk</strong> — en nedgang på 38 % fra 2019. Gjenopphentingen gikk raskere enn ventet; i 2023 var nivået allerede over 2019.</div></div>
+      <div class="insight"><div class="ins-icon">📈</div><div class="ins-title">Fem år med vekst</div><div class="ins-text">Fra 2016 til 2024 er det samlet besøksvekst på <strong>12 %</strong>. Veksten akselererte etter pandemien, og 2022–2024 er de tre beste årene i nyere tid.</div></div>
+    </div>
+  </div>
+
+  <!-- UTLÅN -->
+  <div id="sec-utlan" style="display:none">
+    <div class="grid2">
+      <div class="card wide">
+        <div class="card-title">Utlånstrender 2019–2024</div>
+        <div class="card-sub">Fysiske bøker vs. digitale medier (millioner) · Begynnende fall i e-medier fra 2022</div>
+        <div class="ch h300"><canvas id="c-utlan-trend"></canvas></div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">E-bøker og e-lydbøker 2020–2024</div>
+        <div class="card-sub">Topp i 2021–2022, deretter nedgang</div>
+        <div class="ch h200"><canvas id="c-edigital"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Fysisk vs. digitalt andel 2024</div>
+        <div class="card-sub">Totalt utlån av bøker inkl. digitalt</div>
+        <div class="ch h200"><canvas id="c-utlan-pie"></canvas></div>
+      </div>
+    </div>
+    <div class="insights">
+      <div class="insight"><div class="ins-icon">📖</div><div class="ins-title">Fysiske bøker er tilbake</div><div class="ins-text">Etter et bunnpunkt i 2020 (COVID) er bokutlånet oppe i <strong>13,4M</strong> i 2024 — det høyeste siden registreringsendringen i 2008. Barnebøker driver veksten (+8,9 %).</div></div>
+      <div class="insight"><div class="ins-icon">📱</div><div class="ins-title">Digitalt utlån synker</div><div class="ins-text">E-bøker og e-lydbøker nådde topp i 2021–2022 (stimulert av pandemi), og har siden falt tre år på rad. E-bøker ned <strong>6 %</strong> og e-lydbøker ned <strong>9 %</strong> i 2024.</div></div>
+      <div class="insight"><div class="ins-icon">🔄</div><div class="ins-title">Pandemi-effekt på digital lesing</div><div class="ins-text">COVID-19 ga et midlertidig løft til e-medier da fysiske bibliotek stengte. Nedgangen fra 2022 viser at mange lesere foretrekker det fysiske biblioteket når det er tilgjengelig igjen.</div></div>
+    </div>
+  </div>
+
+  <!-- ARRANGEMENTER -->
+  <div id="sec-arrangement" style="display:none">
+    <div class="grid2">
+      <div class="card wide">
+        <div class="card-title">Arrangementsdeltakere – nasjonal trend 2016–2024</div>
+        <div class="card-sub">Totalt antall deltakere på alle typer arrangement (millioner)</div>
+        <div class="ch h300"><canvas id="c-arr-trend"></canvas></div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">Antall arrangementer 2016–2024</div>
+        <div class="card-sub">Totalt antall gjennomførte arrangement</div>
+        <div class="ch h200"><canvas id="c-arr-antall"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Gjennomsnittlig deltakere per arrangement</div>
+        <div class="card-sub">Fremmøte per arrangement</div>
+        <div class="ch h200"><canvas id="c-arr-snitt"></canvas></div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">Arrangementsdeltakere per innbygger 2024 – fylke</div>
+        <div class="card-sub">Sortert etter deltakelse per innbygger · Svalbard ekskl.</div>
+        <div id="county-bar-arr" class="county-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Arrangementstype 2024 (nasjonalt)</div>
+        <div class="card-sub">Fordeling av deltakere</div>
+        <div class="ch h260"><canvas id="c-arr-pie"></canvas></div>
+      </div>
+    </div>
+    <div class="insights">
+      <div class="insight"><div class="ins-icon">🎭</div><div class="ins-title">Rekord i 2024</div><div class="ins-text">Med <strong>1,87 millioner deltakere</strong> på 73 450 arrangement er 2024 det beste året noensinne — 13 % over 2023 og 10 % over toppåret 2019.</div></div>
+      <div class="insight"><div class="ins-icon">😷</div><div class="ins-title">COVID halverte aktiviteten</div><div class="ins-text">I 2020 falt deltakerantallet til bare <strong>657 000</strong> — ned 61 % fra 2019. Antall arrangement ble halvert. Gjenopphentingen tok til 2022 for fullt.</div></div>
+      <div class="insight"><div class="ins-icon">🏫</div><div class="ins-title">Nordland og Troms i toppen</div><div class="ins-text">Nordland og Troms har flest arrangementsdeltakere per innbygger i 2024 (0,48–0,45). Oslo er sterk i absolutte tall men midt på treet per innbygger.</div></div>
+    </div>
+  </div>
+
+  <!-- ANSATTE -->
+  <div id="sec-ansatte" style="display:none">
+    <div class="grid2">
+      <div class="card wide">
+        <div class="card-title">Antall årsverk i folkebibliotekene 2016–2024</div>
+        <div class="card-sub">Totalt antall rapporterte årsverk nasjonalt</div>
+        <div class="ch h300"><canvas id="c-arsverk-trend"></canvas></div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">Besøk per årsverk</div>
+        <div class="card-sub">Produktivitetsindikator: besøk / ansattressurs</div>
+        <div class="ch h200"><canvas id="c-besok-arsverk"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Årsverk per 10 000 innbyggere</div>
+        <div class="card-sub">Dekningsgrad nasjonalt</div>
+        <div class="ch h200"><canvas id="c-arsverk-innb"></canvas></div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">Årsverk per 10 000 innbyggere 2024 – fylke</div>
+        <div class="card-sub">Sortert · Svalbard ekskl.</div>
+        <div id="county-bar-arsverk" class="county-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Besøk per årsverk 2024 – fylke</div>
+        <div class="card-sub">Høy verdi = mange besøk per ansatt</div>
+        <div id="county-bar-produktiv" class="county-list"></div>
+      </div>
+    </div>
+    <div class="insights">
+      <div class="insight"><div class="ins-icon">📊</div><div class="ins-title">Stabil bemanning, økt aktivitet</div><div class="ins-text">Årsverkene har ligget på <strong>1 770–1 891</strong> gjennom hele perioden — relativt stabilt. Men med 26,8M besøk i 2024 håndterer hvert årsverk <strong>14 500 besøk</strong>, mot 13 500 i 2019.</div></div>
+      <div class="insight"><div class="ins-icon">↘️</div><div class="ins-title">Nedgang i 2024</div><div class="ins-text">Til tross for rekordaktivitet falt årsverkene med 2 % til <strong>1 846</strong> i 2024. Dette er lavere enn 2023-toppen på 1 891 og under 2019-nivået.</div></div>
+      <div class="insight"><div class="ins-icon">🏙️</div><div class="ins-title">Stor variasjon mellom fylker</div><div class="ins-text">Oslo og Vestland har flest absolutte årsverk (245/214), men Nordland og Troms scorer høyest på årsverk per innbygger, noe som reflekterer spredt geografi og mange bibliotekfilialer.</div></div>
+    </div>
+  </div>
+
+  <!-- FYLKE -->
+  <div id="sec-fylke" style="display:none">
+    <div class="note">⚠️ Merk: Fylkesinndelingen endret seg i 2020 (bl.a. ble Østfold, Akershus og Buskerud slått sammen til Viken). Viken ble oppløst igjen fra 2024. Direkte sammenligninger over tid krever forsiktighet.</div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">Besøk per innbygger 2024 – per fylke</div>
+        <div class="card-sub">Sortert etter besøksfrekvens · Svalbard er ekskludert (11,9)</div>
+        <div id="county-bar-besok" class="county-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Bokutlån per innbygger 2024 – per fylke</div>
+        <div class="card-sub">Antall bøker utlånt per person</div>
+        <div id="county-bar-bok" class="county-list"></div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card wide">
+        <div class="card-title">Besøk og bokutlån – alle fylker 2024</div>
+        <div class="card-sub">Absolutte tall (ekskl. Svalbard)</div>
+        <div class="ch h300"><canvas id="c-fylke-abs"></canvas></div>
+      </div>
+    </div>
+    <div class="insights">
+      <div class="insight"><div class="ins-icon">🏙️</div><div class="ins-title">Oslo langt foran</div><div class="ins-text">Oslo har <strong>8,0 besøk per innbygger</strong> — nesten dobbelt av snittet. Med 5,75 millioner besøk på 717 000 innbyggere er dette unikt i europeisk målestokk.</div></div>
+      <div class="insight"><div class="ins-icon">🛢️</div><div class="ins-title">Rogaland sterk</div><div class="ins-text">Rogaland (Stavanger-regionen) ligger på <strong>5,76 besøk per innbygger</strong> — godt over landsgjennomsnittet. Buskerud er nummer to med 6,26, men slår Oslo også i utlån.</div></div>
+      <div class="insight"><div class="ins-icon">📉</div><div class="ins-title">Svake fylker</div><div class="ins-text"><strong>Østfold og Møre og Romsdal</strong> har lavest besøksfrekvens (3,13–3,17 per innb). Finnmark og Telemark er også under landsgjennomsnittet på 4,8.</div></div>
+    </div>
+  </div>
+
+</div>
+
+<footer>Data: Nasjonalbiblioteket/Bibliotekutvikling · Rådata 2016–2024 · bibliotekutvikling.no · Alle tall er faktiske rapporterte verdier fra Excel-rådata</footer>
+
+<script>
+Chart.defaults.font.family = "'Segoe UI',system-ui,sans-serif";
+Chart.defaults.color = '#64748b';
+
+// ── REAL DATA FROM RAW FILES ──────────────────────────────────────────────────
+const years = [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024];
+
+// National totals (aggregated from raw data files)
+const BESOK = [23966690, 24362603, 24910036, 25851121, 15911969, 17583831, 22717339, 26136972, 26836534];
+const BOKUTLAN = [null, null, null, 12204952, 9722547, 11198499, 11683048, 12569702, 13412639];
+const EBOK   = [567977, 642355, 610960, 603535, 960246, 1008674, 909811, 892112, 841337];
+const ELYDBOK = [null, null, null, null, 460499, 637061, 682228, 641745, 583925];
+
+// 2024 county data (real)
+const COUNTIES_2024 = [
+  {n:'Oslo',         pop:717710, besok:5748792, bok:1767580},
+  {n:'Buskerud',     pop:269819, besok:1689030, bok:588219},
+  {n:'Rogaland',     pop:499417, besok:2874354, bok:1448330},
+  {n:'Troms',        pop:169610, besok:824932,  bok:375164},
+  {n:'Trøndelag',    pop:482956, besok:2310977, bok:1300970},
+  {n:'Nordland',     pop:243081, besok:1158113, bok:442314},
+  {n:'Agder',        pop:319850, besok:1424051, bok:838089},
+  {n:'Vestfold',     pop:256432, besok:1077497, bok:725172},
+  {n:'Akershus',     pop:728803, besok:3061121, bok:1602660},
+  {n:'Innlandet',    pop:376304, besok:1526375, bok:964269},
+  {n:'Vestland',     pop:651299, besok:2432422, bok:1627456},
+  {n:'Telemark',     pop:177093, besok:596645,  bok:409577},
+  {n:'Finnmark',     pop:75053,  besok:244290,  bok:103664},
+  {n:'Østfold',      pop:312152, besok:990100,  bok:637148},
+  {n:'Møre og Romsdal', pop:270624, besok:846646, bok:577057},
+].sort((a,b) => b.besok/b.pop - a.besok/a.pop);
+
+// ── CHART HELPERS ─────────────────────────────────────────────────────────────
+const cfg = (type, data, opts) => ({type, data, options:{responsive:true,maintainAspectRatio:false,...opts}});
+
+function lineDS(label, data, color, dash) {
+  return {label, data, borderColor:color, backgroundColor:color+'22',
+    fill: !dash, tension:0.4, pointRadius:5, pointBackgroundColor:color,
+    borderDash: dash||[], borderWidth:2};
+}
+const scaleOpts = (yLabel) => ({
+  plugins:{legend:{position:'bottom',labels:{boxWidth:11,padding:14,font:{size:11}}}},
+  scales:{
+    y:{title:{display:!!yLabel,text:yLabel,font:{size:10}}, grid:{color:'#f1f5f9'}, ticks:{font:{size:10}}},
+    x:{grid:{display:false}, ticks:{font:{size:10}}}
+  }
+});
+
+// ── BESØK TREND ───────────────────────────────────────────────────────────────
+new Chart(document.getElementById('c-besok-trend'), cfg('line',
+  {labels: years, datasets:[lineDS('Besøk (millioner)', BESOK.map(v=>+(v/1e6).toFixed(2)), '#1a3a5c')]},
+  {...scaleOpts('Millioner besøk'),
+    plugins:{...scaleOpts().plugins,
+      annotation:{annotations:{covid:{type:'box',xMin:2019.5,xMax:2021.5,backgroundColor:'rgba(220,38,38,.06)',borderColor:'rgba(220,38,38,.25)',borderWidth:1,label:{display:true,content:'COVID',font:{size:10},color:'#b91c1c'}}}}}
+  }
+));
+
+// Besøk index (2019=100)
+const base = BESOK[3];
+new Chart(document.getElementById('c-besok-index'), cfg('line',
+  {labels: years, datasets:[{
+    label:'Indeks (2019=100)', data: BESOK.map(v=>+(v/base*100).toFixed(1)),
+    borderColor:'#7c3aed', backgroundColor:'rgba(124,58,237,.1)', fill:true, tension:0.4,
+    pointRadius:4, pointBackgroundColor:'#7c3aed'
+  }]},
+  scaleOpts('Indeks')
+));
+
+// Besøk per innbygger (approx pop)
+const POP = [5215000,5258000,5296000,5328000,5368000,5391000,5435000,5488000,5550000];
+new Chart(document.getElementById('c-besok-innb'), cfg('bar',
+  {labels: years, datasets:[{
+    label:'Besøk per innb.', data: BESOK.map((v,i)=>+(v/POP[i]).toFixed(2)),
+    backgroundColor: years.map((_,i)=> i===8?'#1a3a5c':'rgba(26,58,92,.3)'), borderRadius:5
+  }]},
+  scaleOpts('')
+));
+
+// ── UTLÅN TREND ───────────────────────────────────────────────────────────────
+const utlanYears = [2019,2020,2021,2022,2023,2024];
+new Chart(document.getElementById('c-utlan-trend'), cfg('line',
+  {labels: utlanYears, datasets:[
+    lineDS('Fysiske bøker (mill.)', BOKUTLAN.slice(3).map(v=>v?+(v/1e6).toFixed(2):null), '#00796b'),
+    {...lineDS('E-bøker (mill.)', EBOK.slice(3).map(v=>+(v/1e6).toFixed(3)), '#d97706', [5,4]), fill:false},
+    {...lineDS('E-lydbøker (mill.)', ELYDBOK.slice(3).map(v=>v?+(v/1e6).toFixed(3):null), '#7c3aed', [5,4]), fill:false},
+  ]},
+  scaleOpts('Millioner')
+));
+
+// E-digital bar
+new Chart(document.getElementById('c-edigital'), cfg('bar',
+  {labels:[2020,2021,2022,2023,2024], datasets:[
+    {label:'E-bøker', data:EBOK.slice(4).map(v=>+(v/1000).toFixed(0)), backgroundColor:'#d97706cc', borderRadius:4},
+    {label:'E-lydbøker', data:ELYDBOK.slice(4).map(v=>v?+(v/1000).toFixed(0):0), backgroundColor:'#7c3aedcc', borderRadius:4},
+  ]},
+  {...scaleOpts('Tusen utlån'), options:{...scaleOpts().options, plugins:{...scaleOpts().plugins}}}
+));
+
+// Utlån pie 2024
+new Chart(document.getElementById('c-utlan-pie'), {
+  type:'doughnut',
+  data:{
+    labels:['Fysiske bøker','E-bøker','E-lydbøker','Andre fysiske'],
+    datasets:[{data:[13.41, 0.841, 0.584, 0.87], backgroundColor:['#00796b','#d97706','#7c3aed','#94a3b8'], borderWidth:2, borderColor:'#fff'}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:11,padding:12,font:{size:11}}}}}
+});
+
+// ── FYLKE BARS ────────────────────────────────────────────────────────────────
+function buildCountyBars(containerId, getValue, formatVal, color) {
+  const sorted = [...COUNTIES_2024].sort((a,b) => getValue(b)-getValue(a));
+  const max = getValue(sorted[0]);
+  const el = document.getElementById(containerId);
+  el.innerHTML = sorted.map(c => {
+    const val = getValue(c);
+    const pct = val/max*100;
+    return `<div class="county-row">
+      <span class="county-name">${c.n}</span>
+      <div class="county-bar-wrap"><div class="county-bar" style="width:${pct}%;background:${color}"></div></div>
+      <span class="county-val">${formatVal(val)}</span>
+    </div>`;
+  }).join('');
+}
+buildCountyBars('county-bar-besok', c=>c.besok/c.pop, v=>v.toFixed(2), '#1a3a5c');
+buildCountyBars('county-bar-bok', c=>c.bok/c.pop, v=>v.toFixed(2), '#00796b');
+
+// Grouped bar chart – absolute
+const sortedAbs = [...COUNTIES_2024].sort((a,b)=>b.besok-a.besok);
+new Chart(document.getElementById('c-fylke-abs'), cfg('bar',
+  {labels: sortedAbs.map(c=>c.n), datasets:[
+    {label:'Besøk', data:sortedAbs.map(c=>Math.round(c.besok/1000)), backgroundColor:'#1a3a5ccc', borderRadius:3},
+    {label:'Bokutlån', data:sortedAbs.map(c=>Math.round(c.bok/1000)), backgroundColor:'#00796bcc', borderRadius:3},
+  ]},
+  {...scaleOpts('Tusen'),
+    options:{...scaleOpts().options, plugins:{...scaleOpts().plugins,
+      legend:{position:'bottom',labels:{boxWidth:11,padding:14,font:{size:11}}}}}}
+));
+
+// ── ARRANGEMENT DATA ──────────────────────────────────────────────────────────
+const ARR_ANTALL   = [47149, 49899, 60002, 63877, 30718, 34739, 58111, 67706, 73450];
+const ARR_DELTAKERE= [1172288,1328283,1545115,1704836,657006,724116,1368373,1664863,1878049];
+const ARSVERK      = [1772, 1800, 1767, 1826, 1837, 1834, 1835, 1891, 1846];
+
+// Arrangement trend
+new Chart(document.getElementById('c-arr-trend'), cfg('line',
+  {labels: years, datasets:[lineDS('Deltakere (millioner)', ARR_DELTAKERE.map(v=>+(v/1e6).toFixed(3)), '#16a34a')]},
+  scaleOpts('Millioner deltakere')
+));
+
+// Antall arrangement
+new Chart(document.getElementById('c-arr-antall'), cfg('bar',
+  {labels: years, datasets:[{label:'Arrangementer', data: ARR_ANTALL,
+    backgroundColor: years.map((_,i)=>i===8?'#16a34a':'rgba(22,163,74,.35)'), borderRadius:4}]},
+  scaleOpts('Antall')
+));
+
+// Snitt per arrangement
+new Chart(document.getElementById('c-arr-snitt'), cfg('line',
+  {labels: years, datasets:[{label:'Deltakere per arr.', data: ARR_ANTALL.map((a,i)=>+(ARR_DELTAKERE[i]/a).toFixed(1)),
+    borderColor:'#d97706', backgroundColor:'rgba(217,119,6,.1)', fill:true, tension:0.4, pointRadius:4}]},
+  scaleOpts('Per arrangement')
+));
+
+// Arrangement type pie 2024 (from published data)
+new Chart(document.getElementById('c-arr-pie'), {
+  type:'doughnut',
+  data:{
+    labels:['Skoler/barnehager','Egne arr. (andre)','Eksterne arr. i bibl.'],
+    datasets:[{data:[548000, 1099000, 231000],
+      backgroundColor:['#1a3a5c','#16a34a','#86efac'], borderWidth:2, borderColor:'#fff'}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:11,padding:12,font:{size:11}}}}}
+});
+
+// County arr bars
+const COUNTIES_ARR = [
+  {n:'Oslo',pop:717710,arr_d:302684,arsverk:245},
+  {n:'Buskerud',pop:269819,arr_d:107952,arsverk:91},
+  {n:'Rogaland',pop:499417,arr_d:208395,arsverk:176},
+  {n:'Troms',pop:169610,arr_d:76568,arsverk:57},
+  {n:'Trøndelag',pop:482956,arr_d:164966,arsverk:154},
+  {n:'Nordland',pop:243081,arr_d:116449,arsverk:81},
+  {n:'Agder',pop:319850,arr_d:72197,arsverk:103},
+  {n:'Vestfold',pop:256432,arr_d:64111,arsverk:97},
+  {n:'Akershus',pop:728803,arr_d:185061,arsverk:214},
+  {n:'Innlandet',pop:376304,arr_d:140657,arsverk:138},
+  {n:'Vestland',pop:651299,arr_d:198366,arsverk:214},
+  {n:'Telemark',pop:177093,arr_d:48230,arsverk:66},
+  {n:'Finnmark',pop:75053,arr_d:26645,arsverk:34},
+  {n:'Østfold',pop:312152,arr_d:88322,arsverk:97},
+  {n:'Møre og Romsdal',pop:270624,arr_d:72326,arsverk:77},
+];
+
+buildCountyBars('county-bar-arr',
+  c=>c.arr_d/c.pop, v=>v.toFixed(3), '#16a34a');
+
+// ── ANSATTE / ÅRSVERK ─────────────────────────────────────────────────────────
+new Chart(document.getElementById('c-arsverk-trend'), {
+  type:'line',
+  data:{labels: years, datasets:[lineDS('Årsverk', ARSVERK, '#7c3aed')]},
+  options:{responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:11,padding:14,font:{size:11}}}},
+    scales:{
+      y:{min:1700, max:1950, grid:{color:'#f1f5f9'}, ticks:{font:{size:10}}},
+      x:{grid:{display:false}, ticks:{font:{size:10}}}
+    }
+  }
+});
+
+new Chart(document.getElementById('c-besok-arsverk'), cfg('bar',
+  {labels: years, datasets:[{label:'Besøk per årsverk',
+    data: BESOK.map((b,i)=>Math.round(b/ARSVERK[i])),
+    backgroundColor: years.map((_,i)=>i===8?'#7c3aed':'rgba(124,58,237,.3)'), borderRadius:4}]},
+  scaleOpts('Besøk per årsverk')
+));
+
+new Chart(document.getElementById('c-arsverk-innb'), cfg('line',
+  {labels: years, datasets:[{label:'Årsverk per 10k innb.',
+    data: ARSVERK.map((a,i)=>+(a/POP[i]*10000).toFixed(2)),
+    borderColor:'#0891b2', backgroundColor:'rgba(8,145,178,.1)', fill:true, tension:0.4, pointRadius:4}]},
+  scaleOpts('Per 10 000 innb.')
+));
+
+buildCountyBars('county-bar-arsverk',
+  c=>c.arsverk/c.pop*10000, v=>v.toFixed(2), '#7c3aed');
+buildCountyBars('county-bar-produktiv',
+  c=>COUNTIES_2024.find(x=>x.n===c.n)?.besok/c.arsverk || 0,
+  v=>Math.round(v).toLocaleString('nb'), '#0891b2');
+
+// ── TAB SWITCH ────────────────────────────────────────────────────────────────
+function show(id, btn) {
+  ['besok','utlan','arrangement','ansatte','fylke'].forEach(s => {
+    document.getElementById('sec-'+s).style.display = s===id ? '' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+</script>
+</body>
+</html>

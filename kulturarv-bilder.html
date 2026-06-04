@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- [SEC-3] Content Security Policy: avgrenser inline-skript, bilete og API-tilkoplingar -->
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'none';
+             script-src 'unsafe-inline';
+             style-src 'unsafe-inline';
+             img-src https://www.nb.no https://mm.dimu.org https://iiif.nb.no
+                     https://nye.digitalarkivet.no https:;
+             connect-src https://api.nb.no https://api.dimu.org
+                         https://nye.digitalarkivet.no https://goto.digitalarkivet.no
+                         https://digitalarkivet.no;
+             font-src https://www.nb.no 'self';
+             frame-ancestors 'none'">
+  <title>Kulturarv bildesøk | Nasjonalbiblioteket</title>
+  <meta name="description" content="Søk i historiske fotografier frå Nasjonalbiblioteket, Digitalt Museum og Digitalarkivet.">
+  <meta property="og:title" content="Kulturarv bildesøk | Nasjonalbiblioteket">
+  <meta property="og:locale" content="nb_NO">
+  <meta name="theme-color" content="#550029">
+  <link rel="preconnect" href="https://www.nb.no">
+  <style>
+    /* ============================================================
+       NB Design System v.2 — Design Tokens
+       Kilde: nb-tokens.css + nb-framework.css (Mai 2026)
+       ============================================================ */
+
+    @font-face {
+      font-family: ClearfaceStd;
+      font-style: normal;
+      font-weight: 400;
+      font-display: fallback;
+      src: url("https://www.nb.no/content/themes/theme-block-base/assets/fonts/ClearfaceStd-Regular.woff2") format("woff2");
+    }
+    @font-face {
+      font-family: "Bureau Sans";
+      font-style: normal;
+      font-weight: 300 700;
+      font-display: fallback;
+      src: url("https://www.nb.no/content/themes/theme-block-base/assets/fonts/STKBureauSansVariableComplete.woff2") format("woff2");
+    }
+
+    :root {
+      /* Primærfargar */
+      --nb-color-primary:          #17181B;
+      --nb-color-primary-active:   #550029;
+      --nb-color-secondary-100:    #FFEAEA;
+      /* Tekstfargar */
+      --nb-color-text-primary:     #17181B;
+      --nb-color-text-secondary:   #5B5C62;
+      --nb-color-text-inverted:    #FFFFFF;
+      /* Bakgrunnar */
+      --nb-color-bg-page:          #F4F4F4;
+      --nb-color-bg-elevated:      #FFFFFF;
+      --nb-color-bg-highlighted:   #E4DFDE;
+      --nb-color-bg-dark:          #17181B;
+      /* Nøytrale tonar */
+      --nb-color-neutral-300:      #6D6F76;
+      --nb-color-neutral-200:      #919298;
+      --nb-color-neutral-100:      #D4D4D4;
+      --nb-color-neutral-50:       #EFEFEF;
+      /* System */
+      --nb-color-error:            #C72A2A;
+      --nb-color-warning:          #C77F2A;
+      --nb-color-success:          #007435;
+      --nb-color-info:             #005A87;
+      --nb-color-white:            #FFFFFF;
+      /* Badge-fargar for kjeldene */
+      --nb-color-badge-nb:         #550029;
+      --nb-color-badge-dimu:       #17181B;
+      --nb-color-badge-da:         #005A87;
+      /* Typografi */
+      --nb-font-heading: "ClearfaceStd", Georgia, serif;
+      --nb-font-body:    "Bureau Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      /* Tekststørringar */
+      --nb-text-xs:   0.75rem;
+      --nb-text-sm:   0.875rem;
+      --nb-text-base: 1rem;
+      --nb-text-md:   1.125rem;
+      --nb-text-lg:   1.25rem;
+      --nb-text-xl:   1.5rem;
+      --nb-text-2xl:  1.875rem;
+      /* Linjehøgde */
+      --nb-leading-tight:   1.2;
+      --nb-leading-snug:    1.4;
+      --nb-leading-normal:  1.5;
+      --nb-leading-relaxed: 1.7;
+      /* Fontvekt */
+      --nb-font-normal:  400;
+      --nb-font-medium:  500;
+      --nb-font-bold:    700;
+      /* Spacing (8 px grunnmål) */
+      --nb-space-1:  0.25rem;
+      --nb-space-2:  0.5rem;
+      --nb-space-3:  0.75rem;
+      --nb-space-4:  1rem;
+      --nb-space-5:  1.25rem;
+      --nb-space-6:  1.5rem;
+      --nb-space-8:  2rem;
+      --nb-space-10: 2.5rem;
+      --nb-space-12: 3rem;
+      --nb-space-16: 4rem;
+      /* Layout */
+      --nb-max-width:     1280px;
+      --nb-header-height: 72px;
+      --nb-gutter:        clamp(1rem, 4vw, 2.5rem);
+      /* Border-radius */
+      --nb-radius-sm:   4px;
+      --nb-radius-md:   8px;
+      --nb-radius-lg:   16px;
+      --nb-radius-xl:   24px;
+      --nb-radius-full: 9999px;
+      /* Skuggar */
+      --nb-shadow-sm: 0 1px 3px rgba(0,0,0,.08);
+      --nb-shadow-md: 0 4px 12px rgba(0,0,0,.12);
+      --nb-shadow-lg: 0 8px 24px rgba(0,0,0,.16);
+      /* Animasjonar */
+      --nb-transition-fast: 150ms ease;
+      --nb-transition-base: 250ms ease;
+      /* Fokusring (WCAG 2.4.7) */
+      --nb-focus-color:   #550029;
+      --nb-focus-outline: 3px solid var(--nb-focus-color);
+      --nb-focus-offset:  3px;
+      /* Noise-tekstur (same som nb.no) */
+      --nb-noise-url: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIj4KICA8ZmlsdGVyIGlkPSJuIiB4PSIwIiB5PSIwIj4KICAgIDxmZVR1cmJ1bGVuY2UgdHlwZT0iZnJhY3RhbE5vaXNlIiBiYXNlRnJlcXVlbmN5PSIwLjc1IiBudW1PY3RhdmVzPSI0IiBzdGl0Y2hUaWxlcz0ic3RpdGNoIi8+CiAgPC9maWx0ZXI+CiAgPHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbHRlcj0idXJsKCNuKSIgb3BhY2l0eT0iMSIvPgo8L3N2Zz4=");
+      --nb-noise-opacity: 0.4;
+    }
+
+    /* Mørk modus (WCAG 1.4.3 kontrast ivaretas) */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --nb-color-text-primary:    #F4F4F4;
+        --nb-color-text-secondary:  #C8C8CC;
+        --nb-color-text-inverted:   #17181B;
+        --nb-color-bg-page:         #17181B;
+        --nb-color-bg-elevated:     #26272B;
+        --nb-color-bg-highlighted:  #33343A;
+        --nb-color-bg-dark:         #0D0E10;
+        --nb-color-primary-active:  #FE91B8;
+        --nb-focus-color:           #FE91B8;
+        --nb-color-badge-nb:        #FE91B8;
+        --nb-noise-opacity:         0.1;
+      }
+    }
+
+    /* ---- Reset & base ---- */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        transition-duration: .01ms !important;
+      }
+    }
+
+    body {
+      font-family: var(--nb-font-body);
+      background: var(--nb-color-bg-page);
+      color: var(--nb-color-text-primary);
+      min-height: 100vh;
+      font-size: var(--nb-text-base);
+      line-height: var(--nb-leading-normal);
+    }
+
+    /* WCAG 2.4.7 — Synleg fokusring for alle interaktive element */
+    :focus-visible {
+      outline: var(--nb-focus-outline);
+      outline-offset: var(--nb-focus-offset);
+    }
+
+    /* WCAG 2.4.1 — Hopplenke (skip link) */
+    .nb-skip-link {
+      position: absolute;
+      top: -100%;
+      left: var(--nb-space-4);
+      background: var(--nb-color-primary-active);
+      color: #fff;
+      padding: var(--nb-space-3) var(--nb-space-6);
+      font-family: var(--nb-font-body);
+      font-size: var(--nb-text-base);
+      font-weight: var(--nb-font-bold);
+      text-decoration: none;
+      border-radius: 0 0 var(--nb-radius-sm) var(--nb-radius-sm);
+      z-index: 9999;
+      transition: top var(--nb-transition-fast);
+    }
+    .nb-skip-link:focus { top: 0; }
+
+    /* Skjult tekst for skjermlesar (sr-only) */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* ---- Header ---- */
+    .nb-header {
+      background: var(--nb-color-bg-dark);
+      color: var(--nb-color-text-inverted);
+      position: relative;
+      overflow: hidden;
+    }
+    .nb-header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--nb-noise-url);
+      opacity: var(--nb-noise-opacity);
+      pointer-events: none;
+    }
+    .nb-header__inner {
+      max-width: var(--nb-max-width);
+      margin: 0 auto;
+      padding: var(--nb-space-4) var(--nb-gutter);
+      display: flex;
+      align-items: center;
+      gap: var(--nb-space-5);
+      position: relative;
+      z-index: 1;
+      min-height: var(--nb-header-height);
+    }
+
+    .nb-logo {
+      display: flex;
+      align-items: center;
+      gap: var(--nb-space-3);
+      text-decoration: none;
+      color: inherit;
+      flex-shrink: 0;
+    }
+    .nb-logo:focus-visible {
+      outline: var(--nb-focus-outline);
+      outline-offset: var(--nb-focus-offset);
+    }
+    .nb-logo-text {
+      font-family: var(--nb-font-heading);
+      font-size: var(--nb-text-lg);
+      line-height: var(--nb-leading-tight);
+    }
+
+    /* NB-symbol SVG */
+    .nb-symbol { width: 32px; height: 40px; flex-shrink: 0; }
+
+    .header-divider {
+      width: 1px;
+      height: 1.5rem;
+      background: rgba(255,255,255,0.25);
+      flex-shrink: 0;
+    }
+    .header-subtitle {
+      font-size: var(--nb-text-sm);
+      color: rgba(255,255,255,0.7);
+      letter-spacing: 0.02em;
+    }
+
+    /* ---- Søk-seksjon ---- */
+    .search-section {
+      background: var(--nb-color-bg-elevated);
+      border-bottom: 2px solid var(--nb-color-neutral-100);
+      padding: var(--nb-space-8) var(--nb-gutter) var(--nb-space-6);
+    }
+    .search-inner {
+      max-width: var(--nb-max-width);
+      margin: 0 auto;
+    }
+    .search-heading {
+      font-family: var(--nb-font-heading);
+      font-size: var(--nb-text-2xl);
+      font-weight: var(--nb-font-normal);
+      margin-bottom: var(--nb-space-6);
+      color: var(--nb-color-text-primary);
+      line-height: var(--nb-leading-tight);
+    }
+    .search-row {
+      display: flex;
+      gap: var(--nb-space-2);
+      margin-bottom: var(--nb-space-4);
+    }
+    .search-input {
+      flex: 1;
+      min-width: 0;
+      padding: var(--nb-space-3) var(--nb-space-4);
+      font-size: var(--nb-text-base);
+      font-family: var(--nb-font-body);
+      border: 2px solid var(--nb-color-neutral-100);
+      border-radius: var(--nb-radius-sm);
+      background: var(--nb-color-bg-page);
+      color: var(--nb-color-text-primary);
+      outline: none;
+      transition: border-color var(--nb-transition-fast);
+      -webkit-appearance: none;
+      min-height: 48px;
+    }
+    .search-input:focus { border-color: var(--nb-color-primary-active); }
+    .search-input::placeholder { color: var(--nb-color-neutral-200); }
+
+    .search-btn {
+      padding: var(--nb-space-3) var(--nb-space-8);
+      background: var(--nb-color-primary-active);
+      color: #fff;
+      border: none;
+      border-radius: var(--nb-radius-sm);
+      font-size: var(--nb-text-base);
+      font-family: var(--nb-font-body);
+      font-weight: var(--nb-font-bold);
+      letter-spacing: 0.03em;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity var(--nb-transition-fast);
+      min-height: 48px;
+    }
+    .search-btn:hover   { opacity: 0.85; }
+    .search-btn:focus-visible { outline: var(--nb-focus-outline); outline-offset: var(--nb-focus-offset); }
+
+    .filter-row {
+      display: flex;
+      align-items: center;
+      gap: var(--nb-space-3);
+      flex-wrap: wrap;
+    }
+    .filter-row label {
+      font-size: var(--nb-text-sm);
+      color: var(--nb-color-text-secondary);
+      white-space: nowrap;
+    }
+    .photographer-input {
+      width: 280px;
+      padding: var(--nb-space-2) var(--nb-space-3);
+      font-size: var(--nb-text-sm);
+      font-family: var(--nb-font-body);
+      border: 1px solid var(--nb-color-neutral-100);
+      border-radius: var(--nb-radius-sm);
+      background: var(--nb-color-bg-page);
+      color: var(--nb-color-text-primary);
+      outline: none;
+      transition: border-color var(--nb-transition-fast);
+      -webkit-appearance: none;
+      min-height: 40px;
+    }
+    .photographer-input:focus        { border-color: var(--nb-color-primary-active); }
+    .photographer-input::placeholder { color: var(--nb-color-neutral-200); }
+
+    /* ---- Filter-stripe ---- */
+    #filterBar {
+      display: none;
+      background: var(--nb-color-bg-highlighted);
+      border-bottom: 1px solid var(--nb-color-neutral-100);
+      padding: var(--nb-space-3) var(--nb-gutter);
+    }
+    .filter-bar-inner {
+      max-width: var(--nb-max-width);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: var(--nb-space-4);
+      flex-wrap: wrap;
+    }
+    .filter-label-txt {
+      font-size: var(--nb-text-xs);
+      font-weight: var(--nb-font-bold);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--nb-color-text-secondary);
+      white-space: nowrap;
+    }
+    .source-chips { display: flex; gap: var(--nb-space-2); flex-wrap: wrap; }
+
+    .source-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--nb-space-2);
+      padding: var(--nb-space-2) var(--nb-space-4);
+      border: 2px solid var(--nb-color-neutral-100);
+      border-radius: var(--nb-radius-full);
+      background: var(--nb-color-bg-elevated);
+      cursor: pointer;
+      font-size: var(--nb-text-sm);
+      font-family: var(--nb-font-body);
+      transition: all var(--nb-transition-fast);
+      user-select: none;
+      white-space: nowrap;
+      min-height: 36px;
+    }
+    .source-chip:hover       { border-color: var(--nb-color-primary); }
+    .source-chip.active      { background: var(--nb-color-primary); color: var(--nb-color-text-inverted); border-color: var(--nb-color-primary); }
+    .source-chip:focus-visible { outline: var(--nb-focus-outline); outline-offset: var(--nb-focus-offset); }
+
+    .source-chip .chip-count {
+      background: var(--nb-color-primary-active);
+      color: #fff;
+      font-size: var(--nb-text-xs);
+      font-weight: var(--nb-font-bold);
+      padding: 2px var(--nb-space-2);
+      border-radius: var(--nb-radius-full);
+      min-width: 22px;
+      text-align: center;
+    }
+    .source-chip.chip-loading .chip-count { background: var(--nb-color-neutral-200); }
+
+    .total-count-txt {
+      margin-left: auto;
+      font-size: var(--nb-text-sm);
+      color: var(--nb-color-text-secondary);
+    }
+
+    /* ---- Hovud-innhald ---- */
+    #main-content {
+      max-width: var(--nb-max-width);
+      margin: 0 auto;
+      padding: var(--nb-space-6) var(--nb-gutter) var(--nb-space-16);
+    }
+
+    /* Varselmeldingar */
+    #notices { margin-bottom: var(--nb-space-4); }
+
+    .notice-item {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--nb-space-3);
+      padding: var(--nb-space-3) var(--nb-space-4);
+      background: #fff8ee;
+      border-left: 4px solid var(--nb-color-warning);
+      border-radius: 0 var(--nb-radius-sm) var(--nb-radius-sm) 0;
+      margin-bottom: var(--nb-space-2);
+      font-size: var(--nb-text-sm);
+      color: var(--nb-color-text-primary);
+      line-height: var(--nb-leading-normal);
+    }
+    @media (prefers-color-scheme: dark) {
+      .notice-item { background: rgba(199,127,42,0.15); }
+    }
+    .notice-item a { color: var(--nb-color-primary-active); text-decoration: underline; }
+    .notice-item a:hover { text-decoration: none; }
+
+    /* Placeholder */
+    #placeholderState {
+      text-align: center;
+      padding: var(--nb-space-16) 0 var(--nb-space-12);
+    }
+    .placeholder-icon { font-size: 3.25rem; margin-bottom: var(--nb-space-5); opacity: 0.3; }
+    .placeholder-head {
+      font-family: var(--nb-font-heading);
+      font-size: var(--nb-text-xl);
+      font-weight: var(--nb-font-normal);
+      color: var(--nb-color-text-secondary);
+      margin-bottom: var(--nb-space-3);
+      line-height: var(--nb-leading-snug);
+    }
+    .placeholder-sub { font-size: var(--nb-text-sm); color: var(--nb-color-neutral-300); line-height: var(--nb-leading-relaxed); }
+
+    /* Skeleton loader */
+    #loadingState { display: none; }
+    .skeleton-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: var(--nb-space-4);
+    }
+    .skeleton-card {
+      background: var(--nb-color-bg-elevated);
+      border-radius: var(--nb-radius-xl);
+      overflow: hidden;
+      animation: nb-pulse 1.6s ease-in-out infinite;
+      box-shadow: var(--nb-shadow-sm);
+    }
+    .skeleton-img  { width: 100%; padding-bottom: 72%; background: var(--nb-color-bg-highlighted); }
+    .skeleton-body { padding: var(--nb-space-3) var(--nb-space-4); }
+    .skeleton-line { height: 11px; background: var(--nb-color-bg-highlighted); margin-bottom: var(--nb-space-2); border-radius: var(--nb-radius-sm); }
+    .skeleton-line.s { width: 55%; }
+
+    @keyframes nb-pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.55; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .skeleton-card { animation: none; }
+    }
+
+    /* Resultatgrid */
+    #resultsContainer { display: none; }
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: var(--nb-space-4);
+    }
+
+    /* Bilekort (nb-card) */
+    .img-card {
+      background: var(--nb-color-bg-elevated);
+      border-radius: var(--nb-radius-xl);
+      overflow: hidden;
+      cursor: pointer;
+      box-shadow: var(--nb-shadow-sm);
+      transition: transform var(--nb-transition-base), box-shadow var(--nb-transition-base);
+      outline: none;
+      position: relative;
+    }
+    .img-card:hover  { transform: translateY(-3px); box-shadow: var(--nb-shadow-lg); }
+    .img-card:focus-visible { outline: var(--nb-focus-outline); outline-offset: var(--nb-focus-offset); }
+
+    .card-thumb {
+      width: 100%;
+      padding-bottom: 72%;
+      position: relative;
+      background: var(--nb-color-bg-highlighted);
+      overflow: hidden;
+    }
+    .card-thumb img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform var(--nb-transition-base);
+    }
+    .img-card:hover .card-thumb img { transform: scale(1.03); }
+
+    .card-thumb-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.25rem;
+      color: var(--nb-color-neutral-200);
+    }
+    .source-badge {
+      position: absolute;
+      top: var(--nb-space-2);
+      left: var(--nb-space-2);
+      padding: 2px var(--nb-space-2);
+      font-size: var(--nb-text-xs);
+      font-weight: var(--nb-font-bold);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      border-radius: var(--nb-radius-sm);
+      pointer-events: none;
+    }
+    .badge-nb             { background: var(--nb-color-badge-nb);   color: #fff; }
+    .badge-dimu           { background: var(--nb-color-badge-dimu); color: #fff; }
+    .badge-digitalarkivet { background: var(--nb-color-badge-da);   color: #fff; }
+
+    .card-body {
+      padding: var(--nb-space-3) var(--nb-space-4) var(--nb-space-4);
+    }
+    .card-title {
+      font-family: var(--nb-font-heading);
+      font-size: var(--nb-text-sm);
+      line-height: var(--nb-leading-snug);
+      color: var(--nb-color-text-primary);
+      margin-bottom: var(--nb-space-1);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .card-meta {
+      font-size: var(--nb-text-xs);
+      color: var(--nb-color-text-secondary);
+    }
+    .card-meta span + span::before { content: ' · '; }
+
+    /* Ingen treff */
+    .no-results {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: var(--nb-space-16) 0;
+    }
+    .no-results h2 {
+      font-family: var(--nb-font-heading);
+      font-size: var(--nb-text-xl);
+      font-weight: var(--nb-font-normal);
+      color: var(--nb-color-text-secondary);
+      margin-bottom: var(--nb-space-2);
+    }
+    .no-results p { font-size: var(--nb-text-sm); color: var(--nb-color-neutral-300); }
+
+    /* Paginering (WCAG 2.5.5 — 44px min touch-mål) */
+    #pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--nb-space-2);
+      margin-top: var(--nb-space-10);
+      flex-wrap: wrap;
+    }
+    .page-btn {
+      padding: var(--nb-space-2) var(--nb-space-4);
+      border: 2px solid var(--nb-color-neutral-100);
+      border-radius: var(--nb-radius-sm);
+      background: var(--nb-color-bg-elevated);
+      cursor: pointer;
+      font-size: var(--nb-text-sm);
+      font-family: var(--nb-font-body);
+      font-weight: var(--nb-font-medium);
+      transition: all var(--nb-transition-fast);
+      min-width: 44px;
+      min-height: 44px;
+      text-align: center;
+    }
+    .page-btn:hover:not(:disabled) { background: var(--nb-color-primary-active); color: #fff; border-color: var(--nb-color-primary-active); }
+    .page-btn.active  { background: var(--nb-color-primary-active); color: #fff; border-color: var(--nb-color-primary-active); }
+    .page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .page-btn:focus-visible { outline: var(--nb-focus-outline); outline-offset: var(--nb-focus-offset); }
+    .page-ellipsis { color: var(--nb-color-text-secondary); padding: 0 var(--nb-space-1); }
+
+    /* ---- Modal ---- */
+    #modalOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.88);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+      padding: var(--nb-space-6);
+    }
+    #modalOverlay.open { display: flex; }
+
+    .modal-box {
+      background: var(--nb-color-bg-elevated);
+      border-radius: var(--nb-radius-xl);
+      max-width: 860px;
+      width: 100%;
+      max-height: 92vh;
+      overflow-y: auto;
+      position: relative;
+      box-shadow: var(--nb-shadow-lg);
+    }
+    .modal-close-btn {
+      position: absolute;
+      top: var(--nb-space-3);
+      right: var(--nb-space-3);
+      width: 44px;
+      height: 44px;
+      background: var(--nb-color-primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--nb-radius-md);
+      font-size: var(--nb-text-md);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      transition: background var(--nb-transition-fast);
+    }
+    .modal-close-btn:hover { background: var(--nb-color-primary-active); }
+    .modal-close-btn:focus-visible { outline: var(--nb-focus-outline); outline-offset: var(--nb-focus-offset); }
+
+    .modal-img-area {
+      background: var(--nb-color-bg-dark);
+      border-radius: var(--nb-radius-xl) var(--nb-radius-xl) 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 200px;
+      max-height: 60vh;
+      overflow: hidden;
+    }
+    .modal-img-area img {
+      max-width: 100%;
+      max-height: 60vh;
+      object-fit: contain;
+      display: block;
+    }
+    .modal-img-placeholder {
+      font-size: 4.5rem;
+      color: var(--nb-color-neutral-300);
+      padding: var(--nb-space-12);
+    }
+    .modal-detail {
+      padding: var(--nb-space-8);
+    }
+    .modal-title {
+      font-family: var(--nb-font-heading);
+      font-size: var(--nb-text-xl);
+      font-weight: var(--nb-font-normal);
+      margin-bottom: var(--nb-space-5);
+      line-height: var(--nb-leading-snug);
+      color: var(--nb-color-text-primary);
+    }
+    .modal-meta-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: var(--nb-space-6);
+    }
+    .modal-meta-table tr { border-bottom: 1px solid var(--nb-color-neutral-50); }
+    .modal-meta-table td { padding: var(--nb-space-2) 0; font-size: var(--nb-text-sm); vertical-align: top; }
+    .modal-meta-table td:first-child {
+      width: 130px;
+      font-size: var(--nb-text-xs);
+      font-weight: var(--nb-font-bold);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--nb-color-text-secondary);
+      padding-right: var(--nb-space-4);
+    }
+    .modal-open-link {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--nb-space-2);
+      padding: var(--nb-space-3) var(--nb-space-6);
+      background: var(--nb-color-primary-active);
+      color: #fff;
+      text-decoration: none;
+      font-size: var(--nb-text-sm);
+      font-weight: var(--nb-font-bold);
+      border-radius: var(--nb-radius-sm);
+      transition: opacity var(--nb-transition-fast);
+    }
+    .modal-open-link:hover { opacity: 0.85; }
+    .modal-open-link:focus-visible { outline: var(--nb-focus-outline); outline-offset: var(--nb-focus-offset); }
+
+    /* ---- Footer ---- */
+    .nb-footer {
+      background: var(--nb-color-bg-dark);
+      color: rgba(255,255,255,0.7);
+      position: relative;
+      overflow: hidden;
+    }
+    .nb-footer::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--nb-noise-url);
+      opacity: var(--nb-noise-opacity);
+      pointer-events: none;
+    }
+    .nb-footer__inner {
+      max-width: var(--nb-max-width);
+      margin: 0 auto;
+      padding: var(--nb-space-8) var(--nb-gutter);
+      position: relative;
+      z-index: 1;
+      font-size: var(--nb-text-sm);
+      line-height: var(--nb-leading-relaxed);
+    }
+    .nb-footer a { color: rgba(255,255,255,0.85); text-decoration: underline; }
+    .nb-footer a:hover { color: #fff; }
+    .nb-footer a:focus-visible { outline: var(--nb-focus-outline); outline-offset: var(--nb-focus-offset); }
+
+    /* ---- Responsiv ---- */
+    @media (max-width: 640px) {
+      .search-section { padding-top: var(--nb-space-5); }
+      .search-heading  { font-size: var(--nb-text-xl); }
+      .results-grid, .skeleton-grid {
+        grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+        gap: var(--nb-space-3);
+      }
+      .photographer-input { width: 100%; }
+      .modal-detail { padding: var(--nb-space-5) var(--nb-space-4); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- WCAG 2.4.1 — Hopplenke: let skjermlesar-brukarar å hoppe over navigasjon -->
+<a href="#main-content" class="nb-skip-link">Gå til hovudinnhald</a>
+
+<!-- ======================================================
+     HEADER
+     ====================================================== -->
+<header class="nb-header">
+  <div class="nb-header__inner">
+    <!-- [SEC-5] noopener noreferrer hindrar Referer-lekkasje til tredjepartsloggar -->
+    <a class="nb-logo" href="https://www.nb.no" target="_blank" rel="noopener noreferrer"
+       aria-label="Nasjonalbiblioteket — opnar ekstern lenke">
+      <!-- NB-symbol: raud rektangel med kvite prikkar (grid av tekstar = bøker) -->
+      <svg class="nb-symbol" viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+        <rect width="32" height="40" fill="#550029"/>
+        <circle cx="8"  cy="10" r="2.2" fill="white" opacity="0.75"/>
+        <circle cx="16" cy="10" r="2.2" fill="white" opacity="0.75"/>
+        <circle cx="24" cy="10" r="2.2" fill="white" opacity="0.75"/>
+        <circle cx="8"  cy="18" r="2.2" fill="white" opacity="0.75"/>
+        <circle cx="16" cy="18" r="2.2" fill="white" opacity="0.75"/>
+        <circle cx="24" cy="18" r="2.2" fill="white" opacity="0.75"/>
+        <circle cx="8"  cy="26" r="2.2" fill="white" opacity="0.75"/>
+        <circle cx="16" cy="26" r="2.2" fill="white" opacity="0.75"/>
+        <circle cx="24" cy="26" r="2.2" fill="white" opacity="0.75"/>
+        <circle cx="8"  cy="34" r="2.2" fill="white" opacity="0.35"/>
+        <circle cx="16" cy="34" r="2.2" fill="white" opacity="0.35"/>
+        <circle cx="24" cy="34" r="2.2" fill="white" opacity="0.35"/>
+      </svg>
+      <span class="nb-logo-text">Nasjonalbiblioteket</span>
+    </a>
+    <div class="header-divider" aria-hidden="true"></div>
+    <span class="header-subtitle">Kulturarv bildesøk</span>
+  </div>
+</header>
+
+<!-- ======================================================
+     SØK
+     ====================================================== -->
+<section class="search-section">
+  <div class="search-inner">
+    <h1 class="search-heading">Søk i historiske fotografier</h1>
+    <div class="search-row">
+      <input
+        id="queryInput"
+        type="text"
+        class="search-input"
+        placeholder="Søk i titler, motiv, steder, beskrivelser …"
+        autocomplete="off"
+        spellcheck="false"
+        aria-label="Søketekst"
+      >
+      <button id="searchBtn" class="search-btn">Søk</button>
+    </div>
+    <div class="filter-row">
+      <label for="photographerInput">Filtrer på fotograf:</label>
+      <input
+        id="photographerInput"
+        type="text"
+        class="photographer-input"
+        placeholder="Fotografens navn …"
+        autocomplete="off"
+        aria-label="Fotograf"
+      >
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================
+     FILTER-STRIPE (kjelder + teljing)
+     ====================================================== -->
+<div id="filterBar">
+  <div class="filter-bar-inner">
+    <span class="filter-label-txt" aria-hidden="true">Kjelde</span>
+    <!-- role="group" samlar kjeldeknappane semantisk (WCAG 1.3.1) -->
+    <div class="source-chips" id="sourceChips" role="group" aria-label="Filtrer på kjelde"></div>
+    <span class="total-count-txt" id="totalCountTxt" aria-live="polite" aria-atomic="true"></span>
+  </div>
+</div>
+
+<!-- ======================================================
+     HOVUDINNHALD
+     ====================================================== -->
+<!-- tabindex="-1" for at hopplenka kan setje fokus hit (WCAG 2.4.1) -->
+<main id="main-content" tabindex="-1">
+
+  <!-- Skjermlesar-kunngjering av søkjeresultat (WCAG 4.1.3) -->
+  <div id="searchAnnouncement" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Varsel per kjelde -->
+  <div id="notices" aria-live="polite"></div>
+
+  <!-- Placeholder -->
+  <div id="placeholderState">
+    <div class="placeholder-icon">🖼</div>
+    <h2 class="placeholder-head">Søk på tvers av tre samlinger</h2>
+    <p class="placeholder-sub">
+      Nasjonalbiblioteket &nbsp;·&nbsp; Digitalt Museum &nbsp;·&nbsp; Digitalarkivet<br>
+      Skriv et søkeord og trykk Søk for å komme i gang.
+    </p>
+  </div>
+
+  <!-- Skeleton loader -->
+  <div id="loadingState">
+    <div class="skeleton-grid" id="skeletonGrid"></div>
+  </div>
+
+  <!-- Resultat -->
+  <div id="resultsContainer">
+    <div class="results-grid" id="resultsGrid" role="list"></div>
+    <nav id="pagination" aria-label="Paginering"></nav>
+  </div>
+
+</main>
+
+<!-- ======================================================
+     MODAL
+     ====================================================== -->
+<div id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitleEl">
+  <div class="modal-box" id="modalBox"></div>
+</div>
+
+<!-- ======================================================
+     FOOTER
+     ====================================================== -->
+<footer class="nb-footer">
+  <div class="nb-footer__inner">
+    Kulturarv bildesøk — eit verktøy for søk på tvers av
+    <a href="https://www.nb.no" target="_blank" rel="noopener noreferrer">Nasjonalbiblioteket</a>,
+    <a href="https://digitaltmuseum.no" target="_blank" rel="noopener noreferrer">Digitalt Museum</a> og
+    <a href="https://digitalarkivet.no" target="_blank" rel="noopener noreferrer">Digitalarkivet</a>.
+    Data tilhøyrer dei respektive kjeldene.
+  </div>
+</footer>
+
+<!-- ======================================================
+     JAVASCRIPT — ADAPTER-MØNSTER
+     ====================================================== -->
+<script>
+'use strict';
+
+/* ============================================================
+   GRENSESNITT: ImageSourceAdapter
+   Alle adapterar skal implementere: id, displayName, badgeClass, search()
+   ============================================================ */
+class ImageSourceAdapter {
+  get id()          { throw new Error(this.constructor.name + ': id ikkje implementert'); }
+  get displayName() { throw new Error(this.constructor.name + ': displayName ikkje implementert'); }
+  get badgeClass()  { return ''; }
+
+  /**
+   * Søk i kjelda.
+   * @param {string} query
+   * @param {{ page: number, size: number, photographer: string|null }} options
+   * @returns {Promise<{ items: object[], total: number }>}
+   */
+  async search(query, options) {
+    throw new Error(this.constructor.name + ': search() ikkje implementert');
+  }
+}
+
+
+/* ============================================================
+   ADAPTER 1: Nasjonalbiblioteket
+   API: https://api.nb.no/catalog/v1/items
+   ============================================================ */
+class NasjonalbiblioteketAdapter extends ImageSourceAdapter {
+  get id()          { return 'nb'; }
+  get displayName() { return 'Nasjonalbiblioteket'; }
+  get badgeClass()  { return 'badge-nb'; }
+
+  async search(query, { page = 0, size = 20, photographer = null } = {}) {
+    let q = query || '*';
+    // [SEC-2] Saniterer fotografnamn før det byggjast inn i Solr-spørjing
+    if (photographer) q += ` creators:"${sanitizeQueryTerm(photographer)}"`;
+
+    const params = new URLSearchParams({ q, size, page });
+    params.append('filter', 'mediatype:bilder');
+    params.append('filter', 'digital:Ja');
+
+    const resp = await fetch(`https://api.nb.no/catalog/v1/items?${params}`, {
+      signal: AbortSignal.timeout(12000),
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+
+    const items = (data._embedded?.items ?? []).map(item => {
+      // Thumbnail: erstatning av {width}/{height}-parametrar
+      const href = item._links?.thumbnail_custom?.href ?? null;
+      const thumbnail = href
+        ? href.replace('{width}', '400').replace('{height}', '300')
+        : null;
+
+      const creators = item.metadata?.creators ?? [];
+      const creator  = creators.map(c => c.name ?? String(c)).filter(Boolean).join(', ') || null;
+      const year     = item.metadata?.originInfo?.firstDigitalContentTime?.slice(0, 4) ?? null;
+
+      return {
+        id:         item.id,
+        title:      item.metadata?.title ?? 'Uten tittel',
+        creator,
+        date:       year,
+        thumbnail,
+        sourceUrl:  `https://www.nb.no/items/${item.id}`,
+        source:     this.id,
+        sourceName: this.displayName,
+      };
+    });
+
+    return { items, total: data.page?.totalElements ?? 0 };
+  }
+}
+
+
+/* ============================================================
+   ADAPTER 2: Digitalt Museum
+   API: https://api.dimu.org/api/solr/select (Solr/JSON)
+   ============================================================ */
+class DigitaltMuseumAdapter extends ImageSourceAdapter {
+  get id()          { return 'dimu'; }
+  get displayName() { return 'Digitalt Museum'; }
+  get badgeClass()  { return 'badge-dimu'; }
+
+  async search(query, { page = 0, size = 20, photographer = null } = {}) {
+    const params = new URLSearchParams({
+      q:         query || '*:*',
+      wt:        'json',
+      rows:      size,
+      start:     page * size,
+      'api.key': 'demo',
+    });
+    params.append('fq', 'artifact.type:Photograph');
+    params.append('fq', 'artifact.hasPictures:true');
+    // [SEC-2] Saniterer fotografnamn før det byggjast inn i Solr-spørjing
+    if (photographer) params.append('fq', `artifact.ingress.producer:"${sanitizeQueryTerm(photographer)}"`);
+
+    const resp = await fetch(`https://api.dimu.org/api/solr/select?${params}`, {
+      signal: AbortSignal.timeout(12000),
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+
+    const docs  = data.response?.docs ?? [];
+    const items = docs.map(doc => {
+      const mediaId   = doc['artifact.defaultMediaIdentifier'];
+      const uniqueId  = doc['artifact.uniqueId'];
+      const thumbnail = mediaId
+        ? `https://mm.dimu.org/image/${mediaId}?dimension=400x400`
+        : null;
+      const fromYear  = doc['artifact.ingress.production.fromYear'];
+
+      return {
+        id:         uniqueId ?? doc['identifier.id'],
+        title:      doc['artifact.ingress.title'] ?? 'Uten tittel',
+        creator:    doc['artifact.ingress.producer'] ?? null,
+        date:       fromYear ? String(fromYear) : null,
+        thumbnail,
+        sourceUrl:  uniqueId
+                      ? `https://digitaltmuseum.no/${uniqueId}`
+                      : 'https://digitaltmuseum.no/',
+        source:     this.id,
+        sourceName: this.displayName,
+      };
+    });
+
+    return { items, total: data.response?.numFound ?? 0 };
+  }
+}
+
+
+/* ============================================================
+   ADAPTER 3: Digitalarkivet (nye.digitalarkivet.no)
+
+   Offentleg CORS-ope REST API oppdaga 2026-05:
+     GET /api/media-file/search/photo
+       ?media=photo        — påkravd
+       &s={søkjeord}       — fritekst
+       &page={N}           — 1-indeksert
+       &itemsPerPage={N}   — antal treff
+       &originators[]={id} — filter på fotograf/opphavar
+
+   Fotograf-filter er to-stegs:
+     1. Hent aggregasjonar med ?no_data=1 for å finna originator-ID
+     2. Bruk ID-en som originators[]-parameter
+
+   Item-felt: uuid, title, description, thumbnailUrl, gotoUrl
+   ============================================================ */
+class DigitalarkivetAdapter extends ImageSourceAdapter {
+  get id()          { return 'digitalarkivet'; }
+  get displayName() { return 'Digitalarkivet'; }
+  get badgeClass()  { return 'badge-digitalarkivet'; }
+
+  static BASE   = 'https://nye.digitalarkivet.no';
+  static SEARCH = `${DigitalarkivetAdapter.BASE}/api/media-file/search/photo`;
+
+  async search(query, { page = 0, size = 20, photographer = null } = {}) {
+    try {
+      // Steg 1: løys opp fotograf-namn til originator-ID om naudsynt
+      let originatorId = null;
+      if (photographer) {
+        originatorId = await this._resolveOriginator(photographer);
+      }
+
+      // Steg 2: hovudsøk
+      const params = new URLSearchParams({
+        media:        'photo',
+        page:         String(page + 1),   // API er 1-indeksert
+        itemsPerPage: String(size),
+      });
+
+      if (query) params.set('s', sanitizeQueryTerm(query));
+
+      if (originatorId !== null) {
+        params.append('originators[]', String(originatorId));
+      } else if (photographer) {
+        // Fallback: inkluder fotografnamn i friteksten
+        const combined = [query, photographer].filter(Boolean).join(' ');
+        params.set('s', sanitizeQueryTerm(combined));
+      }
+
+      const resp = await fetch(`${DigitalarkivetAdapter.SEARCH}?${params}`, {
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+      const data = await resp.json();
+      return this._parse(data, photographer
+        ? (originatorId !== null ? null : photographer)
+        : null);
+
+    } catch (err) {
+      throw new Error('CORS_BLOCKED');
+    }
+  }
+
+  /**
+   * Finn originator-ID for eit fotografnamn ved å slå opp i aggregasjonar.
+   * Returnerer null om ingen treff.
+   */
+  async _resolveOriginator(name) {
+    try {
+      const params = new URLSearchParams({
+        media:    'photo',
+        s:        sanitizeQueryTerm(name),
+        no_data:  '1',
+        itemsPerPage: '0',
+      });
+      const resp = await fetch(`${DigitalarkivetAdapter.SEARCH}?${params}`, {
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      const originators = data.aggregations?.originators ?? [];
+      const lc = name.toLowerCase();
+      const match = originators.find(o => o.name.toLowerCase().includes(lc));
+      return match ? match.id : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  _parse(data, fallbackPhotographer) {
+    const items = (data.data ?? []).map(item => ({
+      id:         item.uuid ?? String(item.id),
+      title:      item.title ?? item.description ?? 'Uten tittel',
+      creator:    fallbackPhotographer ?? null,
+      date:       null,   // ikkje eksponert i søke-API
+      thumbnail:  item.thumbnailUrl ?? null,
+      sourceUrl:  item.gotoUrl ??
+                  `${DigitalarkivetAdapter.BASE}/source/${item.sourceId}/photo/${item.uuid}`,
+      source:     this.id,
+      sourceName: this.displayName,
+    }));
+
+    return {
+      items,
+      total: data.hits ?? data.pagination?.items ?? items.length,
+    };
+  }
+}
+
+
+/* ============================================================
+   SEARCH AGGREGATOR
+   Koordinerer alle adapterar, køyrer parallelt søk
+   ============================================================ */
+class SearchAggregator {
+  constructor() {
+    this._map = new Map();
+  }
+
+  register(adapter) {
+    this._map.set(adapter.id, adapter);
+    return this; // chaining
+  }
+
+  get adapters() {
+    return [...this._map.values()];
+  }
+
+  getAdapter(id) {
+    return this._map.get(id);
+  }
+
+  /**
+   * Søk parallelt i alle (eller valde) kjelder.
+   * Brukar Promise.allSettled — ein feila kjelde stoppar ikkje dei andre.
+   * @returns {Promise<Map<string, SourceResult>>}
+   */
+  async searchAll(query, options, activeIds = null) {
+    const targets = activeIds
+      ? this.adapters.filter(a => activeIds.includes(a.id))
+      : this.adapters;
+
+    const settled = await Promise.allSettled(
+      targets.map(adapter =>
+        adapter.search(query, options)
+          .then(r  => ({ id: adapter.id, status: 'ok',    items: r.items, total: r.total }))
+          .catch(e => ({ id: adapter.id, status: 'error', items: [],      total: 0, error: e.message }))
+      )
+    );
+
+    const resultMap = new Map();
+    for (const outcome of settled) {
+      // allSettled + inner .catch → alltid fulfilled
+      const val = outcome.value;
+      resultMap.set(val.id, val);
+    }
+    return resultMap;
+  }
+}
+
+
+/* ============================================================
+   APP-TILSTAND OG UI
+   ============================================================ */
+const aggregator = new SearchAggregator()
+  .register(new NasjonalbiblioteketAdapter())
+  .register(new DigitaltMuseumAdapter())
+  .register(new DigitalarkivetAdapter());
+
+const PAGE_SIZE = 20;
+
+const appState = {
+  query:         '',
+  photographer:  '',
+  activeSources: aggregator.adapters.map(a => a.id),
+  page:          0,
+  counts:        {},   // { sourceId: number }
+  results:       [],   // ImageItem[]
+  loading:       false,
+};
+
+// DOM-referansar
+const $ = id => document.getElementById(id);
+const queryInput        = $('queryInput');
+const photographerInput = $('photographerInput');
+const searchBtn         = $('searchBtn');
+const filterBar         = $('filterBar');
+const sourceChipsEl     = $('sourceChips');
+const totalCountTxt     = $('totalCountTxt');
+const placeholderState  = $('placeholderState');
+const loadingState      = $('loadingState');
+const skeletonGrid      = $('skeletonGrid');
+const resultsContainer  = $('resultsContainer');
+const resultsGrid       = $('resultsGrid');
+const paginationEl      = $('pagination');
+const noticesEl         = $('notices');
+const modalOverlay      = $('modalOverlay');
+const modalBox          = $('modalBox');
+const mainContent       = $('main-content');
+const searchAnnouncement = $('searchAnnouncement');
+
+// [SEC-7] Debounce — hindrar at brukaren sender hundrevis av API-kall
+// ved å trykke Enter raskt mange gonger
+function debounce(fn, ms) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), ms);
+  };
+}
+const debouncedSearch = debounce(() => startSearch(true), 300);
+
+// Hendingslyttarar
+searchBtn.addEventListener('click', () => startSearch(true));
+queryInput.addEventListener('keydown',        e => { if (e.key === 'Enter') debouncedSearch(); });
+photographerInput.addEventListener('keydown', e => { if (e.key === 'Enter') debouncedSearch(); });
+modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+
+/* ---- Søk ---- */
+function startSearch(resetPage = true) {
+  const q = queryInput.value.trim();
+  const p = photographerInput.value.trim();
+  if (!q && !p) return;
+  appState.query        = q;
+  appState.photographer = p;
+  if (resetPage) appState.page = 0;
+  runSearch();
+}
+
+async function runSearch() {
+  if (appState.loading) return;
+  appState.loading = true;
+  showSkeleton();
+
+  const resultMap = await aggregator.searchAll(
+    appState.query,
+    { page: appState.page, size: PAGE_SIZE, photographer: appState.photographer || null },
+    appState.activeSources,
+  );
+
+  appState.counts  = {};
+  appState.results = [];
+  const errors     = [];
+
+  for (const adapter of aggregator.adapters) {
+    const r = resultMap.get(adapter.id);
+    if (!r) continue;
+
+    if (r.status === 'error') {
+      appState.counts[adapter.id] = 0;
+      if (appState.activeSources.includes(adapter.id)) {
+        errors.push({ adapter, error: r.error });
+      }
+    } else {
+      appState.counts[adapter.id] = r.total;
+      appState.results.push(...r.items);
+    }
+  }
+
+  appState.loading = false;
+  renderFilterBar();
+  renderNotices(errors);
+  renderResults();
+}
+
+
+/* ---- Filter-stripe ---- */
+function renderFilterBar() {
+  filterBar.style.display = 'block';
+
+  sourceChipsEl.innerHTML = aggregator.adapters.map(a => {
+    const count  = appState.counts[a.id] ?? 0;
+    const active = appState.activeSources.includes(a.id);
+    return `<button
+      class="source-chip ${active ? 'active' : ''}"
+      onclick="toggleSource('${a.id}')"
+      aria-pressed="${active}"
+      title="${a.displayName}"
+    >${a.displayName}<span class="chip-count">${count.toLocaleString('nb-NO')}</span></button>`;
+  }).join('');
+
+  const grand = Object.values(appState.counts).reduce((s, n) => s + n, 0);
+  totalCountTxt.textContent = grand.toLocaleString('nb-NO') + ' treff totalt';
+}
+
+
+/* ---- Varsel ---- */
+function renderNotices(errors) {
+  noticesEl.innerHTML = errors.map(({ adapter, error }) => {
+    const isCors = error === 'CORS_BLOCKED' || error?.includes('CORS');
+    const isDA   = adapter.id === 'digitalarkivet';
+
+    // [SEC-6] Logg intern feildetalj til konsoll — ikkje til brukar
+    if (error && error !== 'CORS_BLOCKED') {
+      console.warn(`[${adapter.id}] API-feil:`, error);
+    }
+
+    // [SEC-4] escHtml() på adapter.displayName — konsekvent for alle verdiar i innerHTML
+    const safeName = escHtml(adapter.displayName);
+
+    let msg;
+    if (isDA || isCors) {
+      const directUrl = `https://nye.digitalarkivet.no/search/photo?media=photo&s=${encodeURIComponent(appState.query)}`;
+      // [SEC-5] rel="noopener noreferrer" hindrar Referer-lekkasje
+      msg = `<strong>${safeName}</strong> er ikkje tilgjengeleg akkurat nå. Prøv igjen, eller
+             <a href="${escHtml(directUrl)}" target="_blank" rel="noopener noreferrer">søk direkte på Digitalarkivet ↗</a>`;
+    } else {
+      // [SEC-6] Generisk feilmelding til brukar — ingen interne detaljar
+      msg = `<strong>${safeName}</strong> er ikke tilgjengelig akkurat nå. Prøv igjen senere.`;
+    }
+    return `<div class="notice-item" role="alert">⚠ ${msg}</div>`;
+  }).join('');
+}
+
+
+/* ---- Skeleton ---- */
+function showSkeleton() {
+  // WCAG 4.1.3 — aria-busy informerer skjermlesarar om at innhald lastas
+  mainContent.setAttribute('aria-busy', 'true');
+  searchAnnouncement.textContent = 'Søkjer …';
+
+  placeholderState.style.display  = 'none';
+  loadingState.style.display      = 'block';
+  resultsContainer.style.display  = 'none';
+  noticesEl.innerHTML             = '';
+
+  skeletonGrid.innerHTML = Array.from({ length: 12 }).map(() => `
+    <div class="skeleton-card" aria-hidden="true">
+      <div class="skeleton-img"></div>
+      <div class="skeleton-body">
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line s"></div>
+      </div>
+    </div>`).join('');
+}
+
+
+/* ---- Resultat ---- */
+function renderResults() {
+  // WCAG 4.1.3 — fjern aria-busy og kunngjør resultat for skjermlesarar
+  mainContent.setAttribute('aria-busy', 'false');
+
+  loadingState.style.display     = 'none';
+  resultsContainer.style.display = 'block';
+
+  if (!appState.results.length) {
+    resultsGrid.innerHTML = `
+      <div class="no-results">
+        <h2>Ingen treff</h2>
+        <p>Prøv et annet søkeord, eller fjern kildefilter.</p>
+      </div>`;
+    paginationEl.innerHTML = '';
+    searchAnnouncement.textContent = 'Ingen treff. Prøv eit anna søkjeord.';
+    return;
+  }
+
+  resultsGrid.innerHTML = appState.results
+    .map((item, idx) => renderCard(item, idx))
+    .join('');
+
+  // Kunngjør antal treff for skjermlesarar (WCAG 4.1.3)
+  const grand = Object.values(appState.counts).reduce((s, n) => s + n, 0);
+  searchAnnouncement.textContent =
+    `${grand.toLocaleString('nb-NO')} treff funne. Viser side ${appState.page + 1}.`;
+
+  renderPagination();
+}
+
+function renderCard(item, idx) {
+  const adapter    = aggregator.getAdapter(item.source);
+  const badgeClass = adapter?.badgeClass ?? '';
+  const imgEl      = item.thumbnail
+    ? `<img src="${escHtml(item.thumbnail)}" alt="${escHtml(item.title)}" loading="lazy"
+            onerror="this.parentElement.innerHTML='<div class=card-thumb-placeholder>📷</div>'">`
+    : `<div class="card-thumb-placeholder">📷</div>`;
+
+  const metaParts = [item.creator, item.date].filter(Boolean);
+
+  return `<article
+    class="img-card"
+    role="listitem"
+    tabindex="0"
+    onclick="openModal(${idx})"
+    onkeydown="if(event.key==='Enter'||event.key===' ')openModal(${idx})"
+    aria-label="${escHtml(item.title)}"
+  >
+    <div class="card-thumb">
+      ${imgEl}
+      <span class="source-badge ${badgeClass}">${escHtml(item.sourceName)}</span>
+    </div>
+    <div class="card-body">
+      <div class="card-title">${escHtml(item.title)}</div>
+      ${metaParts.length
+        ? `<div class="card-meta">${metaParts.map(s => `<span>${escHtml(s)}</span>`).join('')}</div>`
+        : ''}
+    </div>
+  </article>`;
+}
+
+
+/* ---- Paginering ---- */
+function renderPagination() {
+  const grand      = Object.values(appState.counts).reduce((s, n) => s + n, 0);
+  const totalPages = Math.ceil(grand / PAGE_SIZE);
+  if (totalPages <= 1) { paginationEl.innerHTML = ''; return; }
+
+  const p     = appState.page;
+  const pages = buildPageRange(p, totalPages);
+
+  const btnPrev = `<button class="page-btn" onclick="goToPage(${p-1})" ${p===0?'disabled':''} aria-label="Forrige side">← Forrige</button>`;
+  const btnNext = `<button class="page-btn" onclick="goToPage(${p+1})" ${p>=totalPages-1?'disabled':''} aria-label="Neste side">Neste →</button>`;
+  const midBtns = pages.map(pg =>
+    pg === '…'
+      ? `<span class="page-ellipsis">…</span>`
+      : `<button class="page-btn ${pg===p?'active':''}" onclick="goToPage(${pg})" aria-label="Side ${pg+1}" aria-current="${pg===p?'page':false}">${pg+1}</button>`
+  ).join('');
+
+  paginationEl.innerHTML = btnPrev + midBtns + btnNext;
+}
+
+function buildPageRange(cur, total) {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i);
+  if (cur <= 3)   return [0,1,2,3,4,'…',total-1];
+  if (cur >= total-4) return [0,'…',total-5,total-4,total-3,total-2,total-1];
+  return [0,'…',cur-1,cur,cur+1,'…',total-1];
+}
+
+function goToPage(page) {
+  // [SEC-8] Valider at sidenummer er eit ikkje-negativt heiltal innanfor gyldige grenser
+  const grand      = Object.values(appState.counts).reduce((s, n) => s + n, 0);
+  const totalPages = Math.max(1, Math.ceil(grand / PAGE_SIZE));
+  appState.page = clampPage(page, totalPages);
+  runSearch();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+
+/* ---- Kjelde-filter ---- */
+function toggleSource(sourceId) {
+  const idx = appState.activeSources.indexOf(sourceId);
+  if (idx > -1) {
+    if (appState.activeSources.length > 1) {
+      appState.activeSources.splice(idx, 1);
+    }
+  } else {
+    appState.activeSources.push(sourceId);
+  }
+  appState.page = 0;
+  runSearch();
+}
+
+
+/* ---- Modal ---- */
+// Lagrar kva element som hadde fokus før modalen vart opna (WCAG 2.4.3)
+let _modalTriggerEl = null;
+
+function openModal(idx) {
+  const item = appState.results[idx];
+  if (!item) return;
+
+  // Lagre fokus-element før modal (for retur ved lukking)
+  _modalTriggerEl = document.activeElement;
+
+  const imgEl = item.thumbnail
+    ? `<img src="${escHtml(item.thumbnail)}" alt="${escHtml(item.title)}">`
+    : `<div class="modal-img-placeholder">📷</div>`;
+
+  const metaRows = [
+    ['Kjelde',    item.sourceName],
+    ['Fotograf',  item.creator],
+    ['År',        item.date],
+  ].filter(([, v]) => v)
+   .map(([l, v]) => `<tr><td>${escHtml(l)}</td><td>${escHtml(String(v))}</td></tr>`)
+   .join('');
+
+  // [SEC-1] Valider URL frå API — blokkerer javascript:, data: osv.
+  // [SEC-5] rel="noopener noreferrer" hindrar Referer-lekkasje
+  const safeSourceUrl = sanitizeUrl(item.sourceUrl);
+
+  modalBox.innerHTML = `
+    <button class="modal-close-btn" id="modalCloseBtn" onclick="closeModal()" aria-label="Lukk bilete">✕</button>
+    <div class="modal-img-area">${imgEl}</div>
+    <div class="modal-detail">
+      <h2 class="modal-title" id="modalTitleEl">${escHtml(item.title)}</h2>
+      ${metaRows ? `<table class="modal-meta-table"><tbody>${metaRows}</tbody></table>` : ''}
+      <a class="modal-open-link" href="${escHtml(safeSourceUrl)}" target="_blank" rel="noopener noreferrer">
+        Sjå originalen ↗
+      </a>
+    </div>`;
+
+  modalOverlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  // WCAG 2.4.3 — flytt fokus til lukke-knappen når modalen opnar
+  requestAnimationFrame(() => {
+    const closeBtn = document.getElementById('modalCloseBtn');
+    if (closeBtn) closeBtn.focus();
+  });
+}
+
+function closeModal() {
+  modalOverlay.classList.remove('open');
+  document.body.style.overflow = '';
+  // WCAG 2.4.3 — returner fokus til det elementet som opna modalen
+  if (_modalTriggerEl && typeof _modalTriggerEl.focus === 'function') {
+    _modalTriggerEl.focus();
+  }
+  _modalTriggerEl = null;
+}
+
+
+/* ---- Hjelpefunksjonar ---- */
+
+/** Eskapar HTML-spesialtegn — brukas på ALT som settast inn via innerHTML */
+function escHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * [SEC-1] Validerer URL — berre https: og http: er tillatne.
+ * Blokkerer javascript:, data:, vbscript: og andre farleg protokollar.
+ */
+function sanitizeUrl(url) {
+  if (!url) return '#';
+  try {
+    const parsed = new URL(String(url));
+    if (!['https:', 'http:'].includes(parsed.protocol)) return '#';
+    return parsed.href;
+  } catch {
+    return '#';
+  }
+}
+
+/**
+ * [SEC-2] Saniterer søkje-input for Solr/API-injeksjon.
+ * Fjernar teikn som kan endre spørjingssemantikken: " \ ( )
+ */
+function sanitizeQueryTerm(str) {
+  if (!str) return '';
+  return String(str).replace(/["\\()[\]{}^~*?:!]/g, ' ').trim();
+}
+
+/**
+ * [SEC-8] Validerer at sidenummer er eit ikkje-negativt heiltal
+ * innanfor eit akseptabelt spenn.
+ */
+function clampPage(page, totalPages) {
+  const n = Math.floor(Number(page));
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(n, Math.max(0, totalPages - 1)));
+}
+</script>
+</body>
+</html>

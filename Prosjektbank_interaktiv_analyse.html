@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prosjektbanken 2013–2025 — interaktiv analyse</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#0f1419;--card:#1a2230;--ink:#e8edf4;--mut:#8a98ab;--acc:#4db8a8;--acc2:#e0a458;--line:#2a3548;}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+header{padding:34px 26px 18px;border-bottom:1px solid var(--line)}
+h1{margin:0 0 6px;font-size:25px;letter-spacing:-.3px}
+header p{margin:0;color:var(--mut);font-size:14px;max-width:760px}
+nav{display:flex;flex-wrap:wrap;gap:6px;padding:14px 22px;position:sticky;top:0;background:rgba(15,20,25,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);z-index:5}
+nav button{background:transparent;color:var(--mut);border:1px solid var(--line);padding:7px 13px;border-radius:20px;cursor:pointer;font-size:13px;transition:.15s}
+nav button:hover{color:var(--ink)}
+nav button.active{background:var(--acc);color:#08110f;border-color:var(--acc);font-weight:600}
+main{max-width:980px;margin:0 auto;padding:24px 22px 80px}
+section{display:none;animation:f .3s}
+section.active{display:block}
+@keyframes f{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+h2{font-size:20px;margin:8px 0 4px}
+.lead{color:var(--mut);font-size:14.5px;margin:0 0 20px;max-width:780px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:18px}
+.chart-wrap{position:relative;height:380px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.kpi b{display:block;font-size:26px;color:var(--acc);letter-spacing:-.5px}
+.kpi span{font-size:12.5px;color:var(--mut)}
+.insight{border-left:3px solid var(--acc2);background:#22293a;padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0;font-size:14px}
+.insight b{color:var(--acc2)}
+.controls{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.controls button{background:#222c3d;border:1px solid var(--line);color:var(--mut);padding:5px 11px;border-radius:16px;cursor:pointer;font-size:12px}
+.controls button.on{background:var(--acc);color:#08110f;border-color:var(--acc)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+th{color:var(--mut);font-weight:600}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+.bar{height:7px;background:var(--acc);border-radius:4px;display:inline-block;vertical-align:middle}
+small.note{color:var(--mut);font-size:12px;display:block;margin-top:10px}
+.ff{columns:2;column-gap:24px;font-size:13px}
+.ff div{break-inside:avoid;padding:5px 0;border-bottom:1px solid var(--line)}
+.ff em{color:var(--mut);font-style:normal;font-size:12px}
+@media(max-width:640px){.ff{columns:1}.chart-wrap{height:320px}}
+</style></head>
+<body>
+<header>
+<h1>Prosjektbanken 2013–2025 — en ny gjennomgang</h1>
+<p>695 prosjekter, 223,5 mill. kr i støtte fra Nasjonalbiblioteket. Denne analysen ser bevisst på det forrige rapport i liten grad berørte: <b>pengene</b>, <b>konsentrasjonen</b> og <b>geografi sett mot folketall</b>. Klikk deg gjennom fanene.</p>
+</header>
+<nav id="nav"></nav>
+<main>
+
+<section id="penger">
+<h2>Pengene: færre, men større prosjekter</h2>
+<p class="lead">Den samlede potten har holdt seg, men måten den deles ut på har endret seg dramatisk. Utviklingsmidler går fra mange små til få store tildelinger.</p>
+<div class="kpis">
+<div class="kpi"><b>223,5 mill</b><span>samlet støtte 2013–2025</span></div>
+<div class="kpi"><b>100&nbsp;000</b><span>median Utviklingsmidler 2014</span></div>
+<div class="kpi"><b>500&nbsp;000</b><span>median Utviklingsmidler 2024 (5×)</span></div>
+<div class="kpi"><b>2</b><span>ordninger med ulik logikk</span></div>
+</div>
+<div class="card"><div class="chart-wrap"><canvas id="c_medgrant"></canvas></div></div>
+<div class="insight"><b>Nytt funn:</b> Median-tildelingen for Utviklingsmidler er femdoblet — fra 100 000 kr (2014) til 500 000 kr (2024). Ordningen har gått fra å smøre tynt utover mange søkere til å satse tungt på færre, større prosjekter. Det er et politisk valg verdt å diskutere: bredde vs. dybde.</div>
+<div class="card"><div class="chart-wrap"><canvas id="c_moneyyear"></canvas></div></div>
+</section>
+
+<section id="konsentrasjon">
+<h2>Konsentrasjon: ti aktører tar halve potten</h2>
+<p class="lead">215 ulike prosjekteiere har fått midler. Men fordelingen er svært skjev.</p>
+<div class="kpis">
+<div class="kpi"><b>48&nbsp;%</b><span>av pengene til topp 10 eiere</span></div>
+<div class="kpi"><b>68&nbsp;%</b><span>til topp 20 eiere</span></div>
+<div class="kpi"><b>215</b><span>unike prosjekteiere totalt</span></div>
+<div class="kpi"><b>15,1 mill</b><span>til Bergen bibliotek alene</span></div>
+</div>
+<div class="card"><table id="t_top"></table>
+<small class="note">Beløp i mill. kr. Søylene er relative til største mottaker.</small></div>
+<div class="insight"><b>Nytt funn:</b> 10 av 215 eiere mottar nesten halvparten av alle midlene. De store bybibliotekene, fylkesbibliotekene og UH-bibliotekene er gjengangere. Spørsmålet for forvaltningen: er dette uttrykk for at de beste søknadene faktisk kommer derfra — eller bygger ordningen opp under en «søknadskompetanse-elite» som mindre bibliotek ikke når opp mot?</div>
+</section>
+
+<section id="type">
+<h2>Bibliotektype: tre ulike pengelogikker</h2>
+<p class="lead">Folkebibliotekene er flest i antall, men får minst per prosjekt. Fylkes- og UH-bibliotek opererer i en helt annen størrelsesorden.</p>
+<div class="card"><div class="chart-wrap"><canvas id="c_typemed"></canvas></div>
+<small class="note">Median-tildeling per prosjekt. Folkebibliotek trekkes ned av de mange små «Aktiv formidling»-tilskuddene.</small></div>
+<div class="insight"><b>Funn:</b> Median-tildelingen til fylkes- og UH-bibliotek (≈475–500&nbsp;000 kr) er rundt <b>6× høyere</b> enn til folkebibliotek (75&nbsp;000 kr). Folkebibliotek står for 504 av 695 prosjekter, men bare 99 av 223 mill. Ordningen finansierer i praksis to forskjellige ting: små formidlingstiltak i kommunene og tunge utviklingsløft i regional/akademisk sektor.</div>
+<div class="card"><h3 style="margin:4px 0 12px;font-size:16px">Tematisk profil per type (% som nevner temaet)</h3>
+<div class="chart-wrap"><canvas id="c_typetheme"></canvas></div></div>
+</section>
+
+<section id="geografi">
+<h2>Geografi: snu spørsmålet — per innbygger leder Nord-Norge</h2>
+<p class="lead">Den forrige analysen konkluderte med at Nord-Norge er underrepresentert. Det stemmer i absolutte tall. Men måler man prosjekter mot folketall, snur bildet helt.</p>
+<div class="card"><div class="chart-wrap"><canvas id="c_geoindex"></canvas></div>
+<small class="note">Indeks = andel av prosjekter delt på andel av befolkning. 1,0 = «rettferdig» andel. Over 1 = overrepresentert per innbygger.</small></div>
+<div class="insight"><b>Nytt funn som utfordrer forrige rapport:</b> Per innbygger er <b>Nord-Norge (indeks 1,40) og Vestlandet (1,37) blant de mest aktive</b> — mens <b>Østlandet (0,76) er underrepresentert</b> til tross for flest prosjekter i absolutte tall. «Nord-Norge er underrepresentert» er altså en konsekvens av at landsdelen har få innbyggere, ikke av lav søkeraktivitet. Forsiktig tolkning: ~51 prosjekter (særlig fylkesbibliotek som dekker hele regioner) lot seg ikke stedfeste sikkert.</div>
+<div class="card"><div class="chart-wrap"><canvas id="c_geomoney"></canvas></div>
+<small class="note">Antall prosjekter og samlet støtte (mill. kr) per landsdel.</small></div>
+</section>
+
+<section id="tema">
+<h2>Tema over tid</h2>
+<p class="lead">Andel prosjekter som nevner hvert tema i fulltekst (mål + beskrivelse). Klikk temaene for å vise/skjule.</p>
+<div class="controls" id="theme_ctrl"></div>
+<div class="card"><div class="chart-wrap"><canvas id="c_themeyear"></canvas></div></div>
+<div class="insight"><b>Observasjon:</b> Samarbeid og formidling dominerer stabilt gjennom hele perioden. Demokrati og leselyst vokser i takt med nasjonale strategier — men som forrige rapport påpekte, er dette ofte nytt <i>vokabular</i> på eksisterende aktivitet. KI/digital kompetanse er overraskende lavt og flatt gjennom hele perioden.</div>
+</section>
+
+<section id="innsats">
+<h2>Innsatsområder: formell merking vs. faktisk innhold</h2>
+<p class="lead">Hvor mange prosjekter er formelt merket med hvert av innsatsområdene? Sammenlign med hvor ofte temaet faktisk omtales i teksten.</p>
+<div class="card"><div class="chart-wrap"><canvas id="c_innsats"></canvas></div></div>
+<div class="insight"><b>Funn:</b> «Demokrati og ytringsfrihet» (10 prosjekter) og «Leselyst og lesefremming» (8) er blant de minst brukte formelle merkene — men temaene gjennomsyrer søknadstekstene. De fire store («Nye samarbeidsformer», «Nye formidlingsmetoder», «Nye bibliotektjenester», «Møteplass») fanger nesten alt. Kategoriseringen er for grovmasket til å brukes analytisk; fulltekst gir et helt annet bilde.</div>
+</section>
+
+<section id="fritt">
+<h2>Fritt forsøk: de 39 eksperimentene</h2>
+<p class="lead">Kategorien for det som ikke passer inn andre steder. Her finner man podkast-bibliotek, VR-historie, escape rooms på dagsturhytter og lenkede data.</p>
+<div class="card"><div class="ff" id="ff_list"></div></div>
+</section>
+
+</main>
+<script>
+const D = {"money_year": {"2013": {"Utviklingsmidler": {"sum": 5932000, "n": 9}}, "2014": {"Utviklingsmidler": {"sum": 22384000, "n": 96}}, "2015": {"Utviklingsmidler": {"sum": 29096500, "n": 57}}, "2016": {"Utviklingsmidler": {"sum": 10685000, "n": 40}}, "2017": {"Utviklingsmidler": {"sum": 19120700, "n": 46}}, "2018": {"Utviklingsmidler": {"sum": 16375000, "n": 36}}, "2019": {"Utviklingsmidler": {"sum": 3450000, "n": 11}}, "2021": {"Aktiv formidling": {"sum": 20015000, "n": 102}, "Utviklingsmidler": {"sum": 19445000, "n": 41}}, "2022": {"Utviklingsmidler": {"sum": 9888153, "n": 28}, "Aktiv formidling": {"sum": 6480331, "n": 65}}, "2023": {"Aktiv formidling": {"sum": 10060500, "n": 58}, "Utviklingsmidler": {"sum": 15880000, "n": 27}}, "2024": {"Aktiv formidling": {"sum": 13460000, "n": 44}, "Utviklingsmidler": {"sum": 10470000, "n": 15}}, "2025": {"Utviklingsmidler": {"sum": 10755000, "n": 20}}}, "median_grant_year": {"2013": 500000, "2014": 100000, "2015": 200000, "2016": 190000, "2017": 320000, "2018": 290000, "2019": 200000, "2021": 350000, "2022": 225000, "2023": 440000, "2024": 500000, "2025": 360000}, "top_recipients": [{"navn": "Bergen bibliotek", "sum": 15115700, "n": 34}, {"navn": "Trøndelag fylkesbibliotek", "sum": 14365000, "n": 15}, {"navn": "Universitetsbiblioteket i Oslo", "sum": 14196000, "n": 12}, {"navn": "Deichman", "sum": 11900000, "n": 18}, {"navn": "Vestland fylkesbibliotek", "sum": 10535000, "n": 16}, {"navn": "Innlandet fylkesbibliotek", "sum": 9590000, "n": 16}, {"navn": "Universitetsbiblioteket i Bergen", "sum": 9135000, "n": 17}, {"navn": "Fylkesbiblioteket i Akershus, Buskerud og Østfold", "sum": 9040000, "n": 23}, {"navn": "Vestfold fylkesbibliotek", "sum": 7180000, "n": 11}, {"navn": "Troms fylkesbibliotek", "sum": 6920000, "n": 10}, {"navn": "Stavanger bibliotek", "sum": 6460000, "n": 18}, {"navn": "Rogaland fylkesbibliotek", "sum": 5890000, "n": 7}, {"navn": "Lillestrøm bibliotek", "sum": 5095000, "n": 12}, {"navn": "NTNU Universitetsbiblioteket", "sum": 4410000, "n": 7}, {"navn": "Drammen  bibliotek", "sum": 4200000, "n": 9}, {"navn": "Finnmark fylkesbibliotek", "sum": 4050000, "n": 3}, {"navn": "Agder fylkesbibliotek", "sum": 3800000, "n": 6}, {"navn": "Tønsberg bibliotek", "sum": 3660000, "n": 9}, {"navn": "UiT Norges arktiske Universitet – biblioteket", "sum": 3317000, "n": 5}, {"navn": "Kristiansand bibliotek", "sum": 3285000, "n": 9}], "concentration": {"n_eiere": 215, "top10_pct": 48.3, "top20_pct": 68.1, "total_mill": 223.5}, "by_type": [{"type": "Folkebibliotek", "sum": 98829853, "n": 504, "median": 75000}, {"type": "Fylkesbibliotek", "sum": 75363331, "n": 116, "median": 475000}, {"type": "UH-bibliotek", "sum": 35194000, "n": 54, "median": 500000}, {"type": "Annet", "sum": 14110000, "n": 21, "median": 500000}], "type_theme": {"Folkebibliotek": {"Demokrati/ytringsfrihet": 21, "Leselyst/lesefremming": 28, "Digital kompetanse/KI": 7, "Inkludering/mangfold": 26, "Helse/mestring": 18, "Samisk/urfolk/kvensk": 3, "Bærekraft/miljø": 13, "Makerspace/skaperverksted": 11, "Samarbeid/partnerskap": 84, "Formidling/arrangement": 87}, "UH-bibliotek": {"Demokrati/ytringsfrihet": 19, "Leselyst/lesefremming": 4, "Digital kompetanse/KI": 28, "Inkludering/mangfold": 15, "Helse/mestring": 2, "Samisk/urfolk/kvensk": 4, "Bærekraft/miljø": 13, "Makerspace/skaperverksted": 9, "Samarbeid/partnerskap": 85, "Formidling/arrangement": 54}, "Fylkesbibliotek": {"Demokrati/ytringsfrihet": 18, "Leselyst/lesefremming": 29, "Digital kompetanse/KI": 16, "Inkludering/mangfold": 29, "Helse/mestring": 20, "Samisk/urfolk/kvensk": 7, "Bærekraft/miljø": 11, "Makerspace/skaperverksted": 12, "Samarbeid/partnerskap": 92, "Formidling/arrangement": 84}, "Annet": {"Demokrati/ytringsfrihet": 19, "Leselyst/lesefremming": 24, "Digital kompetanse/KI": 14, "Inkludering/mangfold": 14, "Helse/mestring": 24, "Samisk/urfolk/kvensk": 5, "Bærekraft/miljø": 19, "Makerspace/skaperverksted": 14, "Samarbeid/partnerskap": 100, "Formidling/arrangement": 95}}, "by_region": [{"region": "Østlandet", "sum": 84207800, "n": 244}, {"region": "Vestlandet", "sum": 67940031, "n": 211}, {"region": "Nord-Norge", "sum": 27646500, "n": 81}, {"region": "Trøndelag", "sum": 24467500, "n": 67}, {"region": "Ukjent", "sum": 8448353, "n": 51}, {"region": "Sørlandet", "sum": 10787000, "n": 41}], "region_theme": {"Nord-Norge": {"Demokrati/ytringsfrihet": 20, "Leselyst/lesefremming": 26, "Digital kompetanse/KI": 5, "Inkludering/mangfold": 30, "Helse/mestring": 12, "Samisk/urfolk/kvensk": 17, "Bærekraft/miljø": 11, "Makerspace/skaperverksted": 10, "Samarbeid/partnerskap": 90, "Formidling/arrangement": 94}, "Sørlandet": {"Demokrati/ytringsfrihet": 12, "Leselyst/lesefremming": 29, "Digital kompetanse/KI": 12, "Inkludering/mangfold": 29, "Helse/mestring": 27, "Samisk/urfolk/kvensk": 0, "Bærekraft/miljø": 12, "Makerspace/skaperverksted": 7, "Samarbeid/partnerskap": 85, "Formidling/arrangement": 80}, "Østlandet": {"Demokrati/ytringsfrihet": 21, "Leselyst/lesefremming": 28, "Digital kompetanse/KI": 10, "Inkludering/mangfold": 24, "Helse/mestring": 20, "Samisk/urfolk/kvensk": 1, "Bærekraft/miljø": 11, "Makerspace/skaperverksted": 14, "Samarbeid/partnerskap": 85, "Formidling/arrangement": 79}, "Vestlandet": {"Demokrati/ytringsfrihet": 24, "Leselyst/lesefremming": 23, "Digital kompetanse/KI": 12, "Inkludering/mangfold": 26, "Helse/mestring": 16, "Samisk/urfolk/kvensk": 1, "Bærekraft/miljø": 15, "Makerspace/skaperverksted": 12, "Samarbeid/partnerskap": 88, "Formidling/arrangement": 86}, "Trøndelag": {"Demokrati/ytringsfrihet": 16, "Leselyst/lesefremming": 31, "Digital kompetanse/KI": 6, "Inkludering/mangfold": 33, "Helse/mestring": 21, "Samisk/urfolk/kvensk": 4, "Bærekraft/miljø": 22, "Makerspace/skaperverksted": 4, "Samarbeid/partnerskap": 79, "Formidling/arrangement": 88}}, "theme_year": {"2013": {"Demokrati/ytringsfrihet": 11, "Leselyst/lesefremming": 33, "Digital kompetanse/KI": 33, "Inkludering/mangfold": 11, "Helse/mestring": 11, "Samisk/urfolk/kvensk": 11, "Bærekraft/miljø": 0, "Makerspace/skaperverksted": 0, "Samarbeid/partnerskap": 100, "Formidling/arrangement": 78}, "2014": {"Demokrati/ytringsfrihet": 28, "Leselyst/lesefremming": 14, "Digital kompetanse/KI": 6, "Inkludering/mangfold": 26, "Helse/mestring": 15, "Samisk/urfolk/kvensk": 1, "Bærekraft/miljø": 4, "Makerspace/skaperverksted": 9, "Samarbeid/partnerskap": 86, "Formidling/arrangement": 84}, "2015": {"Demokrati/ytringsfrihet": 19, "Leselyst/lesefremming": 19, "Digital kompetanse/KI": 7, "Inkludering/mangfold": 39, "Helse/mestring": 7, "Samisk/urfolk/kvensk": 2, "Bærekraft/miljø": 0, "Makerspace/skaperverksted": 12, "Samarbeid/partnerskap": 89, "Formidling/arrangement": 74}, "2016": {"Demokrati/ytringsfrihet": 12, "Leselyst/lesefremming": 8, "Digital kompetanse/KI": 12, "Inkludering/mangfold": 18, "Helse/mestring": 8, "Samisk/urfolk/kvensk": 0, "Bærekraft/miljø": 10, "Makerspace/skaperverksted": 20, "Samarbeid/partnerskap": 82, "Formidling/arrangement": 75}, "2017": {"Demokrati/ytringsfrihet": 22, "Leselyst/lesefremming": 7, "Digital kompetanse/KI": 26, "Inkludering/mangfold": 28, "Helse/mestring": 9, "Samisk/urfolk/kvensk": 2, "Bærekraft/miljø": 7, "Makerspace/skaperverksted": 11, "Samarbeid/partnerskap": 80, "Formidling/arrangement": 72}, "2018": {"Demokrati/ytringsfrihet": 19, "Leselyst/lesefremming": 8, "Digital kompetanse/KI": 8, "Inkludering/mangfold": 22, "Helse/mestring": 11, "Samisk/urfolk/kvensk": 0, "Bærekraft/miljø": 6, "Makerspace/skaperverksted": 33, "Samarbeid/partnerskap": 92, "Formidling/arrangement": 72}, "2019": {"Demokrati/ytringsfrihet": 9, "Leselyst/lesefremming": 9, "Digital kompetanse/KI": 9, "Inkludering/mangfold": 9, "Helse/mestring": 0, "Samisk/urfolk/kvensk": 0, "Bærekraft/miljø": 9, "Makerspace/skaperverksted": 18, "Samarbeid/partnerskap": 100, "Formidling/arrangement": 73}, "2021": {"Demokrati/ytringsfrihet": 15, "Leselyst/lesefremming": 32, "Digital kompetanse/KI": 6, "Inkludering/mangfold": 24, "Helse/mestring": 24, "Samisk/urfolk/kvensk": 1, "Bærekraft/miljø": 20, "Makerspace/skaperverksted": 10, "Samarbeid/partnerskap": 83, "Formidling/arrangement": 87}, "2022": {"Demokrati/ytringsfrihet": 20, "Leselyst/lesefremming": 41, "Digital kompetanse/KI": 8, "Inkludering/mangfold": 29, "Helse/mestring": 15, "Samisk/urfolk/kvensk": 8, "Bærekraft/miljø": 22, "Makerspace/skaperverksted": 8, "Samarbeid/partnerskap": 89, "Formidling/arrangement": 91}, "2023": {"Demokrati/ytringsfrihet": 12, "Leselyst/lesefremming": 35, "Digital kompetanse/KI": 8, "Inkludering/mangfold": 20, "Helse/mestring": 27, "Samisk/urfolk/kvensk": 4, "Bærekraft/miljø": 15, "Makerspace/skaperverksted": 6, "Samarbeid/partnerskap": 85, "Formidling/arrangement": 93}, "2024": {"Demokrati/ytringsfrihet": 22, "Leselyst/lesefremming": 41, "Digital kompetanse/KI": 15, "Inkludering/mangfold": 17, "Helse/mestring": 25, "Samisk/urfolk/kvensk": 8, "Bærekraft/miljø": 15, "Makerspace/skaperverksted": 10, "Samarbeid/partnerskap": 78, "Formidling/arrangement": 88}, "2025": {"Demokrati/ytringsfrihet": 70, "Leselyst/lesefremming": 45, "Digital kompetanse/KI": 20, "Inkludering/mangfold": 60, "Helse/mestring": 25, "Samisk/urfolk/kvensk": 15, "Bærekraft/miljø": 25, "Makerspace/skaperverksted": 10, "Samarbeid/partnerskap": 100, "Formidling/arrangement": 90}}, "theme_list": ["Demokrati/ytringsfrihet", "Leselyst/lesefremming", "Digital kompetanse/KI", "Inkludering/mangfold", "Helse/mestring", "Samisk/urfolk/kvensk", "Bærekraft/miljø", "Makerspace/skaperverksted", "Samarbeid/partnerskap", "Formidling/arrangement"], "innsatsomrader": [["Nye samarbeidsformer og partnerskap", 133], ["Nye formidlingsmetoder", 103], ["Utvikling av nye bibliotektjenester", 99], ["Biblioteket som møteplass", 91], ["FNs bærekraftsmål og bibliotek", 26], ["Mangfold og inkludering", 24], ["Biblioteket som læringsarena", 24], ["Åpen tilgang, åpne data, åpen vitenskap", 14], ["Digitale tjenester", 11], ["Demokrati og ytringsfrihet", 10], ["Leselyst og lesefremming", 8], ["Samarbeid med Nasjonalbiblioteket", 4]], "fritt_forsok": [{"tittel": "Lokalhistorie og ungdomsmedvirkning – med ungdom i førersetet", "eier": "Tromsø bibliotek", "sum": 330000}, {"tittel": "Folkebiblioteket i lokalsamfunnet – kvalitet, verdi og potensial", "eier": "Vestland fylkesbibliotek", "sum": 2000000}, {"tittel": "BIBLIOTEKET SOM PODKASTER", "eier": "Drammen  bibliotek", "sum": 250000}, {"tittel": "«Escape Room»(Rømningsrom) på dagsturhytter i Agder", "eier": "Agder fylkesbibliotek", "sum": 500000}, {"tittel": "Publikumsutvikling og mangfold gjennom analyser av egne statistikker", "eier": "Bodø bibliotek", "sum": 120000}, {"tittel": "Informasjonsknutepunkt Agder, hovedprosjekt", "eier": "Universitetet i Agder. Universitetsbiblioteket", "sum": 550000}, {"tittel": "BIBFRAME og lenkede data", "eier": "Universitetsbiblioteket i Oslo", "sum": 700000}, {"tittel": "Med VR-blikk på historien", "eier": "Trondheim bibliotek", "sum": 350000}, {"tittel": "SkjermTREFF – er møtet med brukeren i universitets- og høgskolebibliotek ved et veiskille?", "eier": "NTNU Universitetsbiblioteket", "sum": 400000}, {"tittel": "Å ta publikum med fra begynnelsen", "eier": "Bergen bibliotek", "sum": 350000}, {"tittel": "Leseløft for nynorsk-litteraturen", "eier": "Sunnfjord bibliotek", "sum": 300000}, {"tittel": "Biblioteket – ein trygg møteplass?", "eier": "Regional bibliotekutvikling Møre og Romsdal", "sum": 280000}, {"tittel": "Lånekortet – en billett til framtida", "eier": "Stavanger bibliotek", "sum": 600000}, {"tittel": "GRANITOL vol. 2", "eier": "Innlandet fylkesbibliotek", "sum": 100000}, {"tittel": "Førespurnadhandtering", "eier": "Bergen bibliotek", "sum": 800000}, {"tittel": "Biblioteket som samskaper", "eier": "Innlandet fylkesbibliotek", "sum": 2700000}, {"tittel": "Biblioteksystem som plattform", "eier": "Deichman", "sum": 750000}, {"tittel": "Den andre røynda", "eier": "Bergen bibliotek", "sum": 300000}, {"tittel": "SkaperStormen Digital historiefortelling", "eier": "Bodø bibliotek", "sum": 400000}, {"tittel": "Kunstig intelligens i biblioteket", "eier": "Universitetsbiblioteket i Oslo", "sum": 500000}, {"tittel": "Levende bøker", "eier": "Ålesund bibliotek", "sum": 42000}, {"tittel": "Personaliserte tjenester", "eier": "Stavanger bibliotek", "sum": 500000}, {"tittel": "Det finnes en app for det", "eier": "Lindesnes bibliotek", "sum": 200000}, {"tittel": "Frie vitenskapelige publikasjoner", "eier": "Universitetsbiblioteket i Bergen", "sum": 510000}, {"tittel": "Bibliotekets førstelinje som knutepunkt", "eier": "NTNU Universitetsbiblioteket", "sum": 340000}, {"tittel": "Spør en smarting", "eier": "Ringsaker bibliotek", "sum": 100000}, {"tittel": "Mapping for sluttbrukertjenester", "eier": "Universitetsbiblioteket i Oslo", "sum": 2800000}, {"tittel": "Morgendagens veileder", "eier": "Tønsberg bibliotek", "sum": 1750000}, {"tittel": "Boka Brukeratferd i bibliotek", "eier": "Bergen bibliotek", "sum": 233700}, {"tittel": "Språkvenn", "eier": "Bergen bibliotek", "sum": 100000}, {"tittel": "Ibsenbiblioteket", "eier": "Skien bibliotek", "sum": 900000}, {"tittel": "Nettvarder – lokasjonsbaserte tjenester", "eier": "Bergen bibliotek", "sum": 100000}, {"tittel": "Samlingsutvikling i en digital tid", "eier": "Tønsberg bibliotek", "sum": 300000}, {"tittel": "Flerspråklig lesestund", "eier": "Eidskog bibliotek", "sum": 30000}, {"tittel": "Bokbåten «Epos» til bLEST Litteraturfest", "eier": "Tysvær bibliotek", "sum": 65000}, {"tittel": "Sponsing og sponsorsamarbeid i bibliotek", "eier": "Innlandet fylkesbibliotek", "sum": 850000}, {"tittel": "Partnerskap og sponsorstrategi", "eier": "Stavanger bibliotek", "sum": 130000}, {"tittel": "BibliotekCamp2015", "eier": "Troms fylkesbibliotek", "sum": 120000}, {"tittel": "Wayfinding & skilting", "eier": "Stavanger bibliotek", "sum": 1200000}], "pop_share": {"Østlandet": 50, "Vestlandet": 24, "Trøndelag": 9, "Nord-Norge": 9, "Sørlandet": 6}};
+const fmt=n=>n.toLocaleString('no-NO');
+const ACC='#4db8a8',ACC2='#e0a458',GRID='#2a3548',MUT='#8a98ab';
+Chart.defaults.color=MUT;Chart.defaults.font.family="-apple-system,Segoe UI,Roboto,sans-serif";
+Chart.defaults.plugins.legend.labels.color='#e8edf4';
+const PAL=['#4db8a8','#e0a458','#7aa2f7','#e06c9f','#9ece6a','#bb9af7','#f7768e','#73daca','#ff9e64','#c0caf5'];
+const charts={};
+
+// nav
+const tabs=[['penger','💰 Pengene'],['konsentrasjon','🎯 Konsentrasjon'],['type','🏛 Bibliotektype'],['geografi','🗺 Geografi'],['tema','📈 Tema over tid'],['innsats','🏷 Innsatsområder'],['fritt','🧪 Fritt forsøk']];
+const nav=document.getElementById('nav');
+tabs.forEach(([id,lab],i)=>{const b=document.createElement('button');b.textContent=lab;b.onclick=()=>show(id,b);if(i==0)b.classList.add('active');nav.appendChild(b);});
+function show(id,btn){document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');window.scrollTo(0,0);}
+document.getElementById('penger').classList.add('active');
+
+// median grant
+const yrs=Object.keys(D.median_grant_year);
+new Chart(c_medgrant,{type:'line',data:{labels:yrs,datasets:[{label:'Median tildeling (kr), Utviklingsmidler',data:yrs.map(y=>D.median_grant_year[y]),borderColor:ACC,backgroundColor:'rgba(77,184,168,.12)',fill:true,tension:.3,pointRadius:4}]},options:{maintainAspectRatio:false,plugins:{title:{display:true,text:'Median tildeling per prosjekt over tid',color:'#e8edf4',font:{size:15}}},scales:{x:{grid:{color:GRID}},y:{grid:{color:GRID},ticks:{callback:v=>fmt(v)}}}}});
+
+// money per year stacked
+const myrs=Object.keys(D.money_year);
+const tU=myrs.map(y=>(D.money_year[y].Utviklingsmidler||{}).sum/1e6||0);
+const tA=myrs.map(y=>(D.money_year[y]['Aktiv formidling']||{}).sum/1e6||0);
+new Chart(c_moneyyear,{type:'bar',data:{labels:myrs,datasets:[{label:'Utviklingsmidler',data:tU,backgroundColor:ACC},{label:'Aktiv formidling',data:tA,backgroundColor:ACC2}]},options:{maintainAspectRatio:false,plugins:{title:{display:true,text:'Utbetalt støtte per oppstartsår (mill. kr)',color:'#e8edf4',font:{size:15}}},scales:{x:{stacked:true,grid:{color:GRID}},y:{stacked:true,grid:{color:GRID}}}}});
+
+// top recipients table
+const maxS=D.top_recipients[0].sum;
+let h='<tr><th>Prosjekteier</th><th class=num>Prosj.</th><th class=num>Mill kr</th><th></th></tr>';
+D.top_recipients.forEach(r=>{h+=`<tr><td>${r.navn}</td><td class=num>${r.n}</td><td class=num>${(r.sum/1e6).toFixed(1)}</td><td style="width:34%"><span class=bar style="width:${r.sum/maxS*100}%"></span></td></tr>`;});
+document.getElementById('t_top').innerHTML=h;
+
+// type median
+new Chart(c_typemed,{type:'bar',data:{labels:D.by_type.map(t=>t.type),datasets:[{label:'Median tildeling (kr)',data:D.by_type.map(t=>t.median),backgroundColor:D.by_type.map((_,i)=>PAL[i])}]},options:{indexAxis:'y',maintainAspectRatio:false,plugins:{legend:{display:false},title:{display:true,text:'Median tildeling per bibliotektype',color:'#e8edf4',font:{size:15}}},scales:{x:{grid:{color:GRID},ticks:{callback:v=>fmt(v)}},y:{grid:{color:GRID}}}}});
+
+// type theme radar
+const tt=D.type_theme;const ttTypes=Object.keys(tt);const themesL=D.theme_list;
+new Chart(c_typetheme,{type:'radar',data:{labels:themesL,datasets:ttTypes.map((t,i)=>({label:t,data:themesL.map(th=>tt[t][th]),borderColor:PAL[i],backgroundColor:PAL[i]+'22',pointRadius:2}))},options:{maintainAspectRatio:false,scales:{r:{grid:{color:GRID},angleLines:{color:GRID},pointLabels:{color:MUT,font:{size:11}},ticks:{display:false}}}}});
+
+// geo index
+const pop=D.pop_share;const regs=D.by_region.filter(r=>pop[r.region]);
+const tot=regs.reduce((a,r)=>a+r.n,0);
+const idx=regs.map(r=>+(r.n/tot*100/pop[r.region]).toFixed(2));
+new Chart(c_geoindex,{type:'bar',data:{labels:regs.map(r=>r.region),datasets:[{label:'Prosjekt-per-innbygger indeks',data:idx,backgroundColor:idx.map(v=>v>=1?ACC:ACC2)}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false},title:{display:true,text:'Prosjekter relativt til folketall (1,0 = befolkningsandel)',color:'#e8edf4',font:{size:14}}},scales:{x:{grid:{color:GRID}},y:{grid:{color:GRID},suggestedMin:0}}}});
+
+new Chart(c_geomoney,{type:'bar',data:{labels:regs.map(r=>r.region),datasets:[{label:'Antall prosjekter',data:regs.map(r=>r.n),backgroundColor:ACC,yAxisID:'y'},{label:'Mill. kr',data:regs.map(r=>+(r.sum/1e6).toFixed(1)),backgroundColor:ACC2,yAxisID:'y1'}]},options:{maintainAspectRatio:false,scales:{x:{grid:{color:GRID}},y:{position:'left',grid:{color:GRID}},y1:{position:'right',grid:{display:false}}}}});
+
+// theme over time
+const tyYears=Object.keys(D.theme_year);
+const tthemeDS=themesL.map((th,i)=>({label:th,data:tyYears.map(y=>D.theme_year[y][th]),borderColor:PAL[i],backgroundColor:PAL[i],tension:.3,pointRadius:2,hidden:i>4}));
+charts.theme=new Chart(c_themeyear,{type:'line',data:{labels:tyYears,datasets:tthemeDS},options:{maintainAspectRatio:false,plugins:{legend:{display:false},title:{display:true,text:'Andel prosjekter som nevner temaet (%)',color:'#e8edf4',font:{size:14}}},scales:{x:{grid:{color:GRID}},y:{grid:{color:GRID},ticks:{callback:v=>v+'%'}}}}});
+const tc=document.getElementById('theme_ctrl');
+themesL.forEach((th,i)=>{const b=document.createElement('button');b.textContent=th;if(i<=4)b.classList.add('on');b.onclick=()=>{const m=charts.theme.getDatasetMeta(i);m.hidden=!(m.hidden===null?charts.theme.data.datasets[i].hidden:m.hidden);charts.theme.update();b.classList.toggle('on');};tc.appendChild(b);});
+
+// innsats
+const ins=D.innsatsomrader;
+new Chart(c_innsats,{type:'bar',data:{labels:ins.map(r=>r[0]),datasets:[{label:'Antall prosjekter med dette formelle merket',data:ins.map(r=>r[1]),backgroundColor:ins.map((_,i)=>PAL[i%PAL.length])}]},options:{indexAxis:'y',maintainAspectRatio:false,plugins:{legend:{display:false},title:{display:true,text:'Formell merking per innsatsområde',color:'#e8edf4',font:{size:14}}},scales:{x:{grid:{color:GRID}},y:{grid:{color:GRID},ticks:{font:{size:11}}}}}});
+
+// fritt forsok
+const ff=document.getElementById('ff_list');
+D.fritt_forsok.sort((a,b)=>b.sum-a.sum).forEach(p=>{const div=document.createElement('div');div.innerHTML=`${p.tittel}<br><em>${p.eier||''} · ${p.sum?fmt(p.sum)+' kr':''}</em>`;ff.appendChild(div);});
+</script>
+</body></html>

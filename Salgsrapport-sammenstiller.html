@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Salgsrapport-sammenstiller</title>
+  <style>
+    :root {
+      --blue:       #1F3864;
+      --blue-med:   #2E5090;
+      --blue-light: #D6E4F0;
+      --green:      #27ae60;
+      --radius:     8px;
+      --shadow:     0 2px 8px rgba(0,0,0,0.10);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #eef2f7;
+      color: #222;
+      min-height: 100vh;
+    }
+
+    /* ── Header ──────────────────────────────────────────────────── */
+    header {
+      background: var(--blue);
+      color: #fff;
+      padding: 22px 40px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+    }
+    header h1 { font-size: 1.45rem; }
+    header p  { font-size: 0.88rem; opacity: .75; margin-top: 4px; }
+
+    /* ── Layout ──────────────────────────────────────────────────── */
+    main {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 30px 20px 60px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1rem;
+      font-weight: bold;
+      color: var(--blue);
+      margin-bottom: 18px;
+    }
+
+    .step-badge {
+      background: var(--blue);
+      color: #fff;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .82rem; font-weight: bold; flex-shrink: 0;
+    }
+
+    /* ── Upload cards ────────────────────────────────────────────── */
+    .upload-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .upload-card {
+      border: 2px dashed #ccc;
+      border-radius: var(--radius);
+      padding: 22px 14px;
+      text-align: center;
+      cursor: pointer;
+      background: #fafafa;
+      transition: border-color .2s, background .2s;
+      user-select: none;
+    }
+    .upload-card:hover     { border-color: var(--blue-med); background: var(--blue-light); }
+    .upload-card.drag-over { border-color: var(--blue);     background: var(--blue-light); }
+    .upload-card.loaded    { border: 2px solid var(--green); background: #f0fff6; }
+
+    .upload-icon  { font-size: 2rem; margin-bottom: 8px; }
+    .upload-label { font-weight: bold; font-size: .9rem; color: var(--blue); margin-bottom: 5px; }
+    .upload-hint  { font-size: .78rem; color: #777; line-height: 1.4; }
+    .upload-fname {
+      font-size: .78rem; color: var(--green); font-weight: bold;
+      margin-top: 9px; word-break: break-all; display: none;
+    }
+    .upload-card.loaded .upload-fname { display: block; }
+
+    input[type="file"] { display: none; }
+
+    /* ── Buttons ─────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 26px;
+      border: none; border-radius: var(--radius);
+      font-size: .97rem; font-weight: bold; cursor: pointer;
+      transition: background .2s, opacity .2s;
+    }
+    .btn-primary { background: var(--blue); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--blue-med); }
+    .btn-primary:disabled { opacity: .38; cursor: not-allowed; }
+
+    .btn-download {
+      background: var(--green); color: #fff;
+      font-size: 1.05rem; padding: 13px 32px;
+    }
+    .btn-download:hover { background: #219a52; }
+
+    /* ── Progress & status ───────────────────────────────────────── */
+    .progress {
+      height: 5px; background: var(--blue-light);
+      border-radius: 3px; margin-top: 14px; overflow: hidden; display: none;
+    }
+    .progress-bar {
+      height: 100%; background: var(--blue-med);
+      width: 0; transition: width .4s;
+      animation: shimmer 1.4s infinite;
+    }
+    @keyframes shimmer { 0%,100%{opacity:1} 50%{opacity:.6} }
+
+    .status-msg { font-size: .85rem; color: #555; margin-top: 10px; min-height: 1.2em; }
+
+    .error-box {
+      color: #c0392b; font-weight: bold;
+      padding: 12px 16px;
+      background: #fdf2f2; border-radius: 6px;
+      border-left: 4px solid #c0392b;
+      margin-top: 14px; display: none;
+    }
+
+    /* ── Results summary ─────────────────────────────────────────── */
+    .results { display: none; }
+    .results.show { display: block; }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .sum-card {
+      border-radius: var(--radius);
+      padding: 16px 12px;
+      text-align: center;
+    }
+    .sum-label { font-size: .78rem; font-weight: bold; opacity: .8; margin-bottom: 5px; }
+    .sum-value { font-size: 1.25rem; font-weight: bold; }
+    .sum-sub   { font-size: .75rem; opacity: .7; margin-top: 3px; }
+
+    .c-bh  { background: #E8F4FD; color: #1a5276; }
+    .c-nb  { background: #EAF7EA; color: #1a5c2b; }
+    .c-sd  { background: #FEF9E7; color: #7d6608; }
+    .c-tot { background: var(--blue); color: #fff; }
+
+    /* ── Kategorioversikt ────────────────────────────────────────── */
+    .cat-divider {
+      display: flex; align-items: center; gap: 12px;
+      margin: 24px 0 16px;
+      font-size: .82rem; font-weight: bold; color: #888; text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .cat-divider::before, .cat-divider::after {
+      content: ''; flex: 1; height: 1px; background: #e0e0e0;
+    }
+
+    .cat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 4px;
+    }
+
+    .cat-card {
+      border-radius: var(--radius);
+      padding: 16px 14px 14px;
+      border-left: 4px solid transparent;
+    }
+    .cat-card .cat-icon  { font-size: 1.4rem; margin-bottom: 6px; }
+    .cat-card .cat-name  { font-size: .82rem; font-weight: bold; opacity: .75; margin-bottom: 6px; }
+    .cat-card .cat-oms   { font-size: 1.1rem; font-weight: bold; margin-bottom: 2px; }
+    .cat-card .cat-ant   { font-size: .75rem; opacity: .65; }
+    .cat-card .cat-prods { font-size: .72rem; opacity: .55; margin-top: 3px; }
+
+    .c-book  { background: #EEF2FF; border-color: #4F6BED; color: #2d3e9e; }
+    .c-film  { background: #FFF0F0; border-color: #E05252; color: #8B1A1A; }
+    .c-ting  { background: #F0FFF4; border-color: #38A169; color: #1a5c2b; }
+    .c-andre { background: #FAFAFA; border-color: #999;    color: #444;    }
+
+    /* ── Info footer ─────────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      font-size: .78rem;
+      color: #999;
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📊 Salgsrapport-sammenstiller</h1>
+  <p>Slår sammen rapporter fra bokhandel, nettbutikk og SD til én Excel-fil</p>
+</header>
+
+<main>
+
+  <!-- ── Steg 1: Last opp ──────────────────────────────────────── -->
+  <div class="card">
+    <div class="card-title">
+      <span class="step-badge">1</span>
+      Last opp de tre rapportene
+    </div>
+
+    <div class="upload-grid">
+
+      <div class="upload-card" id="bh-card">
+        <div class="upload-icon">🏪</div>
+        <div class="upload-label">Bokhandel</div>
+        <div class="upload-hint">Excel-rapport fra kassasystem</div>
+        <div class="upload-fname" id="bh-fname"></div>
+        <input type="file" id="bh-input" accept=".xlsx,.xls">
+      </div>
+
+      <div class="upload-card" id="nb-card">
+        <div class="upload-icon">🌐</div>
+        <div class="upload-label">Nettbutikk</div>
+        <div class="upload-hint">Kopiert fra WordPress / WooCommerce</div>
+        <div class="upload-fname" id="nb-fname"></div>
+        <input type="file" id="nb-input" accept=".xlsx,.xls">
+      </div>
+
+      <div class="upload-card" id="sd-card">
+        <div class="upload-icon">📦</div>
+        <div class="upload-label">SD</div>
+        <div class="upload-hint">Kopiert fra SD-portalen</div>
+        <div class="upload-fname" id="sd-fname"></div>
+        <input type="file" id="sd-input" accept=".xlsx,.xls">
+      </div>
+
+    </div>
+
+    <div class="error-box" id="error-box"></div>
+  </div>
+
+  <!-- ── Steg 2: Generer ───────────────────────────────────────── -->
+  <div class="card">
+    <div class="card-title">
+      <span class="step-badge">2</span>
+      Generer samlet rapport
+    </div>
+
+    <button class="btn btn-primary" id="generate-btn" disabled onclick="generate()">
+      ⚙️&nbsp; Generer rapport
+    </button>
+
+    <div class="progress" id="progress">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+    <div class="status-msg" id="status-msg"></div>
+  </div>
+
+  <!-- ── Steg 3: Last ned ──────────────────────────────────────── -->
+  <div class="card results" id="results">
+    <div class="card-title">
+      <span class="step-badge">3</span>
+      Resultat
+    </div>
+
+    <div class="summary-grid">
+      <div class="sum-card c-bh">
+        <div class="sum-label">🏪 Bokhandel</div>
+        <div class="sum-value" id="s-bh-oms">—</div>
+        <div class="sum-sub"  id="s-bh-ant">—</div>
+      </div>
+      <div class="sum-card c-nb">
+        <div class="sum-label">🌐 Nettbutikk</div>
+        <div class="sum-value" id="s-nb-oms">—</div>
+        <div class="sum-sub"  id="s-nb-ant">—</div>
+      </div>
+      <div class="sum-card c-sd">
+        <div class="sum-label">📦 SD</div>
+        <div class="sum-value" id="s-sd-oms">—</div>
+        <div class="sum-sub"  id="s-sd-ant">—</div>
+      </div>
+      <div class="sum-card c-tot">
+        <div class="sum-label">📊 Totalt</div>
+        <div class="sum-value" id="s-tot-oms">—</div>
+        <div class="sum-sub"  id="s-tot-ant">—</div>
+      </div>
+    </div>
+
+    <button class="btn btn-download" onclick="download()">
+      ⬇️&nbsp; Last ned Excel-rapport
+    </button>
+
+    <div class="cat-divider">Fordelt på produkttype</div>
+
+    <div class="cat-grid">
+      <div class="cat-card c-book">
+        <div class="cat-icon">📚</div>
+        <div class="cat-name">Bøker</div>
+        <div class="cat-oms" id="c-book-oms">—</div>
+        <div class="cat-ant" id="c-book-ant">—</div>
+        <div class="cat-prods" id="c-book-prods">—</div>
+      </div>
+      <div class="cat-card c-film">
+        <div class="cat-icon">🎬</div>
+        <div class="cat-name">Filmer</div>
+        <div class="cat-oms" id="c-film-oms">—</div>
+        <div class="cat-ant" id="c-film-ant">—</div>
+        <div class="cat-prods" id="c-film-prods">—</div>
+      </div>
+      <div class="cat-card c-ting">
+        <div class="cat-icon">🛍️</div>
+        <div class="cat-name">Ting</div>
+        <div class="cat-oms" id="c-ting-oms">—</div>
+        <div class="cat-ant" id="c-ting-ant">—</div>
+        <div class="cat-prods" id="c-ting-prods">—</div>
+      </div>
+      <div class="cat-card c-andre">
+        <div class="cat-icon">📦</div>
+        <div class="cat-name">Andre</div>
+        <div class="cat-oms" id="c-andre-oms">—</div>
+        <div class="cat-ant" id="c-andre-ant">—</div>
+        <div class="cat-prods" id="c-andre-prods">—</div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  Fungerer helt lokalt i nettleseren — ingen data sendes til noen server.
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  State
+// ═══════════════════════════════════════════════════════════════
+const files = { bh: null, nb: null, sd: null };
+let generatedWb = null;
+
+// ═══════════════════════════════════════════════════════════════
+//  File upload — click + drag-and-drop
+// ═══════════════════════════════════════════════════════════════
+['bh','nb','sd'].forEach(key => {
+  const card  = document.getElementById(key + '-card');
+  const input = document.getElementById(key + '-input');
+  const fname = document.getElementById(key + '-fname');
+
+  // Click on card -> open file picker
+  card.addEventListener('click', () => input.click());
+
+  // File picker change
+  input.addEventListener('change', () => {
+    if (input.files[0]) setFile(key, input.files[0]);
+  });
+
+  // Drag & drop
+  card.addEventListener('dragover', e => { e.preventDefault(); card.classList.add('drag-over'); });
+  card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+  card.addEventListener('drop', e => {
+    e.preventDefault();
+    card.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f && /\.(xlsx|xls)$/i.test(f.name)) setFile(key, f);
+  });
+
+  function setFile(k, f) {
+    files[k] = f;
+    fname.textContent = '✓ ' + f.name;
+    card.classList.add('loaded');
+    checkReady();
+    hideError();
+  }
+});
+
+function checkReady() {
+  document.getElementById('generate-btn').disabled = !(files.bh && files.nb && files.sd);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Utilities
+// ═══════════════════════════════════════════════════════════════
+
+/** Norsk tallformat: "4 186,00" / "kr 4 186,00" → 4186.00 */
+function parseNO(s) {
+  if (s == null) return 0;
+  s = String(s).replace(/ /g, ' ').replace(/kr/gi, '').trim();
+  if (!s || s === '-') return 0;
+  s = s.replace(/[\s ]/g, '').replace(',', '.');
+  return parseFloat(s) || 0;
+}
+
+/** Normaliser EAN/ISBN til ren streng uten desimaler */
+function normEAN(val) {
+  if (val == null) return null;
+  let s = String(val).replace(/ /g, '').replace(/\s/g, '').trim();
+  if (s.endsWith('.0')) s = s.slice(0, -2);
+  if (/[eE][+\-]/.test(s)) {
+    try { s = String(Math.round(parseFloat(s))); } catch(e) {}
+  }
+  return s || null;
+}
+
+function readWB(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try { resolve(XLSX.read(new Uint8Array(e.target.result), { type: 'array' })); }
+      catch(err) { reject(new Error('Kunne ikke lese «' + file.name + '»: ' + err.message)); }
+    };
+    reader.onerror = () => reject(new Error('Feil ved lesing av ' + file.name));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function getRows(wb, idx) {
+  const ws = wb.Sheets[wb.SheetNames[idx || 0]];
+  return XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Parsers
+// ═══════════════════════════════════════════════════════════════
+
+function parseBokhandel(wb) {
+  const rows = getRows(wb);
+  const products = {};
+  let cat = null;
+
+  for (const row of rows) {
+    if (!row || row.every(c => c == null)) continue;
+    const [c0, c1, c2, c3, , , , c7] = row;
+
+    // Kategorilinje: c0 er streng (ikke 'Varenr'), resten null
+    if (typeof c0 === 'string' && c0 !== 'Varenr' && c1 == null && c2 == null) {
+      cat = c0.trim(); continue;
+    }
+    if (c0 === 'Varenr') continue;           // kolonneheader
+    if (c0 == null && c1 == null) continue;  // subtotal
+
+    const ean = normEAN(c1);
+    if (!ean || !c2) continue;
+
+    const ant = typeof c3 === 'number' ? Math.round(c3) : 0;
+    const oms = typeof c7 === 'number' ? c7 : 0;
+
+    if (products[ean]) { products[ean].antall += ant; products[ean].omsetning += oms; }
+    else products[ean] = { tittel: String(c2).trim(), kategori: cat || '', antall: ant, omsetning: oms };
+  }
+  return products;
+}
+
+function parseNettbutikk(wb) {
+  const rows = getRows(wb);
+  const products = {};
+
+  for (let i = 0; i < rows.length; i++) {
+    if (i < 2) continue;
+    const row = rows[i];
+    if (!row || row.every(c => c == null)) continue;
+    const [, tittel, sku, antall, nsStr, kategori] = row;
+    if (!sku || !tittel) continue;
+
+    const ean = normEAN(sku);
+    if (!ean) continue;
+
+    const oms = parseNO(nsStr);
+    const ant = typeof antall === 'number' ? Math.round(antall) : 0;
+    const cat = kategori ? String(kategori).replace(/ /g, ' ').trim() : '';
+
+    if (products[ean]) { products[ean].antall += ant; products[ean].omsetning += oms; }
+    else products[ean] = { tittel: String(tittel).trim(), kategori: cat, antall: ant, omsetning: oms };
+  }
+  return products;
+}
+
+function parseSD(wb) {
+  const rows = getRows(wb);
+  const products = {};
+
+  for (let i = 0; i < rows.length; i++) {
+    if (i === 0) continue;
+    const row = rows[i];
+    if (!row || row.every(c => c == null)) continue;
+    // Kolonner: radnr, isbn, tittel, forl, avd, bgrnr, statgr, antall, belop, mva, total
+    const [, isbn, tittel, , , , , antallS, , , totalS] = row;
+    if (!isbn || !tittel) continue;
+
+    const ean = normEAN(isbn);
+    if (!ean) continue;
+
+    const ant   = Math.round(parseNO(antallS));
+    const total = parseNO(totalS);
+    const tit   = String(tittel).replace(/ /g, '').trim();
+
+    if (products[ean]) { products[ean].antall += ant; products[ean].omsetning += total; }
+    else products[ean] = { tittel: tit, antall: ant, omsetning: total };
+  }
+  return products;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Generate
+// ═══════════════════════════════════════════════════════════════
+
+async function generate() {
+  hideError();
+  showProgress();
+  document.getElementById('results').classList.remove('show');
+
+  try {
+    setStatus('Leser filer…');
+    const [wbBH, wbNB, wbSD] = await Promise.all([
+      readWB(files.bh), readWB(files.nb), readWB(files.sd)
+    ]);
+
+    setStatus('Parser bokhandel…');
+    const bh = parseBokhandel(wbBH);
+
+    setStatus('Parser nettbutikk…');
+    const nb = parseNettbutikk(wbNB);
+
+    setStatus('Parser SD…');
+    const sd = parseSD(wbSD);
+
+    setStatus('Slår sammen…');
+    const allEANs = [...new Set([...Object.keys(bh), ...Object.keys(nb), ...Object.keys(sd)])];
+
+    const rows = allEANs.map(ean => {
+      const b = bh[ean] || {}, n = nb[ean] || {}, s = sd[ean] || {};
+      const tittel   = b.tittel || n.tittel || s.tittel || '';
+      const kategori = (b.kategori || n.kategori || '').replace(/ -> /g, ' › ');
+      const bhAnt = b.antall || 0, bhOms = b.omsetning || 0;
+      const nbAnt = n.antall || 0, nbOms = n.omsetning || 0;
+      const sdAnt = s.antall || 0, sdOms = s.omsetning || 0;
+      const totAnt = bhAnt + nbAnt + sdAnt;
+      const totOms = bhOms + nbOms + sdOms;
+      const kanaler = (bhAnt > 0 ? 1 : 0) + (nbAnt > 0 ? 1 : 0) + (sdAnt > 0 ? 1 : 0);
+      return { ean, tittel, kategori, bhAnt, bhOms, nbAnt, nbOms, sdAnt, sdOms, totAnt, totOms, kanaler };
+    });
+
+    rows.sort((a, b) => b.totOms - a.totOms);
+
+    setStatus('Bygger Excel-fil…');
+    generatedWb = buildExcel(rows);
+
+    // ── Oppsummering ─────────────────────────────────────────────
+    const sum = (key) => rows.reduce((a, r) => a + r[key], 0);
+    const nok = n => 'kr ' + n.toLocaleString('nb-NO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    document.getElementById('s-bh-oms').textContent  = nok(sum('bhOms'));
+    document.getElementById('s-bh-ant').textContent  = sum('bhAnt') + ' enheter';
+    document.getElementById('s-nb-oms').textContent  = nok(sum('nbOms'));
+    document.getElementById('s-nb-ant').textContent  = sum('nbAnt') + ' enheter';
+    document.getElementById('s-sd-oms').textContent  = nok(sum('sdOms'));
+    document.getElementById('s-sd-ant').textContent  = sum('sdAnt') + ' enheter';
+    document.getElementById('s-tot-oms').textContent = nok(sum('totOms'));
+    document.getElementById('s-tot-ant').textContent = rows.length + ' produkter · ' + sum('totAnt') + ' enheter';
+
+    renderCategories(rows);
+
+    hideProgress();
+    setStatus('✅ Ferdig — ' + rows.length + ' produkter sammenstilt');
+    document.getElementById('results').classList.add('show');
+
+  } catch(err) {
+    hideProgress();
+    showError(err.message);
+    setStatus('');
+    console.error(err);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Build Excel workbook
+// ═══════════════════════════════════════════════════════════════
+
+function buildExcel(rows) {
+  const wb = XLSX.utils.book_new();
+
+  // ── Rad 1: Tittel ─────────────────────────────────────────────
+  // ── Rad 2: Gruppeoverskrifter ─────────────────────────────────
+  // ── Rad 3: Kolonneoverskrifter ────────────────────────────────
+  const header = [
+    ['Samlet salgsrapport', '', '', '', '', '', '', '', '', '', '', ''],
+    ['Produkt', '', '', 'Bokhandel', '', 'Nettbutikk', '', 'SD', '', 'Totalt', '', ''],
+    ['EAN/ISBN', 'Tittel', 'Kategori',
+     'Ant.', 'Omsetning inkl. mva',
+     'Ant.', 'Nettosalg',
+     'Ant.', 'Total inkl. mva',
+     'Ant.', 'Omsetning', 'Kanaler'],
+  ];
+
+  const dataRows = rows.map(r => [
+    r.ean, r.tittel, r.kategori,
+    r.bhAnt, r.bhOms,
+    r.nbAnt, r.nbOms,
+    r.sdAnt, r.sdOms,
+    r.totAnt, r.totOms,
+    r.kanaler,
+  ]);
+
+  const totRow = [
+    'TOTALT', '', '',
+    rows.reduce((a,r)=>a+r.bhAnt,0), rows.reduce((a,r)=>a+r.bhOms,0),
+    rows.reduce((a,r)=>a+r.nbAnt,0), rows.reduce((a,r)=>a+r.nbOms,0),
+    rows.reduce((a,r)=>a+r.sdAnt,0), rows.reduce((a,r)=>a+r.sdOms,0),
+    rows.reduce((a,r)=>a+r.totAnt,0), rows.reduce((a,r)=>a+r.totOms,0),
+    '',
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet([...header, ...dataRows, totRow]);
+
+  // Kolonnebredder
+  ws['!cols'] = [
+    {wch:16},{wch:44},{wch:28},
+    {wch:7},{wch:18},
+    {wch:7},{wch:14},
+    {wch:7},{wch:18},
+    {wch:7},{wch:16},{wch:8},
+  ];
+
+  // Slå sammen celler i headerradene
+  ws['!merges'] = [
+    {s:{r:0,c:0}, e:{r:0,c:11}},  // Tittel
+    {s:{r:1,c:0}, e:{r:1,c:2}},   // Produkt
+    {s:{r:1,c:3}, e:{r:1,c:4}},   // Bokhandel
+    {s:{r:1,c:5}, e:{r:1,c:6}},   // Nettbutikk
+    {s:{r:1,c:7}, e:{r:1,c:8}},   // SD
+    {s:{r:1,c:9}, e:{r:1,c:11}},  // Totalt
+  ];
+
+  // Autofilter på kolonneheader-raden (rad 3 = index 2)
+  ws['!autofilter'] = { ref: 'A3:L' + (rows.length + 3) };
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Samlet salgsrapport');
+  return wb;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Kategori-inndeling
+// ═══════════════════════════════════════════════════════════════
+
+/** Returner 'book' | 'film' | 'ting' | 'andre' basert på EAN og kategoritag */
+function categorize(row) {
+  const kat = (row.kategori || '').toLowerCase();
+  const ean = row.ean || '';
+  // Bøker: kategori inneholder 'bøker'/'bok', eller EAN er ISBN-13 (starter med 978/979)
+  if (kat.includes('bøker') || kat.includes('bok') || /^97[89]/.test(ean)) return 'book';
+  if (kat.includes('film'))  return 'film';
+  if (kat.includes('ting'))  return 'ting';
+  return 'andre';
+}
+
+function renderCategories(rows) {
+  const buckets = { book: [], film: [], ting: [], andre: [] };
+  rows.forEach(r => buckets[categorize(r)].push(r));
+
+  const nok = n => 'kr ' + n.toLocaleString('nb-NO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  Object.entries(buckets).forEach(([key, items]) => {
+    const oms   = items.reduce((a, r) => a + r.totOms, 0);
+    const ant   = items.reduce((a, r) => a + r.totAnt, 0);
+    const prods = items.length;
+    document.getElementById('c-' + key + '-oms').textContent   = nok(oms);
+    document.getElementById('c-' + key + '-ant').textContent   = ant + ' enheter';
+    document.getElementById('c-' + key + '-prods').textContent = prods + ' produkter';
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Download
+// ═══════════════════════════════════════════════════════════════
+
+function download() {
+  if (!generatedWb) return;
+  const dato = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(generatedWb, 'Samlet salgsrapport ' + dato + '.xlsx');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  UI helpers
+// ═══════════════════════════════════════════════════════════════
+
+function showProgress() {
+  const p = document.getElementById('progress');
+  p.style.display = 'block';
+  document.getElementById('progress-bar').style.width = '75%';
+}
+function hideProgress() {
+  document.getElementById('progress').style.display = 'none';
+}
+function setStatus(msg) {
+  document.getElementById('status-msg').textContent = msg;
+}
+function showError(msg) {
+  const el = document.getElementById('error-box');
+  el.textContent = '⚠️ ' + msg;
+  el.style.display = 'block';
+}
+function hideError() {
+  document.getElementById('error-box').style.display = 'none';
+}
+</script>
+</body>
+</html>
