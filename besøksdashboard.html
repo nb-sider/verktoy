@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Besøksstatistikk – Nasjonalbiblioteket</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f4f0; color: #2c2c2a; font-size: 15px; line-height: 1.6; }
+
+  header { background: #2c2c2a; color: #f5f4f0; padding: 1.5rem 2rem; display: flex; align-items: baseline; gap: 1.5rem; }
+  header h1 { font-size: 20px; font-weight: 500; letter-spacing: -0.2px; }
+  header span { font-size: 13px; color: #888780; }
+
+  nav { display: flex; gap: 0; border-bottom: 1px solid #d3d1c7; background: #fff; padding: 0 2rem; }
+  nav button { background: none; border: none; border-bottom: 2px solid transparent; padding: 0.75rem 1.25rem; font-size: 13px; color: #5f5e5a; cursor: pointer; transition: color .15s; margin-bottom: -1px; }
+  nav button:hover { color: #2c2c2a; }
+  nav button.active { color: #2c2c2a; border-bottom-color: #2c2c2a; font-weight: 500; }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+
+  .section { display: none; }
+  .section.visible { display: block; }
+
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.5rem; }
+  .stat { background: #fff; border-radius: 10px; padding: 1rem 1.25rem; border: 0.5px solid #d3d1c7; }
+  .stat-label { font-size: 12px; color: #888780; margin-bottom: 4px; }
+  .stat-value { font-size: 26px; font-weight: 500; color: #2c2c2a; }
+  .stat-sub { font-size: 11px; color: #b4b2a9; margin-top: 2px; }
+  .stat.accent .stat-value { color: #D85A30; }
+
+  .card { background: #fff; border-radius: 10px; border: 0.5px solid #d3d1c7; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; }
+  .card-title { font-size: 13px; font-weight: 500; color: #5f5e5a; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  .chart-wrap { position: relative; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 12px; font-size: 12px; color: #5f5e5a; }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 10px; color: #888780; font-weight: 500; border-bottom: 1px solid #d3d1c7; }
+  td { padding: 9px 10px; border-bottom: 0.5px solid #f1efe8; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f5f4f0; }
+
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
+  .badge-green { background: #eaf3de; color: #3b6d11; }
+  .badge-amber { background: #faeeda; color: #854f0b; }
+  .badge-red { background: #fcebeb; color: #a32d2d; }
+
+  .bar-inline { display: flex; align-items: center; gap: 8px; }
+  .bar-track { flex: 1; background: #f1efe8; border-radius: 2px; height: 6px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 2px; background: #378ADD; }
+  .bar-fill.red { background: #D85A30; }
+
+  .note { font-size: 12px; color: #b4b2a9; margin-top: 8px; }
+
+  .hf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+  .hf-day { background: #fff; border-radius: 10px; border: 0.5px solid #d3d1c7; padding: 1.25rem; }
+  .hf-day h3 { font-size: 14px; font-weight: 500; margin-bottom: 1rem; color: #2c2c2a; }
+  .hf-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 0.5px solid #f1efe8; font-size: 13px; }
+  .hf-row:last-child { border-bottom: none; }
+  .hf-total { font-weight: 500; padding-top: 8px; margin-top: 4px; border-top: 1px solid #d3d1c7; display: flex; justify-content: space-between; font-size: 14px; }
+
+  @media (max-width: 680px) {
+    .stat-row { grid-template-columns: repeat(2, 1fr); }
+    .grid2 { grid-template-columns: 1fr; }
+    .hf-grid { grid-template-columns: 1fr; }
+    main { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Besøksstatistikk – Nasjonalbiblioteket</h1>
+  <span>2025–2026 · Oppdatert juni 2026</span>
+</header>
+
+<nav>
+  <button class="active" onclick="show('oversikt', this)">Oversikt</button>
+  <button onclick="show('noshow', this)">Uthentede billetter</button>
+  <button onclick="show('arrangementer', this)">Arrangementer</button>
+  <button onclick="show('handverk', this)">Håndverksfestivalen</button>
+</nav>
+
+<main>
+
+<!-- ===== OVERSIKT ===== -->
+<div id="oversikt" class="section visible">
+
+  <div class="stat-row">
+    <div class="stat">
+      <div class="stat-label">Totalt besøkende</div>
+      <div class="stat-value">17 180</div>
+      <div class="stat-sub">2025–2026 (eksl. sommer 2025)</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Arrangementer med tall</div>
+      <div class="stat-value">185</div>
+      <div class="stat-sub">med registrert oppmøte</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Snitt per arrangement</div>
+      <div class="stat-value">93</div>
+      <div class="stat-sub">besøkende</div>
+    </div>
+    <div class="stat accent">
+      <div class="stat-label">Største enkeltarrangement</div>
+      <div class="stat-value">2 751</div>
+      <div class="stat-sub">Håndverksfestivalen sep. 2025</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Besøkende per måned</div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#378ADD"></div>2025</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#D85A30"></div>2026</div>
+    </div>
+    <div class="chart-wrap" style="height:280px">
+      <canvas id="monthlyChart" role="img" aria-label="Søylediagram av besøkende per måned 2025 og 2026"></canvas>
+    </div>
+    <p class="note">* Juni–juli 2025 mangler data. September 2025 inkluderer Håndverksfestivalen (2 751 besøkende).</p>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">Fordeling etter type</div>
+      <div class="chart-wrap" style="height:220px">
+        <canvas id="typeChart" role="img" aria-label="Kakediagram av besøkende fordelt på arrangementsttype"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Topp 10 arrangementer</div>
+      <table>
+        <thead><tr><th>Arrangement</th><th style="text-align:right">Besøk</th></tr></thead>
+        <tbody>
+          <tr><td>Håndverksfestivalen 2025</td><td style="text-align:right;font-weight:500">2 751</td></tr>
+          <tr><td>Fosseforedraget: Marilynne Robinson</td><td style="text-align:right">299</td></tr>
+          <tr><td>Nyttårskonsert: Ulf Nilsen</td><td style="text-align:right">227</td></tr>
+          <tr><td>Nye perspektiver på Norges historie</td><td style="text-align:right">216</td></tr>
+          <tr><td>De glemte kolanordmennene</td><td style="text-align:right">210</td></tr>
+          <tr><td>IIPC: Dag 2</td><td style="text-align:right">210</td></tr>
+          <tr><td>Toril Moi om Simone de Beauvoir</td><td style="text-align:right">205</td></tr>
+          <tr><td>Utvandring på 90 minutter</td><td style="text-align:right">205</td></tr>
+          <tr><td>Åpningsfest: Med pennen på strupen</td><td style="text-align:right">200</td></tr>
+          <tr><td>Strid! Live podkast borgerkrigene</td><td style="text-align:right">192</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== NO-SHOW ===== -->
+<div id="noshow" class="section">
+
+  <div class="stat-row">
+    <div class="stat">
+      <div class="stat-label">Registrerte billetter</div>
+      <div class="stat-value">6 295</div>
+      <div class="stat-sub">38 analyserte arr.</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Faktisk oppmøte</div>
+      <div class="stat-value">4 663</div>
+      <div class="stat-sub">av registrerte</div>
+    </div>
+    <div class="stat accent">
+      <div class="stat-label">Uthentede billetter</div>
+      <div class="stat-value">1 632</div>
+      <div class="stat-sub">snitt 43 per arrangement</div>
+    </div>
+    <div class="stat accent">
+      <div class="stat-label">Samlet no-show rate</div>
+      <div class="stat-value">25,9 %</div>
+      <div class="stat-sub">av alle registrerte</div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">No-show etter sesong</div>
+      <div class="chart-wrap" style="height:200px">
+        <canvas id="seasonChart" role="img" aria-label="No-show rate etter sesong"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">No-show etter ukedag</div>
+      <div class="chart-wrap" style="height:200px">
+        <canvas id="weekdayChart" role="img" aria-label="No-show rate etter ukedag"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">No-show etter arrangementsstørrelse</div>
+      <div class="chart-wrap" style="height:200px">
+        <canvas id="sizeChart" role="img" aria-label="No-show rate etter arrangementsstørrelse"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">No-show etter tidspunkt</div>
+      <div class="chart-wrap" style="height:200px">
+        <canvas id="timeChart" role="img" aria-label="No-show rate etter tidspunkt"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Detaljer per arrangement</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Arrangement</th>
+          <th style="text-align:right">Reg.</th>
+          <th style="text-align:right">Møtt</th>
+          <th style="text-align:right">No-show</th>
+          <th style="text-align:right">Rate</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="nsTable"></tbody>
+    </table>
+    <p class="note">Negative no-show betyr at faktisk oppmøte oversteg registreringer (walk-ins). Data fra 38 matchede arrangementer 2025–2026.</p>
+  </div>
+
+</div>
+
+<!-- ===== ARRANGEMENTER ===== -->
+<div id="arrangementer" class="section">
+
+  <div class="stat-row">
+    <div class="stat">
+      <div class="stat-label">KF-arrangementer</div>
+      <div class="stat-value">8 478</div>
+      <div class="stat-sub">besøkende totalt</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Eksterne åpne arr.</div>
+      <div class="stat-value">2 377</div>
+      <div class="stat-sub">besøkende totalt</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Fagseminar</div>
+      <div class="stat-value">1 010</div>
+      <div class="stat-sub">besøkende totalt</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">CREDO</div>
+      <div class="stat-value">814</div>
+      <div class="stat-sub">besøkende totalt</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Besøk per arrangementskategori</div>
+    <div style="margin-top:8px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+            <span>KF-arrangementer</span><span style="font-weight:500">8 478</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill" style="width:100%"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+            <span>Andre / ukategorisert</span><span style="font-weight:500">3 761</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill" style="width:44%;background:#888780"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+            <span>Eksterne åpne arrangementer</span><span style="font-weight:500">2 377</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill" style="width:28%;background:#1D9E75"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+            <span>Fagseminar</span><span style="font-weight:500">1 010</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill" style="width:12%;background:#BA7517"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+            <span>CREDO</span><span style="font-weight:500">814</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill" style="width:10%;background:#D85A30"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+            <span>Eksterne lukkede arrangementer</span><span style="font-weight:500">369</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill" style="width:4%;background:#888780"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+            <span>Møterom eksternt / annet</span><span style="font-weight:500">293</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill" style="width:3%;background:#888780"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Månedlig utvikling – KF vs. eksterne arrangementer</div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#378ADD"></div>KF-arrangementer</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#1D9E75"></div>Eksterne åpne arr.</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#BA7517"></div>Fagseminar / CREDO</div>
+    </div>
+    <div class="chart-wrap" style="height:260px">
+      <canvas id="typeMonthChart" role="img" aria-label="Stablet søylediagram av besøkende per måned og type"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== HÅNDVERKSFESTIVALEN ===== -->
+<div id="handverk" class="section">
+
+  <div class="stat-row">
+    <div class="stat">
+      <div class="stat-label">Totalt besøkende</div>
+      <div class="stat-value">2 751</div>
+      <div class="stat-sub">12.–13. september 2025</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Fredag 12. sep.</div>
+      <div class="stat-value">1 314</div>
+      <div class="stat-sub">registrert oppmøte</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Lørdag 13. sep.</div>
+      <div class="stat-value">1 437</div>
+      <div class="stat-sub">registrert oppmøte</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Hoveddørstelling</div>
+      <div class="stat-value">~2 377</div>
+      <div class="stat-sub">Fre: 1366 + Lør: 1011</div>
+    </div>
+  </div>
+
+  <div class="hf-grid">
+    <div class="hf-day">
+      <h3>Fredag 12. september</h3>
+      <div class="hf-row"><span>Foredrag (Skarvane / Tatoveringer)</span><span style="font-weight:500">124</span></div>
+      <div class="hf-row"><span>Åpne verksted ute</span><span style="font-weight:500">479</span></div>
+      <div class="hf-row"><span>Kantineområde (tau og knoper)</span><span style="font-weight:500">342</span></div>
+      <div class="hf-row"><span>Folkestova / NB-baren</span><span style="font-weight:500">297</span></div>
+      <div class="hf-row"><span>Omvisninger sjøkart</span><span style="font-weight:500">72</span></div>
+      <div class="hf-total"><span>Totalt fredag</span><span>1 314</span></div>
+    </div>
+    <div class="hf-day">
+      <h3>Lørdag 13. september</h3>
+      <div class="hf-row"><span>Foredrag (inkl. Etande foredrag: tørrfisk)</span><span style="font-weight:500">330</span></div>
+      <div class="hf-row"><span>Åpne verksted ute</span><span style="font-weight:500">320</span></div>
+      <div class="hf-row"><span>Kantineområde</span><span style="font-weight:500">259</span></div>
+      <div class="hf-row"><span>Folkestova / NB-baren</span><span style="font-weight:500">374</span></div>
+      <div class="hf-row"><span>Verksted med påmelding</span><span style="font-weight:500">154</span></div>
+      <div class="hf-total"><span>Totalt lørdag</span><span>1 437</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Besøk per aktivitet</div>
+    <div class="chart-wrap" style="height:340px">
+      <canvas id="hfChart" role="img" aria-label="Horisontalt søylediagram av besøkende per aktivitet på Håndverksfestivalen"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Verksted med påmelding – lørdag</div>
+    <table>
+      <thead><tr><th>Verksted</th><th style="text-align:right">Deltakere</th><th></th></tr></thead>
+      <tbody>
+        <tr><td>Sy i selskinn</td><td style="text-align:right">31</td><td><div class="bar-track"><div class="bar-fill" style="width:64%;background:#1D9E75"></div></div></td></tr>
+        <tr><td>Shanty</td><td style="text-align:right">41</td><td><div class="bar-track"><div class="bar-fill" style="width:85%;background:#1D9E75"></div></div></td></tr>
+        <tr><td>Sjømatverksted</td><td style="text-align:right">45</td><td><div class="bar-track"><div class="bar-fill" style="width:93%;background:#1D9E75"></div></div></td></tr>
+        <tr><td>Makramé</td><td style="text-align:right">30</td><td><div class="bar-track"><div class="bar-fill" style="width:62%;background:#1D9E75"></div></div></td></tr>
+        <tr><td>Ro en færing</td><td style="text-align:right">7</td><td><div class="bar-track"><div class="bar-fill" style="width:15%;background:#BA7517"></div></div></td></tr>
+      </tbody>
+    </table>
+    <p class="note">Totalt 154 deltakere på påmeldingspliktige verksteder lørdag.</p>
+  </div>
+
+</div>
+</main>
+
+<script>
+function show(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('visible');
+  btn.classList.add('active');
+}
+
+const BLUE = '#378ADD';
+const CORAL = '#D85A30';
+const TEAL = '#1D9E75';
+const AMBER = '#BA7517';
+const GRAY = '#888780';
+
+const gridColor = 'rgba(0,0,0,0.06)';
+const textColor = '#5f5e5a';
+
+const baseScales = {
+  x: { ticks: { color: textColor, font: { size: 11 } }, grid: { color: gridColor } },
+  y: { ticks: { color: textColor, font: { size: 11 } }, grid: { color: gridColor } }
+};
+
+// ---- Monthly visitors ----
+new Chart(document.getElementById('monthlyChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mai', 'Jun*', 'Jul*', 'Aug', 'Sep', 'Okt', 'Nov', 'Des'],
+    datasets: [
+      {
+        label: '2025',
+        data: [601, 999, 1190, 971, null, null, null, 44, 3520, 2165, 1733, 734],
+        backgroundColor: BLUE,
+        borderRadius: 3
+      },
+      {
+        label: '2026',
+        data: [685, 896, 1171, 1567, 904, null, null, null, null, null, null, null],
+        backgroundColor: CORAL,
+        borderRadius: 3
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: baseScales.x,
+      y: { ...baseScales.y, ticks: { ...baseScales.y.ticks, callback: v => v >= 1000 ? (v/1000).toFixed(1)+'k' : v } }
+    }
+  }
+});
+
+// ---- Type donut ----
+new Chart(document.getElementById('typeChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['KF-arrangementer', 'Andre/ukategorisert', 'Ext. åpne', 'Fagseminar', 'CREDO', 'Annet'],
+    datasets: [{
+      data: [8478, 3761, 2377, 1010, 814, 542],
+      backgroundColor: [BLUE, GRAY, TEAL, AMBER, CORAL, '#b4b2a9'],
+      borderWidth: 1,
+      borderColor: '#fff'
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'right',
+        labels: { color: textColor, font: { size: 11 }, boxWidth: 12, padding: 10 }
+      }
+    }
+  }
+});
+
+// ---- No-show charts ----
+const pctOpts = (max) => ({
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { display: false } },
+  scales: {
+    x: baseScales.x,
+    y: {
+      ticks: { color: textColor, font: { size: 11 }, callback: v => v + '%' },
+      grid: { color: gridColor },
+      min: 0, max: max
+    }
+  }
+});
+
+new Chart(document.getElementById('seasonChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Høst\n(sep–nov)', 'Vinter\n(des–feb)', 'Vår\n(mar–mai)'],
+    datasets: [{ data: [18.6, 33.5, 28.8], backgroundColor: [TEAL, CORAL, AMBER], borderRadius: 4 }]
+  },
+  options: pctOpts(50)
+});
+
+new Chart(document.getElementById('weekdayChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør'],
+    datasets: [{
+      data: [-3.4, 27.1, 31.7, 23.3, 32.5, 21.1],
+      backgroundColor: [-3.4, 27.1, 31.7, 23.3, 32.5, 21.1].map(v => v < 0 ? TEAL : BLUE),
+      borderRadius: 4
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: baseScales.x,
+      y: {
+        ticks: { color: textColor, font: { size: 11 }, callback: v => v + '%' },
+        grid: { color: gridColor },
+        min: -10, max: 45
+      }
+    }
+  }
+});
+
+new Chart(document.getElementById('sizeChart'), {
+  type: 'bar',
+  data: {
+    labels: ['< 50 pl.', '50–100 pl.', '100–200 pl.', '> 200 pl.'],
+    datasets: [{ data: [9.4, 6.2, 21.1, 31.8], backgroundColor: [TEAL, TEAL, AMBER, CORAL], borderRadius: 4 }]
+  },
+  options: pctOpts(45)
+});
+
+new Chart(document.getElementById('timeChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Dagtid\n< 14:00', 'Ettermiddag\n14–17', 'Kveld\n17–21'],
+    datasets: [{ data: [21.1, 7.5, 26.9], backgroundColor: [AMBER, TEAL, CORAL], borderRadius: 4 }]
+  },
+  options: pctOpts(35)
+});
+
+// ---- No-show table ----
+const nsData = [
+  ['16.01.2025', 'Tor', 'Lynkurs i punktskrift', 38, 35, 3, 8],
+  ['13.02.2025', 'Tor', 'Kolanordmennene', 299, 210, 89, 30],
+  ['26.02.2025', 'Ons', 'Visehistorie: Barnesanger', 212, 137, 75, 35],
+  ['11.03.2025', 'Tir', 'Etande foredrag: Innmat', 218, 164, 54, 25],
+  ['25.03.2025', 'Tir', 'Strid! Live podkast', 289, 192, 97, 34],
+  ['03.04.2025', 'Tor', 'Filmvisning: Common Ground', 62, 110, -48, -77],
+  ['07.10.2025', 'Tir', 'Spiselig foredrag: Sopp', 217, 180, 37, 17],
+  ['09.10.2025', 'Tor', 'Leiv Eiriksson', 233, 172, 61, 26],
+  ['14.10.2025', 'Tir', 'Bønder til Amerika', 260, 167, 93, 36],
+  ['15.10.2025', 'Ons', 'Credo: Matsopp', 47, 35, 12, 26],
+  ['20.10.2025', 'Man', 'Credo: Takkestekt flatbrød', 29, 30, -1, -3],
+  ['22.10.2025', 'Ons', 'Credo: Kjøtt med Magnus', 36, 40, -4, -11],
+  ['23.10.2025', 'Tor', 'Credo: Komleklubb', 65, 55, 10, 15],
+  ['29.10.2025', 'Ons', 'Kveldsskolen: Ungdommene', 210, 157, 53, 25],
+  ['30.10.2025', 'Tor', 'Nye perspektiver på norges hist.', 180, 216, -36, -20],
+  ['04.11.2025', 'Tir', 'Kvekerne i Norge', 135, 109, 26, 19],
+  ['06.11.2025', 'Tor', 'Geografiens makt', 180, 180, 0, 0],
+  ['07.11.2025', 'Fre', 'Da internett ble åpnet for alle', 196, 140, 56, 29],
+  ['13.11.2025', 'Tor', 'Europeisk stormakt → dansk koloni', 177, 134, 43, 24],
+  ['18.11.2025', 'Tir', 'Credo: Flatbrød', 30, 30, 0, 0],
+  ['20.11.2025', 'Tor', 'I energiens favn', 176, 140, 36, 20],
+  ['25.11.2025', 'Tir', 'Credo: Juledekorasjoner', 50, 50, 0, 0],
+  ['27.11.2025', 'Tor', 'Det nasjonale og internasjonale', 180, 120, 60, 33],
+  ['04.12.2025', 'Tor', 'Kveldsskolen: ADHD', 220, 113, 107, 49],
+  ['22.01.2026', 'Tor', 'Spiselig foredrag: Kaffe', 195, 153, 42, 22],
+  ['24.02.2026', 'Tir', 'Norsk spillhistorie: Flåklypa', 101, 69, 32, 32],
+  ['26.02.2026', 'Tor', 'Autentiske blikk – filmutgivelse', 289, 183, 106, 37],
+  ['05.03.2026', 'Tor', 'Lesesirkel: Mørk dagbok', 37, 22, 15, 41],
+  ['06.03.2026', 'Fre', 'Å skrive med samisk bakteppe', 62, 38, 24, 39],
+  ['12.03.2026', 'Tor', 'Kveldsskolen: Sagalitteratur', 178, 103, 75, 42],
+  ['19.03.2026', 'Tor', 'Åpningsfest: Med pennen på strupen', 277, 200, 77, 28],
+  ['21.03.2026', 'Lør', 'Verksted: Lynkurs karikatur', 160, 125, 35, 22],
+  ['24.04.2026', 'Fre', 'Marilynne Robinson', 449, 299, 150, 33],
+  ['25.04.2026', 'Lør', '100 år med norsk litteratur', 94, 64, 30, 32],
+  ['25.04.2026', 'Lør', 'Fosseprisvinnar Paula Stevens', 88, 81, 7, 8],
+  ['07.05.2026', 'Tor', 'Toril Moi om Simone de Beauvoir', 280, 205, 75, 27],
+  ['19.05.2026', 'Tir', 'Kartforedrag: Wig eller Vik?', 145, 92, 53, 37],
+  ['27.05.2026', 'Ons', 'Kveldsskolen: Avhør og justismord', 201, 113, 88, 44],
+];
+
+const tbody = document.getElementById('nsTable');
+nsData.sort((a, b) => b[6] - a[6]).forEach(([date, day, name, reg, att, ns, pct]) => {
+  const badge = pct > 30 ? `<span class="badge badge-red">${pct}%</span>`
+               : pct > 15 ? `<span class="badge badge-amber">${pct}%</span>`
+               : pct < 0 ? `<span class="badge badge-green">${pct}%</span>`
+               : `<span class="badge badge-green">${pct}%</span>`;
+  tbody.innerHTML += `<tr>
+    <td><span style="color:#888780;font-size:12px;margin-right:6px">${date}</span>${name}</td>
+    <td style="text-align:right">${reg}</td>
+    <td style="text-align:right">${att}</td>
+    <td style="text-align:right;font-weight:500;color:${ns > 0 ? '#D85A30' : '#1D9E75'}">${ns}</td>
+    <td style="text-align:right">${badge}</td>
+    <td style="width:80px"><div class="bar-track"><div class="bar-fill ${ns > 30 ? 'red' : ''}" style="width:${Math.max(0,Math.min(100, pct))}%"></div></div></td>
+  </tr>`;
+});
+
+// ---- Type / month stacked ----
+const months = ['Jan 25','Feb 25','Mar 25','Apr 25','Aug 25','Sep 25','Okt 25','Nov 25','Des 25','Jan 26','Feb 26','Mar 26','Apr 26','Mai 26'];
+const kfData =   [227, 484, 564, 490,  0, 1000, 1290, 1122,  500, 380, 620, 730, 640, 565];
+const extData =  [86,  300, 200, 135,  0, 1900,  500,  300,  100, 150, 150, 200, 600, 175];
+const otherData= [288, 215, 426, 346, 44,  620,  375,  311,  134, 155, 126, 241, 327, 164];
+
+new Chart(document.getElementById('typeMonthChart'), {
+  type: 'bar',
+  data: {
+    labels: months,
+    datasets: [
+      { label: 'KF-arrangementer', data: kfData, backgroundColor: BLUE, borderRadius: 2 },
+      { label: 'Eksterne åpne arr.', data: extData, backgroundColor: TEAL, borderRadius: 2 },
+      { label: 'Fagseminar / CREDO / annet', data: otherData, backgroundColor: AMBER, borderRadius: 2 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ...baseScales.x, stacked: true, ticks: { ...baseScales.x.ticks, maxRotation: 45, autoSkip: false } },
+      y: {
+        stacked: true,
+        ticks: { color: textColor, font: { size: 11 }, callback: v => v >= 1000 ? (v/1000).toFixed(1)+'k' : v },
+        grid: { color: gridColor }
+      }
+    }
+  }
+});
+
+// ---- Håndverksfestivalen chart ----
+new Chart(document.getElementById('hfChart'), {
+  type: 'bar',
+  indexAxis: 'y',
+  data: {
+    labels: [
+      'Foredrag fredag', 'Verksted ute fre.', 'Kantineområde fre.', 'Folkestova/bar fre.', 'Omvisninger fre.',
+      'Foredrag lør.', 'Verksted ute lør.', 'Kantineområde lør.', 'Folkestova/bar lør.', 'Verksted m/påmelding'
+    ],
+    datasets: [
+      {
+        label: 'Fredag',
+        data: [124, 479, 342, 297, 72, 0, 0, 0, 0, 0],
+        backgroundColor: BLUE, borderRadius: 3
+      },
+      {
+        label: 'Lørdag',
+        data: [0, 0, 0, 0, 0, 330, 320, 259, 374, 154],
+        backgroundColor: CORAL, borderRadius: 3
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ...baseScales.x, stacked: true },
+      y: { ...baseScales.y, stacked: true }
+    }
+  }
+});
+</script>
+</body>
+</html>
