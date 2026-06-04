@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MARC-vask for Tibi – prototype</title>
+<style>
+  :root {
+    --tibi-blå: #1a4d6e;
+    --grønn: #2e7d32;
+    --rød: #c62828;
+    --gul: #f9a825;
+    --grå: #f4f5f7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    margin: 0;
+    background: var(--grå);
+    color: #222;
+  }
+  header {
+    background: var(--tibi-blå);
+    color: #fff;
+    padding: 16px 24px;
+  }
+  header h1 { margin: 0; font-size: 1.3rem; font-weight: 600; }
+  header p { margin: 4px 0 0; opacity: .85; font-size: .85rem; }
+  main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px 24px 40px;
+  }
+  .kolonner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 900px) { .kolonner { grid-template-columns: 1fr; } }
+  .panel {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.12);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+  }
+  .panel h2 { margin: 0 0 8px; font-size: 1rem; color: var(--tibi-blå); }
+  textarea {
+    width: 100%;
+    min-height: 340px;
+    font-family: "Consolas", "Menlo", monospace;
+    font-size: .85rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 10px;
+    resize: vertical;
+    white-space: pre;
+  }
+  textarea:focus { outline: 2px solid var(--tibi-blå); }
+  .knapperad { margin: 16px 0; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  button {
+    font-size: .95rem;
+    padding: 10px 22px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  #vaskBtn { background: var(--tibi-blå); color: #fff; }
+  #vaskBtn:hover { background: #143c57; }
+  .sekundær { background: #e0e3e8; color: #222; font-weight: 500; }
+  .sekundær:hover { background: #d2d6dd; }
+  #kopierBtn.kopiert { background: var(--grønn); color: #fff; }
+  fieldset {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin: 0 0 16px;
+    padding: 10px 14px;
+    background: #fff;
+  }
+  fieldset legend { font-size: .85rem; font-weight: 600; color: var(--tibi-blå); padding: 0 6px; }
+  fieldset label { display: block; font-size: .85rem; margin: 4px 0; cursor: pointer; }
+  #logg { list-style: none; padding: 0; margin: 8px 0 0; font-size: .85rem; }
+  #logg li { padding: 5px 8px; border-left: 4px solid #ccc; margin-bottom: 4px; background: #fafafa; border-radius: 0 4px 4px 0; }
+  #logg li.slettet { border-color: var(--rød); }
+  #logg li.endret { border-color: var(--gul); }
+  #logg li.opprettet { border-color: var(--grønn); }
+  #logg li.advarsel { border-color: var(--rød); background: #fdecea; font-weight: 600; }
+  #logg code { background: #eef1f4; padding: 1px 4px; border-radius: 3px; }
+  .fotnote { font-size: .78rem; color: #666; margin-top: 14px; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>MARC-vask for Tibi <span style="font-weight:300">· prototype</span></h1>
+  <p>Lim inn en kopiert MARC-post (fra Eksternbasen, Oria e.l.) – få ut en Tibi-tilpasset post klar for «Lim inn post» i M2-int.</p>
+</header>
+
+<main>
+  <fieldset>
+    <legend>Regler som kjøres</legend>
+    <label><input type="checkbox" id="r336" checked> Slett *336, *337, *338</label>
+    <label><input type="checkbox" id="r596" checked> Bygg *596 fra *260/*264 ($a sted, $b forlag, $c år) + *250 → $d utgave + *300 → $e sider + *020$a → $f original-ISBN. Originaltaggene fjernes.</label>
+    <label><input type="checkbox" id="rEmne" checked> Slett nynorske emneord ($9 nno), behold bokmål men fjern språkkoden ($9 nob)</label>
+    <label><input type="checkbox" id="rBlank" checked> Fjern blanke linjer og overflødige mellomrom</label>
+  </fieldset>
+
+  <div class="kolonner">
+    <div class="panel">
+      <h2>1 · Lim inn kopiert post</h2>
+      <textarea id="inn" spellcheck="false" placeholder="*000 ...
+*245 10$aTittelen$bundertittel$cforfatter
+*260  $aOslo$bForlaget$c2024
+..."></textarea>
+    </div>
+    <div class="panel">
+      <h2>2 · Vasket post – klar for M2-int</h2>
+      <textarea id="ut" spellcheck="false" readonly placeholder="Resultatet vises her ..."></textarea>
+    </div>
+  </div>
+
+  <div class="knapperad">
+    <button id="vaskBtn">Vask posten</button>
+    <button id="kopierBtn" class="sekundær">Kopier resultat</button>
+    <button id="eksempelBtn" class="sekundær">Vis eksempelpost</button>
+    <button id="tomBtn" class="sekundær">Tøm</button>
+  </div>
+
+  <div class="panel">
+    <h2>Endringslogg</h2>
+    <ul id="logg"><li>Ingen post vasket ennå.</li></ul>
+  </div>
+
+  <p class="fotnote">
+    Prototype. Gjenstår alltid manuelt i M2-int: tittelnummer, format (*019$b), Tibi-ISBN i *020$a,
+    «Tilpass med mal», autorisering og forhåndsvisning. Regelen for nynorske emneord forutsetter at
+    språk er angitt med $9 nno / $9 nob – juster om lokal praksis er annerledes. Verktøyet sender
+    ingenting over nett; alt skjer i nettleseren.
+  </p>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  const inn = document.getElementById("inn");
+  const ut = document.getElementById("ut");
+  const logg = document.getElementById("logg");
+
+  function loggLinje(tekst, klasse) {
+    const li = document.createElement("li");
+    li.className = klasse || "";
+    li.innerHTML = tekst;
+    logg.appendChild(li);
+  }
+
+  // Slår sammen linjer som er brukket ved kopiering (linjer som ikke starter med *)
+  function tilFelter(tekst) {
+    const linjer = tekst.split(/\r?\n/);
+    const felter = [];
+    for (const rå of linjer) {
+      const linje = rå.replace(/\s+$/, "");
+      if (linje.trim() === "") continue; // blanke linjer fjernes ved parsing
+      if (/^\*\d{3}/.test(linje.trim())) {
+        felter.push(linje.trim());
+      } else if (felter.length > 0) {
+        felter[felter.length - 1] += " " + linje.trim();
+      } else {
+        felter.push(linje.trim());
+      }
+    }
+    return felter;
+  }
+
+  function tag(felt) {
+    const m = felt.match(/^\*(\d{3})/);
+    return m ? m[1] : null;
+  }
+
+  function delfelt(felt, kode) {
+    const m = felt.match(new RegExp("\\$" + kode + "([^$]*)"));
+    return m ? m[1].trim() : null;
+  }
+
+  function vask() {
+    logg.innerHTML = "";
+    const original = inn.value;
+    if (!original.trim()) {
+      loggLinje("Lim inn en post først.", "advarsel");
+      ut.value = "";
+      return;
+    }
+
+    const antallBlanke = (original.match(/^\s*$/gm) || []).length;
+    let felter = tilFelter(original);
+
+    // ---- Regel 1: slett 336/337/338 ----
+    if (document.getElementById("r336").checked) {
+      const før = felter.length;
+      felter = felter.filter(f => !["336", "337", "338"].includes(tag(f)));
+      const slettet = før - felter.length;
+      if (slettet > 0) loggLinje("Slettet " + slettet + " felt: <code>*336/*337/*338</code>", "slettet");
+    }
+
+    // ---- Regel 2: bygg *596, fjern 260/264/250/300/020 ----
+    if (document.getElementById("r596").checked) {
+      const utgFelt = felter.find(f => tag(f) === "260" || tag(f) === "264");
+      const f250 = felter.find(f => tag(f) === "250");
+      const f300 = felter.find(f => tag(f) === "300");
+      const f020 = felter.find(f => tag(f) === "020");
+
+      if (utgFelt || f250 || f300 || f020) {
+        let ny596 = "*596  ";
+        const deler = [];
+        if (utgFelt) {
+          const a = delfelt(utgFelt, "a"), b = delfelt(utgFelt, "b"), c = delfelt(utgFelt, "c");
+          if (a) deler.push("$a" + a);
+          if (b) deler.push("$b" + b);
+          if (c) deler.push("$c" + c.replace(/[.\s]+$/, ""));
+        }
+        if (f250) {
+          const d = delfelt(f250, "a");
+          if (d) deler.push("$d" + d.replace(/[.\s]+$/, ""));
+        }
+        if (f300) {
+          const e = delfelt(f300, "a");
+          if (e) deler.push("$e" + e.replace(/[.\s:;+]+$/, ""));
+        }
+        if (f020) {
+          const isbn = delfelt(f020, "a");
+          if (isbn) deler.push("$f" + isbn);
+        }
+
+        if (deler.length > 0) {
+          ny596 += deler.join("");
+          // Erstatt 260/264 med ny 596 på samme plass, fjern 250/300/020
+          let plassert = false;
+          const nye = [];
+          for (const f of felter) {
+            const t = tag(f);
+            if (t === "260" || t === "264") {
+              if (!plassert) { nye.push(ny596); plassert = true; }
+            } else if (!["250", "300", "020"].includes(t)) {
+              nye.push(f);
+            }
+          }
+          if (!plassert) nye.push(ny596);
+          felter = nye;
+
+          loggLinje("Opprettet <code>" + ny596.replace(/</g, "&lt;") + "</code>", "opprettet");
+          if (utgFelt) loggLinje("Fjernet <code>*" + tag(utgFelt) + "</code> (utgivelsesinfo → *596 $a/$b/$c)", "endret");
+          if (f250) loggLinje("Fjernet <code>*250</code> (utgave → *596$d)", "endret");
+          if (f300) loggLinje("Fjernet <code>*300</code> (omfang → *596$e – *300 fylles ut på nytt ved ferdigstilling)", "endret");
+          if (f020) loggLinje("Fjernet <code>*020</code> (original-ISBN → *596$f – Tibi-ISBN legges i *020$a fra scriptet)", "endret");
+        }
+      }
+    }
+
+    // ---- Regel 3: nynorske emneord ----
+    if (document.getElementById("rEmne").checked) {
+      const emneTagger = ["600", "610", "611", "630", "650", "651", "653", "655"];
+      let slettetNno = 0, vasketNob = 0;
+      felter = felter.filter(f => {
+        if (emneTagger.includes(tag(f)) && /\$9\s*nno\b/i.test(f)) { slettetNno++; return false; }
+        return true;
+      });
+      felter = felter.map(f => {
+        if (emneTagger.includes(tag(f)) && /\$9\s*nob\b/i.test(f)) {
+          vasketNob++;
+          return f.replace(/\$9\s*nob\b/gi, "").replace(/\s+$/, "");
+        }
+        return f;
+      });
+      if (slettetNno > 0) loggLinje("Slettet " + slettetNno + " nynorske emneord (<code>$9 nno</code>)", "slettet");
+      if (vasketNob > 0) loggLinje("Fjernet språkkode <code>$9 nob</code> fra " + vasketNob + " emneord", "endret");
+    }
+
+    // ---- Regel 4: blanke linjer ----
+    if (document.getElementById("rBlank").checked && antallBlanke > 0) {
+      loggLinje("Fjernet " + antallBlanke + " blank(e) linje(r) – disse gjør at innliming feiler i M2-int", "slettet");
+    }
+
+    if (logg.children.length === 0) {
+      loggLinje("Ingen endringer var nødvendige – posten var allerede ren.");
+    }
+
+    ut.value = felter.join("\n");
+  }
+
+  document.getElementById("vaskBtn").addEventListener("click", vask);
+
+  document.getElementById("kopierBtn").addEventListener("click", function () {
+    if (!ut.value) return;
+    navigator.clipboard.writeText(ut.value).then(() => {
+      this.textContent = "Kopiert ✓";
+      this.classList.add("kopiert");
+      setTimeout(() => { this.textContent = "Kopier resultat"; this.classList.remove("kopiert"); }, 1500);
+    });
+  });
+
+  document.getElementById("tomBtn").addEventListener("click", function () {
+    inn.value = ""; ut.value = "";
+    logg.innerHTML = "<li>Ingen post vasket ennå.</li>";
+  });
+
+  document.getElementById("eksempelBtn").addEventListener("click", function () {
+    inn.value = [
+      "*000     nam         3",
+      "*008                          nob",
+      "*019  $bl",
+      "*020  $a9788234567890$bib.$cNkr 399.00",
+      "*100 10$aHansen, Maja Lunde$d1975-",
+      "*245 10$aBienes historie$broman$cMaja Lunde",
+      "*250  $a1. utgave",
+      "*260  $aOslo$bAschehoug$c2015",
+      "",
+      "*300  $a447 s.",
+      "*336  $atekst$btxt$2rdacontent",
+      "*337  $auformidlet$bn$2rdamedia",
+      "*338  $abind$bnc$2rdacarrier",
+      "*650  $aBier$9nob",
+      "*650  $aBier$9nno",
+      "*650  $aKlimaendringer$9nob",
+      "*650  $aKlimaendringar$9nno",
+      "*655  $aRomaner$9nob"
+    ].join("\n");
+    vask();
+  });
+})();
+</script>
+</body>
+</html>
