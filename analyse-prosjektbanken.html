@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prosjektbanken 2013–2025 – en analyse</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#faf8f5; --card:#ffffff; --ink:#1f2733; --muted:#5b6776;
+    --accent:#0d5c63; --accent2:#c0533e; --accent3:#d9a441; --line:#e6e1d8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Georgia,'Times New Roman',serif;background:var(--bg);color:var(--ink);line-height:1.65}
+  header{background:var(--accent);color:#fff;padding:3.5rem 1.5rem 3rem;text-align:center}
+  header h1{font-size:2.2rem;font-weight:normal;max-width:46rem;margin:0 auto .8rem}
+  header p{max-width:42rem;margin:0 auto;opacity:.92;font-size:1.05rem}
+  nav{background:#0a4a50;position:sticky;top:0;z-index:10;overflow-x:auto;white-space:nowrap;text-align:center}
+  nav a{display:inline-block;color:#dceef0;text-decoration:none;padding:.7rem 1rem;font-family:Helvetica,Arial,sans-serif;font-size:.85rem}
+  nav a:hover{background:#0d5c63}
+  main{max-width:60rem;margin:0 auto;padding:1.5rem}
+  section{margin:3rem 0}
+  h2{font-size:1.6rem;font-weight:normal;color:var(--accent);border-bottom:2px solid var(--line);padding-bottom:.4rem;margin-bottom:1rem}
+  h3{font-size:1.15rem;color:var(--accent2);margin:1.6rem 0 .5rem;font-weight:normal}
+  p{margin:.7rem 0;max-width:46rem}
+  .lead{font-size:1.12rem;color:var(--ink)}
+  .kpis{display:flex;flex-wrap:wrap;gap:1rem;margin:1.5rem 0}
+  .kpi{flex:1 1 9rem;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:1rem;text-align:center}
+  .kpi b{display:block;font-size:1.7rem;color:var(--accent)}
+  .kpi span{font-family:Helvetica,Arial,sans-serif;font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .chartbox{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:1.2rem;margin:1.2rem 0}
+  .chartbox h4{font-family:Helvetica,Arial,sans-serif;font-size:.95rem;margin-bottom:.6rem;color:var(--ink)}
+  .chartbox .src{font-family:Helvetica,Arial,sans-serif;font-size:.75rem;color:var(--muted);margin-top:.5rem}
+  canvas{max-height:380px}
+  table{border-collapse:collapse;width:100%;font-family:Helvetica,Arial,sans-serif;font-size:.85rem;background:var(--card);margin:1rem 0}
+  th,td{border:1px solid var(--line);padding:.45rem .6rem;text-align:left}
+  th{background:#eef3f3;font-weight:600}
+  td.num,th.num{text-align:right}
+  .note{background:#f4efe6;border-left:4px solid var(--accent3);padding:.8rem 1rem;margin:1.2rem 0;font-size:.95rem;max-width:46rem}
+  .trad{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:6px;padding:1rem 1.2rem;margin:1rem 0;max-width:48rem}
+  .trad h4{color:var(--accent);font-size:1.05rem;margin-bottom:.3rem}
+  .trad .eks{font-family:Helvetica,Arial,sans-serif;font-size:.82rem;color:var(--muted);margin-top:.4rem}
+  footer{background:var(--ink);color:#cfd6de;text-align:center;padding:2rem 1rem;font-size:.85rem;margin-top:3rem}
+  @media(max-width:640px){header h1{font-size:1.6rem}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Hva søker norske bibliotek om – og hvordan har det endret seg?</h1>
+  <p>En analyse av 695 prosjekter i Nasjonalbibliotekets prosjektbank på bibliotekutvikling.no, 2013–2025</p>
+</header>
+
+<nav>
+  <a href="#grunnlag">Datagrunnlag</a>
+  <a href="#tema">Tema over tid</a>
+  <a href="#geografi">Geografi</a>
+  <a href="#bibtype">Bibliotektyper</a>
+  <a href="#innsats">Innsatsområder</a>
+  <a href="#fritt">Fritt forsøk</a>
+  <a href="#metode">Metode</a>
+</nav>
+
+<main>
+
+<section id="grunnlag">
+  <h2>Datagrunnlaget</h2>
+  <p class="lead">Prosjektbanken inneholder prosjekter som har fått utviklingsmidler eller midler til aktiv formidling fra Nasjonalbiblioteket. Datasettet omfatter 695 prosjekter fra 214 prosjekteiere, med samlet tilskudd på 223,5 millioner kroner.</p>
+  <div class="kpis">
+    <div class="kpi"><b>695</b><span>prosjekter</span></div>
+    <div class="kpi"><b>223,5 mill.</b><span>kroner i tilskudd</span></div>
+    <div class="kpi"><b>214</b><span>prosjekteiere</span></div>
+    <div class="kpi"><b>2013–2025</b><span>oppstartsår</span></div>
+    <div class="kpi"><b>100 000</b><span>kr i mediantilskudd</span></div>
+  </div>
+  <p>Banken rommer to ulike ordninger. <strong>Utviklingsmidlene</strong> (426 prosjekter) er den klassiske ordningen med større, flerårige utviklingsprosjekter. <strong>Aktiv formidling</strong> (269 prosjekter) kom først i 2021 som del av bibliotekstrategien «Rom for demokrati og dannelse» – mange og små tilskudd (median 75 000 kr) til konkrete formidlingstiltak. Dette skillet er viktig for hele analysen: når søknadsbildet endrer seg kraftig fra 2021, skyldes mye at det kom en helt ny type prosjekter inn i banken.</p>
+  <div class="chartbox">
+    <h4>Antall prosjekter per oppstartsår, fordelt på ordning</h4>
+    <canvas id="chType"></canvas>
+    <p class="src">Merk: ingen prosjekter i banken har oppstartsår 2020, og 2019 har få – trolig et overgangsår mellom to strategiperioder. 2025 er ufullstendig.</p>
+  </div>
+</section>
+
+<section id="tema">
+  <h2>1 · Hvordan har innhold og tema endret seg?</h2>
+  <p class="lead">Tre store bevegelser preger tolv år med søknader: fra <em>møteplass</em> til <em>formidling</em>, fra <em>flyktningintegrering</em> til bredere <em>mangfold</em>, og en teknologibølge som har skiftet innhold tre ganger.</p>
+
+  <h3>Fra møteplass-æra til formidlings-æra</h3>
+  <p>I 2013–2015, rett etter at den reviderte bibliotekloven gjorde folkebibliotekene til «uavhengig møteplass og arena for offentlig samtale og debatt», handlet over halvparten av søknadene om møteplassfunksjonen, og hver fjerde om litteraturhus-lignende aktivitet med debatter og forfattermøter. Denne andelen er siden mer enn halvert. Fra 2021 tok formidlingen over: andelen prosjekter som handler om leselyst og litteraturformidling hoppet fra rundt 25–34 % til rundt 70 %, drevet av den nye Aktiv formidling-ordningen. Samarbeid med skole, SFO og barnehage fulgte samme kurve, og tre av fire prosjekter etter 2021 retter seg mot barn og unge.</p>
+
+  <div class="chartbox">
+    <h4>Andel av prosjektene som berører utvalgte temaer (% per periode)</h4>
+    <canvas id="chTema"></canvas>
+    <p class="src">Tekstsøk i mål- og prosjektbeskrivelser, bokmåls- og nynorskformer. Periodene følger strategiperiodene.</p>
+  </div>
+
+  <h3>Tidsbilder i temaene</h3>
+  <p>Noen temaer er tydelige barn av sin tid. <strong>Integrering og det flerkulturelle</strong> toppet seg etter flyktningkrisen i 2015 – over hver femte søknad i 2013–2019 handlet om språkkafeer, norsktrening og flerspråklig formidling – men har falt til 8,5 % i 2023–2025. Samtidig har det bredere begrepsparet <strong>mangfold og inkludering</strong> økt til en av fire søknader: Søknadsspråket har skiftet fra «flyktninger og innvandrere» til «utenforskap og inkludering». <strong>Eldre og psykisk helse</strong> fikk et tydelig løft i 2021–2022, i kjølvannet av pandemien.</p>
+  <p>Teknologitemaene avløser hverandre: koding og makerspace toppet seg 2016–2019, dataspill og e-sport vokser jevnt og er nå dobbelt så vanlig som i 2013, og <strong>kunstig intelligens</strong> eksploderte fra nesten null til 7 % av alle søknader i 2023–2025 – blant utviklingsprosjektene alene nevner hele 19 % KI. De første KI-søknadene handler mest om kildekritikk, kompetanseheving og katalogarbeid. Også <strong>samisk og kvensk</strong> innhold vokser markert (til 6 %), i takt med sannhets- og forsoningsprosessen.</p>
+  <p>Blant utviklingsprosjektene (der innsatsområdene styrer) ser man strategienes fingeravtrykk direkte: bærekraftstemaet løftet seg fra 10–16 % til over 50 % etter at FNs bærekraftsmål ble eget innsatsområde i 2021, og demokrati/ytringsfrihet preger halvparten av 2023–2025-søknadene – det er eget innsatsområde i 2025-utlysningen.</p>
+
+  <div class="note"><strong>Kort sagt:</strong> Søknadene speiler både samfunnshendelser (flyktningkrisen, pandemien, KI-gjennombruddet) og Nasjonalbibliotekets egne strategisignaler. Når NB peker ut et innsatsområde, dukker vokabularet opp i søknadene året etter.</div>
+</section>
+
+<section id="geografi">
+  <h2>2 · Forskjeller mellom landsdeler og fylker</h2>
+  <p class="lead">Aktiviteten er svært ujevnt fordelt. Vestland alene står for 127 prosjekter og 45 millioner kroner – mer enn Østfold, Buskerud, Telemark og Møre og Romsdal til sammen. Målt per innbygger er Troms, Vestland og Finnmark vinnerne, mens det sentrale Østlandet søker minst.</p>
+
+  <div class="chartbox">
+    <h4>Tilskudd per fylke: totalt (mill. kr) og per innbygger (kr)</h4>
+    <canvas id="chFylke"></canvas>
+    <p class="src">Fylkesinndeling per 2024. Prosjekter fra det tidligere felles fylkesbiblioteket for Akershus, Buskerud og Østfold (23 prosjekter, 9 mill. kr) er holdt utenfor fylkestallene. To prosjekter mangler eier.</p>
+  </div>
+
+  <h3>Systematiske geografiske forskjeller</h3>
+  <p><strong>Nord-Norge</strong> har en tydelig egen profil: 16 % av søknadene berører samisk eller kvensk språk og kultur (mot 0–1 % i sør), nesten hver fjerde søknad tematiserer avstander og desentraliserte tjenester, og eldre er oftere målgruppe (18 %). <strong>Vestlandet</strong> er alene om nynorsk-prosjektene (9 % av søknadene). <strong>Sørlandet</strong> har høyest andel integreringsprosjekter (23 %). <strong>Trøndelag</strong> peker seg ut med barn og unge (79 %) og dataspill.</p>
+  <p>Forskjellene i volum handler mer om <em>søkekultur enn behov</em>: Aktive fylkesbibliotek (Vestland, Troms, Innlandet, Trøndelag) drar med seg småkommunene sine – i Innlandet og Troms står små folkebibliotek for omtrent halvparten av prosjektene, og i disse fylkene er en stor andel små Aktiv formidling-tilskudd. Oslo og Finnmark har få, men store prosjekter (median 0,5 mill. kr), mens Akershus og Østfold ligger påfallende lavt per innbygger (10–14 kr mot Troms' 92 kr).</p>
+
+  <table>
+    <thead><tr><th>Landsdel</th><th class="num">Prosjekter</th><th class="num">Samisk/kvensk</th><th class="num">Nynorsk</th><th class="num">Distrikt/avstand</th><th class="num">Integrering</th><th class="num">Barn og unge</th></tr></thead>
+    <tbody>
+      <tr><td>Nord-Norge</td><td class="num">91</td><td class="num">16 %</td><td class="num">1 %</td><td class="num">23 %</td><td class="num">12 %</td><td class="num">71 %</td></tr>
+      <tr><td>Trøndelag</td><td class="num">70</td><td class="num">6 %</td><td class="num">1 %</td><td class="num">11 %</td><td class="num">14 %</td><td class="num">79 %</td></tr>
+      <tr><td>Vestlandet</td><td class="num">189</td><td class="num">0 %</td><td class="num">9 %</td><td class="num">10 %</td><td class="num">14 %</td><td class="num">60 %</td></tr>
+      <tr><td>Østlandet</td><td class="num">300</td><td class="num">1 %</td><td class="num">1 %</td><td class="num">10 %</td><td class="num">15 %</td><td class="num">65 %</td></tr>
+      <tr><td>Sørlandet</td><td class="num">43</td><td class="num">0 %</td><td class="num">0 %</td><td class="num">9 %</td><td class="num">23 %</td><td class="num">65 %</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="bibtype">
+  <h2>3 · Små bibliotek, store bibliotek, fylkesbibliotek og UH-bibliotek</h2>
+  <p class="lead">Her er forskjellene størst og mest systematiske. De fire bibliotektypene bruker ordningene til helt forskjellige ting – fra småbibliotekenes formidlingstilskudd på 75 000 kroner til UH-bibliotekenes infrastrukturprosjekter på en halv million.</p>
+
+  <div class="chartbox">
+    <h4>Fire ulike roller i ordningen</h4>
+    <canvas id="chBibtype"></canvas>
+  </div>
+
+  <table>
+    <thead><tr><th>Bibliotektype</th><th class="num">Prosjekter</th><th class="num">Sum tilskudd</th><th class="num">Median</th><th class="num">Andel Aktiv formidling</th></tr></thead>
+    <tbody>
+      <tr><td>Små folkebibliotek (kommuner under 15 000 innb.)</td><td class="num">216</td><td class="num">23,5 mill.</td><td class="num">75 000</td><td class="num">64 %</td></tr>
+      <tr><td>Store folkebibliotek</td><td class="num">300</td><td class="num">84,7 mill.</td><td class="num">100 000</td><td class="num">37 %</td></tr>
+      <tr><td>Fylkesbibliotek</td><td class="num">116</td><td class="num">75,4 mill.</td><td class="num">475 000</td><td class="num">16 %</td></tr>
+      <tr><td>UH-bibliotek</td><td class="num">55</td><td class="num">35,6 mill.</td><td class="num">500 000</td><td class="num">0 %</td></tr>
+      <tr><td>Andre (sykehus-, museums- og spesialbibliotek)</td><td class="num">6</td><td class="num">2,5 mill.</td><td class="num">415 000</td><td class="num">0 %</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Fire tydelige profiler</h3>
+  <p><strong>Små folkebibliotek</strong> søker smått og konkret: to tredjedeler av prosjektene deres er Aktiv formidling-tilskudd, og temaprofilen er leselyst (62 %), barn og unge (77 %) og eldre. De søker sjelden alene om store utviklingsprosjekter – da er de heller deltakere i fylkesbibliotekenes samarbeidsprosjekter.</p>
+  <p><strong>Store folkebibliotek</strong> ligner tematisk på de små, men søker oftere utviklingsmidler, eksperimenterer mer med teknologi og dominerer kategorien Fritt forsøk. Bergen bibliotek er landets største enkeltmottaker (15,1 mill. kr).</p>
+  <p><strong>Fylkesbibliotekene</strong> er ordningens «grossister»: 116 prosjekter med median 475 000 kr, nesten alltid samarbeids- og kompetanseprosjekter på vegne av mange kommuner. De står bak de aller største prosjektene i banken – «Formidlingskompetanse i folkebibliotek» (Trøndelag, 6 + 3 mill. kr) og «Biblioteket som samskaper» (Innlandet, 2,7 mill. kr).</p>
+  <p><strong>UH-bibliotekene</strong> lever i en annen verden: ikke ett eneste Aktiv formidling-prosjekt, 82 % av søknadene handler om digitalt/teknologi og 65 % om forskningsstøtte – åpen tilgang, forskningsdata, metadata og informasjonskompetanse. Leselyst (9 %) og møteplass (13 %) er nesten fraværende. UiOs to mapping-prosjekter (Dewey/tesaurus, til sammen 6,7 mill. kr) er typiske: nasjonal infrastruktur, ikke lokal formidling.</p>
+
+  <div class="chartbox">
+    <h4>Temaprofil per bibliotektype (% av prosjektene som berører temaet)</h4>
+    <canvas id="chProfil"></canvas>
+  </div>
+</section>
+
+<section id="innsats">
+  <h2>4 · De tolv innsatsområdene</h2>
+  <p class="lead">Innsatsområdene gjelder utviklingsmidlene (Aktiv formidling-tilskuddene kategoriseres ikke). Det viktigste funnet: <strong>innsatsområdene er ikke et stabilt system, men årringer fra skiftende strategier</strong> – og de tiltrekker seg systematisk ulike søkere og ulike beløp.</p>
+
+  <div class="chartbox">
+    <h4>Antall prosjekter og mediantilskudd per innsatsområde/kategori</h4>
+    <canvas id="chInnsats"></canvas>
+  </div>
+
+  <h3>Tre systematiske forskjeller</h3>
+  <p><strong>1 · Hvert område har sin epoke.</strong> «Biblioteket som møteplass» (91 prosjekter) og «Biblioteket som læringsarena» finnes nesten bare i 2014–2015, da møteplass-paragrafen var ny. «FNs bærekraftsmål» eksisterer kun fra 2021. «Demokrati og ytringsfrihet» og «Leselyst og lesefremming» er i praksis 2025-kategorier. Bare «Nye samarbeidsformer og partnerskap» (141) og «Utvikling av nye bibliotektjenester» (100) lever gjennom hele perioden – de er ordningens grunnfjell.</p>
+  <p><strong>2 · Hvert område har sin søkertype.</strong> «Åpen tilgang, åpne data, åpen vitenskap» og «Samarbeid med Nasjonalbiblioteket» er UH-dominert (60–75 %) og har de klart høyeste tilskuddene (median 0,6–0,8 mill. kr). «Biblioteket som møteplass» er folkebibliotekenes område (78 % folkebibliotek) med lavest median (100 000 kr). Fylkesbibliotekene er tyngst i «Demokrati og ytringsfrihet» og «Digitale tjenester».</p>
+  <p><strong>3 · Pengene følger abstraksjonen.</strong> Jo mer infrastruktur og sektorutvikling, desto større tilskudd: Åpen vitenskap (median 800 000), Fritt forsøk (350 000) og Utvikling av nye bibliotektjenester (350 000) ligger øverst; møteplass-, forprosjekt- og formidlingsprosjekter nederst. Små folkebibliotek er nesten fraværende i de dyre kategoriene (5–7 %), men godt representert i møteplass og forprosjekt (21–25 %).</p>
+
+  <table>
+    <thead><tr><th>Innsatsområde / kategori</th><th class="num">Prosjekter</th><th class="num">Median (kr)</th><th>Tyngdepunkt</th><th>Typisk søker</th></tr></thead>
+    <tbody>
+      <tr><td>Nye samarbeidsformer og partnerskap</td><td class="num">141</td><td class="num">300 000</td><td>hele perioden</td><td>alle typer</td></tr>
+      <tr><td>Nye formidlingsmetoder</td><td class="num">103</td><td class="num">200 000</td><td>2014–2019</td><td>store folkebibliotek</td></tr>
+      <tr><td>Utvikling av nye bibliotektjenester</td><td class="num">100</td><td class="num">350 000</td><td>hele perioden</td><td>fylkesbibliotek, UH</td></tr>
+      <tr><td>Biblioteket som møteplass</td><td class="num">91</td><td class="num">100 000</td><td>2014–2015</td><td>folkebibliotek</td></tr>
+      <tr><td>Forprosjekt</td><td class="num">47</td><td class="num">150 000</td><td>hele perioden</td><td>alle typer</td></tr>
+      <tr><td>Fritt forsøk</td><td class="num">39</td><td class="num">350 000</td><td>2015–2019</td><td>store aktører</td></tr>
+      <tr><td>FNs bærekraftsmål og bibliotek</td><td class="num">32</td><td class="num">450 000</td><td>2021–2024</td><td>store folkebibliotek</td></tr>
+      <tr><td>Biblioteket som læringsarena</td><td class="num">24</td><td class="num">185 000</td><td>2014–2015</td><td>store folkebibliotek</td></tr>
+      <tr><td>Mangfold og inkludering</td><td class="num">24</td><td class="num">200 000</td><td>2014–2017</td><td>store folkebibliotek</td></tr>
+      <tr><td>Åpen tilgang, åpne data, åpen vitenskap</td><td class="num">15</td><td class="num">800 000</td><td>2018–2024</td><td>UH-bibliotek</td></tr>
+      <tr><td>Digitale tjenester</td><td class="num">11</td><td class="num">305 000</td><td>2013–2016</td><td>fylkesbibliotek</td></tr>
+      <tr><td>Demokrati og ytringsfrihet</td><td class="num">10</td><td class="num">450 000</td><td>2025</td><td>fylkesbibliotek</td></tr>
+      <tr><td>Leselyst og lesefremming</td><td class="num">8</td><td class="num">300 000</td><td>2025</td><td>folkebibliotek</td></tr>
+      <tr><td>Samarbeid med Nasjonalbiblioteket</td><td class="num">4</td><td class="num">635 000</td><td>2023</td><td>UH-bibliotek</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="fritt">
+  <h2>5 · Fritt forsøk: 39 prosjekter – finnes det røde tråder?</h2>
+  <p class="lead">Ja, fem tydelige. Men den viktigste røde tråden er hvem som søker og hva kategorien brukes til: Fritt forsøk er <strong>sektorens FoU-laboratorium</strong>, dominert av de ressurssterke. 59 % av prosjektene eies av store folkebibliotek, 18 % av fylkesbibliotek og 18 % av UH-bibliotek – små folkebibliotek står for bare 5 %. Tilskuddene er store (median 350 000, snitt 578 000 kr), og toppåret var 2017 med 13 av de 39 prosjektene.</p>
+
+  <div class="trad">
+    <h4>Tråd 1 · Teknologi før alle andre (ca. 12 prosjekter)</h4>
+    <p>Den største gruppen tester teknologi før den blir allemannseie – og treffer påfallende ofte. UiO undersøkte kunstig intelligens i bibliotek allerede i 2017, seks år før KI-bølgen i resten av søknadsbunken. VR/AR ble utforsket tre ganger (Bergen, Lindesnes, Trondheim), Drammen bygde podkast-kompetanse som siden er blitt standard, og Bergen testet beacons og NFC i 2016. Hit hører også de tunge infrastrukturforsøkene: Deichmans biblioteksystem som åpen plattform, UiOs mapping av emnevokabularer og BIBFRAME/lenkede data.</p>
+    <p class="eks">Eksempler: «Kunstig intelligens i biblioteket» (UiO, 2017) · «Den andre røynda» (Bergen) · «Biblioteksystem som plattform» (Deichman) · «BIBLIOTEKET SOM PODKASTER» (Drammen)</p>
+  </div>
+
+  <div class="trad">
+    <h4>Tråd 2 · Blikket vendt innover: brukerinnsikt og tjenestedesign (ca. 10)</h4>
+    <p>Nesten like mange prosjekter handler ikke om nye tilbud, men om å forstå og redesigne selve møtet mellom bibliotek og bruker: wayfinding i Sølvberget, kartlegging av brukeratferd og henvendelser i Bergen, redefinering av referansebibliotekaren i Tønsberg, skranke- og veiledningstjenesten ved NTNU (to ganger), brukermedvirkning i nye bydelsbibliotek. Fritt forsøk har gitt rom for noe innsatsområdene sjelden dekker – at biblioteket forsker på seg selv.</p>
+    <p class="eks">Eksempler: «Morgendagens veileder» (Tønsberg) · «Brukeratferd i bibliotek» (Bergen) · «Wayfinding &amp; skilting» (Stavanger) · «Folkebiblioteket i lokalsamfunnet» (Vestland, 2025)</p>
+  </div>
+
+  <div class="trad">
+    <h4>Tråd 3 · Penger og partnerskap utenfor det offentlige (4)</h4>
+    <p>En liten, men prinsipielt interessant gruppe utforsker grensene for bibliotekets finansierings- og driftsmodell: to sponsorprosjekter (Innlandet fylkesbibliotek med 850 000 kr, og Sølvbergets sponsorstrategi), lånekortet som felles billett med museene i Stavanger, og Innlandets store samskapingsprosjekt. Temaer som er for kontroversielle eller utypiske til å passe i et innsatsområde – nettopp det «fritt forsøk» er til for.</p>
+    <p class="eks">Eksempler: «Sponsing og sponsorsamarbeid i bibliotek» · «Lånekortet – en billett til framtida» · «Biblioteket som samskaper» (2,7 mill. kr)</p>
+  </div>
+
+  <div class="trad">
+    <h4>Tråd 4 · Sektoren som målgruppe (ca. 6)</h4>
+    <p>Flere prosjekter har bibliotekansatte – ikke publikum – som målgruppe: unconference-konseptene BibliotekCamp (Troms) og GRANITOL (Innlandet), håndboken om utagerende brukere og trygghet i biblioteket (Møre og Romsdal), og bokutgivelsen av Brukeratferd-undersøkelsen. Fritt forsøk har fungert som finansieringskilde for sektorens egen kompetanse- og metodebygging.</p>
+    <p class="eks">Eksempler: «BibliotekCamp2015» · «GRANITOL vol. 2» · «Biblioteket – ein trygg møteplass?»</p>
+  </div>
+
+  <div class="trad">
+    <h4>Tråd 5 · Formidlingseksperimenter med kunstnerisk vri (ca. 8)</h4>
+    <p>Resten er enkeltstående, ofte lekne formidlingsformer som ikke passet i noen boks: levende bøker som performance (Ålesund), escape rooms på dagsturhytter (Agder), bokbåten Epos til litteraturfestival (Tysvær), «Spør en smarting»-foredrag for barn (Ringsaker), flerspråklige lesestunder og språkbytte-ordninger (Eidskog, Bergen) – og det som siden ble Ibsenbiblioteket i Skien.</p>
+    <p class="eks">Eksempler: «Levende bøker» · «Escape Room på dagsturhytter» · «Ibsenbiblioteket» (Skien, 2016)</p>
+  </div>
+
+  <p><strong>Samlet bilde:</strong> Fritt forsøk-prosjektene er mer innadvendte, mer teknologitunge og mer sektorrettede enn resten av prosjektbanken – og de fungerer som tidlig varsling. Det som dukker opp her (KI, podkast, VR, samskaping, brukerinnsikt) blir gjerne hovedstrøm i søknadsbunken fem år senere. Kategorien har i praksis vært de store aktørenes utviklingsavdeling, finansiert av fellesskapet.</p>
+</section>
+
+<section id="metode">
+  <h2>Metode og forbehold</h2>
+  <p>Analysen bygger på filen <code>prosjekter_komplett.json</code> (695 prosjekter skrapet fra prosjektbanken på bibliotekutvikling.no, juni 2026). Temaanalysen er gjort med tekstsøk (bokmåls- og nynorskformer) i tittel, mål- og prosjektbeskrivelse – den fanger ordbruk, ikke nødvendigvis prosjektets kjerne. Bibliotektype og fylke er kodet ut fra prosjekteiers navn; «små» folkebibliotek er definert som kommuner med under 15 000 innbyggere (folketall ca. 2024, dagens fylkesinndeling). Banken viser bare <em>innvilgede</em> søknader – avslåtte søknader finnes ikke i datasettet, så «hva bibliotekene søker om» betyr her «hva som har fått støtte». Beløpene er ikke prisjustert. To prosjekter mangler prosjekteier, ett mangler beløp, og 2025-årgangen er ufullstendig.</p>
+</section>
+
+</main>
+
+<footer>
+  Analyse av Nasjonalbibliotekets prosjektbank · bibliotekutvikling.no · utarbeidet juni 2026
+</footer>
+
+<script>
+const C = {teal:'#0d5c63', rust:'#c0533e', gold:'#d9a441', grey:'#8a94a0', light:'#7fb3b8', dark:'#1f2733', green:'#5b8c5a', purple:'#7d6b94'};
+Chart.defaults.font.family = "Helvetica, Arial, sans-serif";
+Chart.defaults.font.size = 12;
+
+// --- Ordning per år ---
+new Chart(document.getElementById('chType'), {
+  type:'bar',
+  data:{labels:[2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025],
+    datasets:[
+      {label:'Utviklingsmidler', data:[9,96,57,40,46,36,11,0,41,28,27,15,20], backgroundColor:C.teal},
+      {label:'Aktiv formidling', data:[0,0,0,0,0,0,0,0,102,65,58,44,0], backgroundColor:C.gold}
+    ]},
+  options:{responsive:true, scales:{x:{stacked:true}, y:{stacked:true, title:{display:true,text:'Antall prosjekter'}}}}
+});
+
+// --- Tema over tid ---
+const perioder = ['2013–2015','2016–2019','2021–2022','2023–2025'];
+new Chart(document.getElementById('chTema'), {
+  type:'line',
+  data:{labels:perioder, datasets:[
+    {label:'Leselyst/litteraturformidling', data:[34.0,24.8,67.8,70.1], borderColor:C.rust, backgroundColor:C.rust, tension:.3},
+    {label:'Skole/SFO/barnehage-samarbeid', data:[39.5,42.1,69.9,67.7], borderColor:C.gold, backgroundColor:C.gold, tension:.3},
+    {label:'Møteplass', data:[53.7,37.6,28.0,28.7], borderColor:C.teal, backgroundColor:C.teal, tension:.3},
+    {label:'Litteraturhus-funksjon (debatt mv.)', data:[26.5,8.3,10.6,7.3], borderColor:C.light, backgroundColor:C.light, tension:.3},
+    {label:'Integrering/flerkulturelt', data:[22.8,21.1,14.0,8.5], borderColor:C.purple, backgroundColor:C.purple, tension:.3},
+    {label:'Mangfold/inkludering', data:[17.3,11.3,20.8,24.4], borderColor:C.green, backgroundColor:C.green, tension:.3},
+    {label:'Kunstig intelligens', data:[0,0.8,0.4,7.3], borderColor:C.dark, backgroundColor:C.dark, tension:.3, borderDash:[5,3]},
+    {label:'Samisk/kvensk', data:[1.9,0,3.8,6.1], borderColor:C.grey, backgroundColor:C.grey, tension:.3, borderDash:[5,3]}
+  ]},
+  options:{responsive:true, plugins:{legend:{position:'bottom'}},
+    scales:{y:{title:{display:true,text:'% av prosjektene i perioden'}, max:80}}}
+});
+
+// --- Fylke ---
+const fylker = ['Troms','Vestland','Finnmark','Trøndelag','Vestfold','Innlandet','Oslo','Agder','Nordland','Rogaland','Telemark','Buskerud','Møre og Romsdal','Akershus','Østfold'];
+new Chart(document.getElementById('chFylke'), {
+  type:'bar',
+  data:{labels:fylker, datasets:[
+    {label:'Kr per innbygger', data:[92,69,68,51,50,47,40,38,34,31,22,21,18,14,10], backgroundColor:C.teal, yAxisID:'y'},
+    {label:'Totalt (mill. kr)', data:[15.6,45.0,5.1,24.5,12.9,17.4,28.8,12.2,8.3,15.3,3.8,5.7,4.8,10.3,3.0], backgroundColor:C.gold, yAxisID:'y2'}
+  ]},
+  options:{responsive:true,
+    scales:{x:{ticks:{maxRotation:60,minRotation:45}},
+      y:{position:'left', title:{display:true,text:'Kr per innbygger'}},
+      y2:{position:'right', grid:{drawOnChartArea:false}, title:{display:true,text:'Mill. kr totalt'}}}}
+});
+
+// --- Bibtype søyler ---
+new Chart(document.getElementById('chBibtype'), {
+  type:'bar',
+  data:{labels:['Små folkebibliotek','Store folkebibliotek','Fylkesbibliotek','UH-bibliotek'],
+    datasets:[
+      {label:'Antall prosjekter', data:[216,300,116,55], backgroundColor:C.teal, yAxisID:'y'},
+      {label:'Mediantilskudd (1000 kr)', data:[75,100,475,500], backgroundColor:C.rust, yAxisID:'y2'}
+    ]},
+  options:{responsive:true,
+    scales:{y:{position:'left', title:{display:true,text:'Antall'}},
+      y2:{position:'right', grid:{drawOnChartArea:false}, title:{display:true,text:'Median, 1000 kr'}}}}
+});
+
+// --- Temaprofil radar ---
+new Chart(document.getElementById('chProfil'), {
+  type:'radar',
+  data:{labels:['Leselyst','Barn og unge','Digital/teknologi','Forskningsstøtte','Møteplass','Eldre'],
+    datasets:[
+      {label:'Små folkebibliotek', data:[62,77,52,5,38,15], borderColor:C.gold, backgroundColor:'rgba(217,164,65,.15)'},
+      {label:'Store folkebibliotek', data:[46,74,58,5,37,12], borderColor:C.teal, backgroundColor:'rgba(13,92,99,.12)'},
+      {label:'Fylkesbibliotek', data:[48,51,64,11,37,8], borderColor:C.green, backgroundColor:'rgba(91,140,90,.12)'},
+      {label:'UH-bibliotek', data:[9,15,82,65,13,5], borderColor:C.rust, backgroundColor:'rgba(192,83,62,.12)'}
+    ]},
+  options:{responsive:true, scales:{r:{beginAtZero:true, max:90, ticks:{display:false}}},
+    plugins:{legend:{position:'bottom'}}}
+});
+
+// --- Innsatsområder ---
+const inn = [
+  ['Nye samarbeidsformer og partnerskap',141,300],
+  ['Nye formidlingsmetoder',103,200],
+  ['Utvikling av nye bibliotektjenester',100,350],
+  ['Biblioteket som møteplass',91,100],
+  ['Forprosjekt',47,150],
+  ['Fritt forsøk',39,350],
+  ['FNs bærekraftsmål og bibliotek',32,450],
+  ['Biblioteket som læringsarena',24,185],
+  ['Mangfold og inkludering',24,200],
+  ['Åpen tilgang, åpne data, åpen vitenskap',15,800],
+  ['Digitale tjenester',11,305],
+  ['Demokrati og ytringsfrihet',10,450],
+  ['Leselyst og lesefremming',8,300],
+  ['Samarbeid med Nasjonalbiblioteket',4,635]
+];
+new Chart(document.getElementById('chInnsats'), {
+  type:'bar',
+  data:{labels:inn.map(r=>r[0]), datasets:[
+    {label:'Antall prosjekter', data:inn.map(r=>r[1]), backgroundColor:C.teal, xAxisID:'x'},
+    {label:'Mediantilskudd (1000 kr)', data:inn.map(r=>r[2]), backgroundColor:C.gold, xAxisID:'x2'}
+  ]},
+  options:{indexAxis:'y', responsive:true, maintainAspectRatio:false,
+    scales:{x:{position:'top', title:{display:true,text:'Antall'}},
+      x2:{position:'bottom', grid:{drawOnChartArea:false}, title:{display:true,text:'Median, 1000 kr'}}}}
+});
+document.getElementById('chInnsats').parentElement.style.height='520px';
+</script>
+</body>
+</html>
