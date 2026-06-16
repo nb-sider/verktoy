@@ -16,7 +16,1285 @@
 
   <link rel="preconnect" href="https://www.nb.no">
   <link rel="preconnect" href="https://api.nb.no">
-  <link rel="stylesheet" href="nb-framework/css/nb-all.css">
+  <!-- NB Framework (tokens + rammeverk) bakt inn, så siden er selvstendig -->
+  <style>
+/**
+ * NB Design System – Design Tokens
+ * Hentet fra NB Design System v.2 (Figma) og nb.no
+ * Kilde: https://www.figma.com/design/0WoFBpiIINXK1Sf6LvXpVp/NB-Design-System-v.2
+ *
+ * Brukes som grunnlag for alle NB-sider.
+ * Importer denne filen FØRST, deretter nb-framework.css
+ */
+
+/* ─────────────────────────────────────────────────────────
+   FONTER
+   Selvhostet på nb.no. Krever at siden kjøres fra nb.no-domenet,
+   eller at fontfilene lastes ned og legges i /assets/fonts/.
+
+   ClearfaceStd  – serifffont til overskrifter (ITC Clearface, Adobe)
+   Bureau Sans   – variabelfont til brødtekst, vekt 300–700 i én fil
+                   (STK Bureau Sans, laget for Nasjonalbiblioteket)
+───────────────────────────────────────────────────────── */
+
+@font-face {
+  font-family: ClearfaceStd;
+  font-style: normal;
+  font-weight: 400;
+  font-display: fallback;           /* Vis fallback-font mens woff2 lastes */
+  src: url("https://www.nb.no/content/themes/theme-block-base/assets/fonts/ClearfaceStd-Regular.woff2")
+       format("woff2");
+}
+
+@font-face {
+  font-family: "Bureau Sans";
+  font-style: normal;
+  font-weight: 300 700;             /* Variabelfont – dekker hele vektspekteret */
+  font-display: fallback;
+  src: url("https://www.nb.no/content/themes/theme-block-base/assets/fonts/STKBureauSansVariableComplete.woff2")
+       format("woff2");
+}
+
+@font-face {
+  font-family: "Bureau Sans";
+  font-style: italic;
+  font-weight: 300 700;
+  font-display: fallback;
+  src: url("https://www.nb.no/content/themes/theme-block-base/assets/fonts/STKBureauSansVariableComplete.woff2")
+       format("woff2");
+  font-variation-settings: "slnt" -9.5;   /* Slant-akse for kursiv */
+}
+
+/*
+  Selvhostet alternativ: last ned fontfilene og plasser dem i /assets/fonts/,
+  og endre src-URL-ene til relative stier, f.eks.:
+    src: url("/assets/fonts/ClearfaceStd-Regular.woff2") format("woff2");
+    src: url("/assets/fonts/STKBureauSansVariableComplete.woff2") format("woff2");
+*/
+
+
+:root {
+
+  /* ─────────────────────────────────────────
+     FARGER – Primær
+  ───────────────────────────────────────── */
+  --nb-color-primary:          #17181B;   /* Nesten svart – primær tekstfarge og mørk bakgrunn */
+  --nb-color-primary-active:   #550029;   /* NB-burgundy – merkefarge, aktive elementer */
+
+  /* ─────────────────────────────────────────
+     FARGER – Sekundær (rosa/rosa-toner)
+  ───────────────────────────────────────── */
+  --nb-color-secondary-400:    #FE91B8;
+  --nb-color-secondary-300:    #FE91B8;
+  --nb-color-secondary-200:    #FDBECA;
+  --nb-color-secondary-100:    #FFEAEA;
+
+  /* ─────────────────────────────────────────
+     FARGER – Tekst
+  ───────────────────────────────────────── */
+  --nb-color-text-primary:     #17181B;   /* Hovedtekst */
+  --nb-color-text-secondary:   #5B5C62;   /* Sekundær tekst, bildetekst */
+  --nb-color-text-inverted:    #FFFFFF;   /* Tekst på mørk bakgrunn */
+
+  /* ─────────────────────────────────────────
+     FARGER – Bakgrunner
+  ───────────────────────────────────────── */
+  --nb-color-bg-page:          #F4F4F4;   /* Sidebackgrunn */
+  --nb-color-bg-elevated:      #FFFFFF;   /* Kort, modal, forhøyde elementer */
+  --nb-color-bg-highlighted:   #E4DFDE;   /* Fremhevet bakgrunn, hero */
+  --nb-color-bg-dark:          #17181B;   /* Mørk bakgrunn (footer) */
+
+  /* ─────────────────────────────────────────
+     FARGER – Nøytrale toner
+  ───────────────────────────────────────── */
+  --nb-color-neutral-300:      #6D6F76;
+  --nb-color-neutral-200:      #919298;
+  --nb-color-neutral-100:      #D4D4D4;
+  --nb-color-neutral-50:       #EFEFEF;
+
+  /* ─────────────────────────────────────────
+     FARGER – Aksentfarger
+  ───────────────────────────────────────── */
+  --nb-color-accent-green:     #93C1B1;   /* Myk grønn aksent */
+  --nb-color-white:            #FFFFFF;
+
+  /* ─────────────────────────────────────────
+     FARGER – System (tilstandsfarger)
+  ───────────────────────────────────────── */
+  --nb-color-error:            #C72A2A;   /* Feil */
+  --nb-color-warning:          #C77F2A;   /* Advarsel */
+  --nb-color-success:          #007435;   /* Suksess */
+  --nb-color-info:             #005A87;   /* Informasjon */
+
+  /* ─────────────────────────────────────────
+     TYPOGRAFI – Skrifttyper
+  ───────────────────────────────────────── */
+  --nb-font-heading:     "ClearfaceStd", Georgia, serif;
+  --nb-font-body:        "Bureau Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --nb-font-mono:        "Courier New", Courier, monospace;
+
+  /* ─────────────────────────────────────────
+     TYPOGRAFI – Størrelser (fluid skala)
+  ───────────────────────────────────────── */
+  --nb-text-xs:          0.75rem;    /*  12px */
+  --nb-text-sm:          0.875rem;   /*  14px */
+  --nb-text-base:        1rem;       /*  16px */
+  --nb-text-md:          1.125rem;   /*  18px */
+  --nb-text-lg:          1.25rem;    /*  20px */
+  --nb-text-xl:          1.5rem;     /*  24px */
+  --nb-text-2xl:         1.875rem;   /*  30px */
+  --nb-text-3xl:         2.25rem;    /*  36px */
+  --nb-text-4xl:         2.625rem;   /*  42px */
+
+  /* ─────────────────────────────────────────
+     TYPOGRAFI – Linjehøyde
+  ───────────────────────────────────────── */
+  --nb-leading-tight:    1.2;
+  --nb-leading-snug:     1.4;
+  --nb-leading-normal:   1.5;
+  --nb-leading-relaxed:  1.7;
+
+  /* ─────────────────────────────────────────
+     TYPOGRAFI – Fontvekter
+  ───────────────────────────────────────── */
+  --nb-font-normal:      400;
+  --nb-font-medium:      500;
+  --nb-font-semibold:    600;
+  --nb-font-bold:        700;
+
+  /* ─────────────────────────────────────────
+     SPACING – Grunnmåleenhet: 8px
+  ───────────────────────────────────────── */
+  --nb-space-1:    0.25rem;   /*  4px */
+  --nb-space-2:    0.5rem;    /*  8px */
+  --nb-space-3:    0.75rem;   /* 12px */
+  --nb-space-4:    1rem;      /* 16px */
+  --nb-space-5:    1.25rem;   /* 20px */
+  --nb-space-6:    1.5rem;    /* 24px */
+  --nb-space-8:    2rem;      /* 32px */
+  --nb-space-10:   2.5rem;    /* 40px */
+  --nb-space-12:   3rem;      /* 48px */
+  --nb-space-16:   4rem;      /* 64px */
+  --nb-space-20:   5rem;      /* 80px */
+  --nb-space-24:   6rem;      /* 96px */
+
+  /* ─────────────────────────────────────────
+     LAYOUT
+  ───────────────────────────────────────── */
+  --nb-max-width:          1280px;
+  --nb-content-width:      768px;
+  --nb-header-height:      96px;   /* Målt på nb.no */
+  --nb-gutter:             clamp(1rem, 4vw, 3rem);
+
+  /* ─────────────────────────────────────────
+     BORDER RADIUS
+  ───────────────────────────────────────── */
+  --nb-radius-sm:    4px;
+  --nb-radius-md:    8px;
+  --nb-radius-lg:    16px;
+  --nb-radius-full:  9999px;
+
+  /* ─────────────────────────────────────────
+     SKYGGER
+  ───────────────────────────────────────── */
+  --nb-shadow-sm:    0 1px 3px rgba(0, 0, 0, 0.08);
+  --nb-shadow-md:    0 4px 12px rgba(0, 0, 0, 0.12);
+  --nb-shadow-lg:    0 8px 24px rgba(0, 0, 0, 0.16);
+
+  /* ─────────────────────────────────────────
+     OVERGANGER / ANIMASJONER
+  ───────────────────────────────────────── */
+  --nb-transition-fast:   150ms ease;
+  --nb-transition-base:   250ms ease;
+  --nb-transition-slow:   400ms ease;
+
+  /* ─────────────────────────────────────────
+     FOKUSRING (UU – WCAG 2.4.7)
+  ───────────────────────────────────────── */
+  --nb-focus-color:        #550029;
+  --nb-focus-outline:      3px solid var(--nb-focus-color);
+  --nb-focus-offset:       3px;
+
+  /* ─────────────────────────────────────────
+     NOISE / TEKSTUR
+     Samme teknikk som nb.no:
+     En ::before pseudo-element med et SVG feTurbulence-støymønster
+     legges oppå bakgrunnsfargen #E4DFDE med opacity 0.4.
+     Brukes med klassen .nb-bg-hero.
+  ───────────────────────────────────────── */
+  --nb-noise-url:     url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIj4KICA8ZmlsdGVyIGlkPSJuIiB4PSIwIiB5PSIwIj4KICAgIDxmZVR1cmJ1bGVuY2UgdHlwZT0iZnJhY3RhbE5vaXNlIiBiYXNlRnJlcXVlbmN5PSIwLjc1IiBudW1PY3RhdmVzPSI0IiBzdGl0Y2hUaWxlcz0ic3RpdGNoIi8+CiAgPC9maWx0ZXI+CiAgPHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbHRlcj0idXJsKCNuKSIgb3BhY2l0eT0iMSIvPgo8L3N2Zz4=");
+  --nb-noise-opacity: 0.4;
+
+  /* ─────────────────────────────────────────
+     Z-INDEKSER
+  ───────────────────────────────────────── */
+  --nb-z-below:      -1;
+  --nb-z-base:        0;
+  --nb-z-above:      10;
+  --nb-z-header:    100;
+  --nb-z-modal:     200;
+  --nb-z-toast:     300;
+}
+
+/* ─────────────────────────────────────────────────────────
+   NATTMODUS (Dark mode – WCAG 1.4.3 kontrast ivaretas)
+───────────────────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --nb-color-text-primary:    #F4F4F4;
+    --nb-color-text-secondary:  #C8C8CC;
+    --nb-color-text-inverted:   #17181B;
+    --nb-color-bg-page:         #17181B;
+    --nb-color-bg-elevated:     #26272B;
+    --nb-color-bg-highlighted:  #33343A;
+    --nb-color-bg-dark:         #0D0E10;
+    --nb-color-primary-active:  #FE91B8;   /* Økt synlighet i mørkt tema */
+    --nb-focus-color:           #FE91B8;
+  }
+}
+
+/**
+ * NB Framework – Basestiler og komponenter
+ * Nasjonalbiblioteket – Web-rammeverk
+ *
+ * Avhenger av nb-tokens.css – importer tokens-filen FØRST.
+ *
+ * Inneholder:
+ *   1. Reset & base
+ *   2. Typografi
+ *   3. Skip-lenke (UU)
+ *   4. Header
+ *   5. Hovednavigasjon (desktop + mobil)
+ *   6. Footer
+ *   7. Layouthjelper
+ *   8. Komponenter (knapper, lenker, kort, varsler)
+ *   9. Skjema
+ *  10. Responsivt
+ */
+
+/* ══════════════════════════════════════════
+   1. RESET & BASE
+   WCAG: 1.3.4 Visningsretning, 1.4.4 Tekststørrelse
+══════════════════════════════════════════ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 100%;                       /* Respekterer brukerens nettleserinnstilling */
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;        /* Forhindrer auto-zoom på mobil */
+  text-size-adjust: 100%;
+}
+
+/* Respekter brukernes bevegelsespreferanser (WCAG 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+body {
+  font-family: var(--nb-font-body);
+  font-size: var(--nb-text-base);
+  line-height: var(--nb-leading-normal);
+  color: var(--nb-color-text-primary);
+  background-color: var(--nb-color-bg-page);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;                               /* Footer dyttes ned til bunnen */
+}
+
+img, video, svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+img {
+  border-radius: 24px;   /* Avrundede hjørner på alle bilder */
+}
+
+/* ══════════════════════════════════════════
+   2. TYPOGRAFI
+   WCAG: 1.4.3 Kontrast, 1.4.4 Tekststørrelse, 1.4.12 Tekstavstand
+══════════════════════════════════════════ */
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--nb-font-heading);
+  font-weight: var(--nb-font-normal);              /* 400 – ClearfaceStd finnes kun i vekt 400 */
+  line-height: var(--nb-leading-tight);
+  color: var(--nb-color-text-primary);
+}
+
+h1 { font-size: clamp(var(--nb-text-3xl), 5vw, var(--nb-text-4xl)); }
+h2 { font-size: clamp(var(--nb-text-2xl), 4vw, var(--nb-text-3xl)); }
+h3 { font-size: clamp(var(--nb-text-xl),  3vw, var(--nb-text-2xl)); }
+h4 { font-size: var(--nb-text-xl); }
+h5 { font-size: var(--nb-text-lg); }
+h6 { font-size: var(--nb-text-md); }
+
+p {
+  max-width: var(--nb-content-width);
+  margin-bottom: var(--nb-space-4);
+}
+
+/* Tekstavstand overstyrbar (WCAG 1.4.12) */
+p, li, dd {
+  line-height: var(--nb-leading-relaxed);
+  letter-spacing: 0.012em;
+  word-spacing: 0.16em;
+}
+
+a {
+  color: var(--nb-color-primary-active);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color var(--nb-transition-fast),
+              text-decoration-color var(--nb-transition-fast);
+}
+
+a:hover {
+  color: var(--nb-color-primary);
+  text-decoration-thickness: 2px;
+}
+
+/* Fokus – alle interaktive elementer (WCAG 2.4.7) */
+:focus-visible {
+  outline: var(--nb-focus-outline);
+  outline-offset: var(--nb-focus-offset);
+  border-radius: var(--nb-radius-sm);
+}
+
+/* Fjern fokusring for mus-brukere */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+ul, ol {
+  padding-left: var(--nb-space-6);
+}
+
+li {
+  margin-bottom: var(--nb-space-2);
+}
+
+strong { font-weight: var(--nb-font-bold); }
+em     { font-style: italic; }
+
+code, kbd, pre {
+  font-family: var(--nb-font-mono);
+  font-size: 0.9em;
+}
+
+pre {
+  overflow-x: auto;
+  padding: var(--nb-space-4);
+  background: var(--nb-color-bg-highlighted);
+  border-radius: var(--nb-radius-md);
+}
+
+
+/* ══════════════════════════════════════════
+   3. SKIP-LENKE (WCAG 2.4.1 – Hoppe over blokker)
+   Gjør det mulig for tastaturbrukere å hoppe til hovedinnhold
+══════════════════════════════════════════ */
+
+.nb-skip-link {
+  position: absolute;
+  top: -100%;
+  left: var(--nb-space-4);
+  z-index: var(--nb-z-toast);
+  padding: var(--nb-space-3) var(--nb-space-6);
+  background: var(--nb-color-primary-active);
+  color: var(--nb-color-white) !important;
+  font-family: var(--nb-font-body);
+  font-size: var(--nb-text-base);
+  font-weight: var(--nb-font-bold);
+  text-decoration: none;
+  border-radius: 0 0 var(--nb-radius-md) var(--nb-radius-md);
+  transition: top var(--nb-transition-fast);
+}
+
+.nb-skip-link:focus {
+  top: 0;
+  outline: var(--nb-focus-outline);
+  outline-offset: 0;
+}
+
+
+/* ══════════════════════════════════════════
+   BAKGRUNN MED NOISE-TEKSTUR
+   Samme teknikk som nb.no: farge #E4DFDE +
+   et ::before pseudo-element med SVG feTurbulence-støy i 40% opacity.
+   Brukes på header-inner og footer, akkurat som på nb.no.
+══════════════════════════════════════════ */
+
+.nb-bg-hero {
+  position: relative;                        /* Nødvendig for at ::before skal plasseres riktig */
+  background-color: var(--nb-color-bg-highlighted);   /* #E4DFDE */
+}
+
+.nb-bg-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;                                  /* top/right/bottom/left: 0 */
+  background-image: var(--nb-noise-url);
+  background-repeat: repeat;
+  background-size: 200px 200px;              /* Matcher SVG-størrelsen */
+  opacity: var(--nb-noise-opacity);          /* 0.4 – subtil, som nb.no */
+  pointer-events: none;                      /* Ikke interferer med klikk */
+  z-index: 0;
+}
+
+/* Alt innhold inni .nb-bg-hero legges over noise-laget */
+.nb-bg-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Mørk bakgrunn-variant (footer) */
+.nb-bg-dark-noise {
+  position: relative;
+  background-color: var(--nb-color-bg-dark);
+}
+
+.nb-bg-dark-noise::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--nb-noise-url);
+  background-repeat: repeat;
+  background-size: 200px 200px;
+  opacity: 0.15;                             /* Mer subtil på mørk bakgrunn */
+  pointer-events: none;
+  z-index: 0;
+}
+
+.nb-bg-dark-noise > * {
+  position: relative;
+  z-index: 1;
+}
+
+
+/* ══════════════════════════════════════════
+   4. HEADER
+   WCAG: 1.3.1 Informasjon og relasjoner, 4.1.2 Navn/rolle/verdi
+══════════════════════════════════════════ */
+
+.nb-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--nb-z-header);
+  /* Bakgrunn og noise kommer fra .nb-bg-hero på samme element */
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: var(--nb-shadow-sm);
+  /* Full bredde: ingen max-width her – begrensningen ligger i __inner */
+  width: 100%;
+}
+
+.nb-header__inner {
+  display: flex;
+  align-items: center;
+  gap: var(--nb-space-6);
+  max-width: var(--nb-max-width);
+  margin: 0 auto;
+  padding: 0 var(--nb-gutter);
+  height: var(--nb-header-height);
+  /* Innholdet legger seg over noise-laget (z-index fra .nb-bg-hero > *) */
+}
+
+/* Logo */
+.nb-header__logo {
+  display: flex;
+  align-items: center;
+  gap: var(--nb-space-3);
+  text-decoration: none;
+  color: var(--nb-color-text-primary);             /* #17181B – som nb.no */
+  flex-shrink: 0;
+}
+
+.nb-header__logo svg {
+  width: 20px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.nb-header__logo-text {
+  /* Visuell tekst – ikke skjules (WCAG 1.3.1) */
+  white-space: nowrap;
+  font-family: var(--nb-font-body);                /* Bureau Sans */
+  font-size: var(--nb-text-md);                    /* 18px */
+  font-weight: var(--nb-font-medium);              /* 500 */
+}
+
+/* Toppnavigasjon – snarveier */
+.nb-header__topnav {
+  display: flex;
+  align-items: center;
+  gap: var(--nb-space-2);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  margin-left: auto;
+}
+
+.nb-header__topnav a {
+  font-size: var(--nb-text-sm);
+  color: var(--nb-color-text-secondary);
+  text-decoration: none;
+  padding: var(--nb-space-1) var(--nb-space-3);
+  border-radius: var(--nb-radius-full);
+  transition: background-color var(--nb-transition-fast), color var(--nb-transition-fast);
+}
+
+.nb-header__topnav a:hover {
+  background-color: var(--nb-color-bg-highlighted);
+  color: var(--nb-color-text-primary);
+}
+
+/* Menyknapp (mobil) */
+.nb-header__menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: var(--nb-space-2);
+  padding: var(--nb-space-2) var(--nb-space-3);
+  background: none;
+  border: 1.5px solid var(--nb-color-neutral-100);
+  border-radius: var(--nb-radius-md);
+  cursor: pointer;
+  font-family: var(--nb-font-body);
+  font-size: var(--nb-text-sm);
+  color: var(--nb-color-text-primary);
+  transition: background-color var(--nb-transition-fast);
+}
+
+.nb-header__menu-btn:hover {
+  background-color: var(--nb-color-bg-highlighted);
+}
+
+.nb-header__menu-icon {
+  width: 20px;
+  height: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.nb-header__menu-icon span {
+  display: block;
+  height: 2px;
+  background-color: currentColor;
+  border-radius: 2px;
+  transition: transform var(--nb-transition-base), opacity var(--nb-transition-base);
+}
+
+/* Åpen meny-tilstand */
+.nb-header__menu-btn[aria-expanded="true"] .nb-header__menu-icon span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+.nb-header__menu-btn[aria-expanded="true"] .nb-header__menu-icon span:nth-child(2) {
+  opacity: 0;
+}
+.nb-header__menu-btn[aria-expanded="true"] .nb-header__menu-icon span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+
+/* ══════════════════════════════════════════
+   5. NAVIGASJON
+   WCAG: 2.4.1, 2.4.3, 2.4.5, 3.2.3 Konsekvent navigering
+══════════════════════════════════════════ */
+
+.nb-nav {
+  border-top: 1px solid var(--nb-color-neutral-50);
+  background-color: var(--nb-color-bg-elevated);
+}
+
+.nb-nav__inner {
+  max-width: var(--nb-max-width);
+  margin: 0 auto;
+  padding: 0 var(--nb-gutter);
+}
+
+.nb-nav__list {
+  display: flex;
+  flex-wrap: wrap;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  gap: 0;
+}
+
+.nb-nav__link {
+  display: block;
+  padding: var(--nb-space-4) var(--nb-space-4);
+  font-size: var(--nb-text-sm);
+  font-weight: var(--nb-font-medium);
+  color: var(--nb-color-text-primary);
+  text-decoration: none;
+  position: relative;
+  transition: color var(--nb-transition-fast);
+  white-space: nowrap;
+}
+
+.nb-nav__link::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: var(--nb-space-4);
+  right: var(--nb-space-4);
+  height: 3px;
+  background-color: var(--nb-color-primary-active);
+  transform: scaleX(0);
+  transition: transform var(--nb-transition-fast);
+  border-radius: var(--nb-radius-full) var(--nb-radius-full) 0 0;
+}
+
+.nb-nav__link:hover,
+.nb-nav__link[aria-current="page"] {
+  color: var(--nb-color-primary-active);
+}
+
+.nb-nav__link:hover::after,
+.nb-nav__link[aria-current="page"]::after {
+  transform: scaleX(1);
+}
+
+
+/* ══════════════════════════════════════════
+   6. FOOTER
+   WCAG: 1.3.1, 2.4.2 Sidetitler, 3.1.1 Språk
+══════════════════════════════════════════ */
+
+.nb-footer {
+  /* Bakgrunn og noise fra .nb-bg-hero – samme farge som header (#E4DFDE) */
+  color: var(--nb-color-text-primary);
+  margin-top: auto;
+  /* Avrundede topp-hjørner – 64px matcher nb.no */
+  border-radius: 64px 64px 0 0;
+  overflow: hidden;           /* Klipper noise-laget til avrundet form */
+  /* Subtil kant oppover for å løfte footeren fra innholdet */
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
+}
+
+/*
+  Footer-typografi – eksakt målt fra nb.no:
+  H2:    18px / weight 500 / line-height 21.6px (1.2) / Bureau Sans
+  P, LI: 18px / weight 400 / line-height 27px   (1.5) / Bureau Sans
+  Farge overalt: #17181B
+  Seksjonsgap: margin-top 48px på h2 nr. 2+
+  «Les mer»-lenke: margin-top 16px
+*/
+
+/* Alle lenker i footer */
+.nb-footer a {
+  color: var(--nb-color-text-primary);
+  text-underline-offset: 3px;
+}
+
+.nb-footer a:hover {
+  color: var(--nb-color-primary-active);
+  text-decoration-thickness: 2px;
+}
+
+.nb-footer__main {
+  max-width: var(--nb-max-width);
+  margin: 0 auto;
+  padding: 0 var(--nb-gutter);
+  display: flex;
+  align-items: flex-start;
+  gap: 32px;
+}
+
+/* Hver kolonne */
+.nb-footer__main > div {
+  flex: 1;
+  padding-top: 64px;
+  padding-bottom: 64px;
+  /* Tilbakestill alt fra globale h-regler inne i footerkolonner */
+  font-family: var(--nb-font-body);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.5;                                /* 27px – brødtekst */
+  color: var(--nb-color-text-primary);
+}
+
+/* Overskrifter i footer: weight 500, line-height 1.2 */
+/* Høy spesifisitet (.nb-footer__main > div h2) overgår global h2-regel */
+.nb-footer__main > div h2,
+.nb-footer__section-title {
+  font-family: var(--nb-font-body);                /* Bureau Sans – ikke ClearfaceStd */
+  font-size: 18px;                                 /* Eksplisitt – ikke clamp() */
+  font-weight: 500;
+  line-height: 1.2;                                /* 21.6px */
+  color: var(--nb-color-text-primary);
+  text-transform: none;
+  letter-spacing: normal;
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+/* Brødtekst i footer */
+.nb-footer__text {
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--nb-color-text-primary);
+  margin: 0;
+}
+
+.nb-footer__links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nb-footer__links a {
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--nb-color-text-primary);
+}
+
+/* Sosiale medier – ikon + tekstlabel side om side, som nb.no */
+.nb-footer__social {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: flex;
+  flex-direction: row;
+  gap: 16px;                                       /* 16px – som nb.no */
+}
+
+.nb-footer__social a {
+  display: flex;
+  align-items: center;
+  gap: 8px;                                        /* 8px mellom ikon og tekst */
+  color: var(--nb-color-text-primary);
+  text-decoration: none;
+  font-size: inherit;
+  font-weight: inherit;
+  transition: color var(--nb-transition-fast);
+}
+
+.nb-footer__social a svg {
+  flex-shrink: 0;
+  fill: currentColor;
+}
+
+.nb-footer__social a:hover {
+  color: var(--nb-color-primary-active);
+}
+
+/* Footer bunn-rad */
+.nb-footer__bottom {
+  border-top: 1px solid rgba(23, 24, 27, 0.12);
+  max-width: var(--nb-max-width);
+  margin: 0 auto;
+  padding: var(--nb-space-6) var(--nb-gutter);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--nb-space-4);
+  font-size: var(--nb-text-sm);                    /* Litt mindre i bunn-raden */
+  color: var(--nb-color-text-primary);
+}
+
+.nb-footer__bottom-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nb-space-4);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.nb-footer__bottom-links a {
+  font-size: inherit;
+  color: var(--nb-color-text-primary);
+}
+
+/* "Spør biblioteket" - flytende knapp */
+.nb-footer__ask-btn {
+  position: fixed;
+  bottom: var(--nb-space-6);
+  right: var(--nb-space-6);
+  z-index: var(--nb-z-above);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nb-space-2);
+  padding: var(--nb-space-3) var(--nb-space-5);
+  background-color: var(--nb-color-primary-active);
+  color: var(--nb-color-white);
+  text-decoration: none;
+  font-family: var(--nb-font-body);
+  font-size: var(--nb-text-sm);
+  font-weight: var(--nb-font-bold);
+  border-radius: var(--nb-radius-full);
+  box-shadow: var(--nb-shadow-lg);
+  transition: background-color var(--nb-transition-fast), transform var(--nb-transition-fast);
+}
+
+.nb-footer__ask-btn:hover {
+  background-color: var(--nb-color-primary);
+  color: var(--nb-color-white);
+  transform: translateY(-2px);
+}
+
+
+/* ══════════════════════════════════════════
+   7. LAYOUT-HJELPERE
+══════════════════════════════════════════ */
+
+.nb-container {
+  max-width: var(--nb-max-width);
+  margin: 0 auto;
+  padding: 0 var(--nb-gutter);
+}
+
+.nb-content {
+  max-width: var(--nb-content-width);
+  margin: 0 auto;
+  padding: 0 var(--nb-gutter);
+}
+
+.nb-section {
+  padding: var(--nb-space-16) 0;
+}
+
+.nb-section--sm { padding: var(--nb-space-8) 0; }
+.nb-section--lg { padding: var(--nb-space-24) 0; }
+
+/* CSS Grid-hjelper */
+.nb-grid {
+  display: grid;
+  gap: var(--nb-space-6);
+}
+
+.nb-grid--2col { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.nb-grid--3col { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.nb-grid--4col { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+
+
+/* ══════════════════════════════════════════
+   8. KOMPONENTER
+══════════════════════════════════════════ */
+
+/* ── Knapper ─────────────────────────────
+   WCAG: 4.1.2 Navn/rolle/verdi, 2.1.1 Tastatur
+───────────────────────────────────────── */
+.nb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--nb-space-2);
+  padding: var(--nb-space-3) var(--nb-space-6);
+  font-family: var(--nb-font-body);
+  font-size: var(--nb-text-base);
+  font-weight: var(--nb-font-bold);
+  line-height: 1.2;
+  text-decoration: none;
+  border: 2px solid transparent;
+  border-radius: var(--nb-radius-md);
+  cursor: pointer;
+  transition: background-color var(--nb-transition-fast),
+              color var(--nb-transition-fast),
+              border-color var(--nb-transition-fast),
+              transform var(--nb-transition-fast);
+  min-height: 44px;                      /* WCAG 2.5.5: Min trykk-areal 44×44px */
+  min-width: 44px;
+}
+
+.nb-btn:active {
+  transform: translateY(1px);
+}
+
+/* Primær knapp */
+.nb-btn--primary {
+  background-color: var(--nb-color-primary-active);
+  color: var(--nb-color-white);
+  border-color: var(--nb-color-primary-active);
+}
+
+.nb-btn--primary:hover {
+  background-color: var(--nb-color-primary);
+  border-color: var(--nb-color-primary);
+  color: var(--nb-color-white);
+}
+
+/* Sekundær knapp */
+.nb-btn--secondary {
+  background-color: transparent;
+  color: var(--nb-color-primary-active);
+  border-color: var(--nb-color-primary-active);
+}
+
+.nb-btn--secondary:hover {
+  background-color: var(--nb-color-secondary-100);
+  color: var(--nb-color-primary);
+}
+
+/* Ghost / tertiær */
+.nb-btn--ghost {
+  background-color: transparent;
+  color: var(--nb-color-text-primary);
+  border-color: var(--nb-color-neutral-100);
+}
+
+.nb-btn--ghost:hover {
+  background-color: var(--nb-color-bg-highlighted);
+}
+
+/* ── Kort ────────────────────────────────  */
+.nb-card {
+  background-color: var(--nb-color-bg-elevated);
+  border-radius: 24px;   /* Avrundede hjørner på alle kort */
+  box-shadow: var(--nb-shadow-sm);
+  overflow: hidden;
+  transition: box-shadow var(--nb-transition-fast), transform var(--nb-transition-fast);
+}
+
+.nb-card:hover {
+  box-shadow: var(--nb-shadow-md);
+  transform: translateY(-2px);
+}
+
+.nb-card__body {
+  padding: var(--nb-space-6);
+}
+
+.nb-card__title {
+  font-size: var(--nb-text-xl);
+  margin-bottom: var(--nb-space-3);
+}
+
+.nb-card__meta {
+  font-size: var(--nb-text-sm);
+  color: var(--nb-color-text-secondary);
+  margin-bottom: var(--nb-space-3);
+}
+
+/* ── Varsler / Alert ────────────────────
+   WCAG: 4.1.3 Statusbeskjeder, 1.4.1 Farge
+───────────────────────────────────────── */
+.nb-alert {
+  display: flex;
+  gap: var(--nb-space-3);
+  padding: var(--nb-space-4) var(--nb-space-5);
+  border-radius: var(--nb-radius-md);
+  border-left: 4px solid;
+  font-size: var(--nb-text-sm);
+}
+
+/* Role="alert" for dynamiske varsler – brukes i JS */
+.nb-alert--error   { background: #FDF2F2; border-color: var(--nb-color-error);   color: #7B1818; }
+.nb-alert--warning { background: #FDF6EE; border-color: var(--nb-color-warning); color: #7B4B18; }
+.nb-alert--success { background: #F0F8F3; border-color: var(--nb-color-success); color: #0A4A25; }
+.nb-alert--info    { background: #EEF4FA; border-color: var(--nb-color-info);    color: #0A3558; }
+
+/* ── Breadcrumb ────────────────────────
+   WCAG: 2.4.8, 3.2.3 Konsekvent navigering
+───────────────────────────────────────── */
+.nb-breadcrumb {
+  padding: var(--nb-space-4) 0;
+}
+
+.nb-breadcrumb__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nb-space-1);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: var(--nb-text-sm);
+  color: var(--nb-color-text-secondary);
+}
+
+.nb-breadcrumb__item + .nb-breadcrumb__item::before {
+  content: "/";
+  margin-right: var(--nb-space-1);
+  color: var(--nb-color-neutral-200);
+  aria-hidden: true;
+}
+
+.nb-breadcrumb__link {
+  color: var(--nb-color-text-secondary);
+}
+
+.nb-breadcrumb__link:hover {
+  color: var(--nb-color-primary-active);
+}
+
+.nb-breadcrumb__current {
+  color: var(--nb-color-text-primary);
+  font-weight: var(--nb-font-medium);
+}
+
+
+/* ══════════════════════════════════════════
+   9. SKJEMA
+   WCAG: 1.3.5, 3.3.1, 3.3.2 Ledetekster, 3.3.3 Forslag ved feil
+══════════════════════════════════════════ */
+
+.nb-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nb-space-2);
+  margin-bottom: var(--nb-space-5);
+}
+
+.nb-label {
+  font-size: var(--nb-text-sm);
+  font-weight: var(--nb-font-semibold);
+  color: var(--nb-color-text-primary);
+}
+
+.nb-label--required::after {
+  content: " *";
+  color: var(--nb-color-error);
+  aria-hidden: true;          /* Stjerne er visuell – aria-required="true" brukes på input */
+}
+
+.nb-input,
+.nb-select,
+.nb-textarea {
+  width: 100%;
+  padding: var(--nb-space-3) var(--nb-space-4);
+  font-family: var(--nb-font-body);
+  font-size: var(--nb-text-base);
+  color: var(--nb-color-text-primary);
+  background-color: var(--nb-color-bg-elevated);
+  border: 1.5px solid var(--nb-color-neutral-200);
+  border-radius: var(--nb-radius-md);
+  transition: border-color var(--nb-transition-fast);
+  min-height: 44px;
+}
+
+.nb-input:hover,
+.nb-select:hover,
+.nb-textarea:hover {
+  border-color: var(--nb-color-neutral-300);
+}
+
+.nb-input:focus,
+.nb-select:focus,
+.nb-textarea:focus {
+  outline: var(--nb-focus-outline);
+  outline-offset: var(--nb-focus-offset);
+  border-color: var(--nb-color-primary-active);
+}
+
+.nb-input[aria-invalid="true"],
+.nb-select[aria-invalid="true"],
+.nb-textarea[aria-invalid="true"] {
+  border-color: var(--nb-color-error);
+}
+
+.nb-hint {
+  font-size: var(--nb-text-sm);
+  color: var(--nb-color-text-secondary);
+}
+
+.nb-error-msg {
+  font-size: var(--nb-text-sm);
+  color: var(--nb-color-error);
+  font-weight: var(--nb-font-medium);
+  display: flex;
+  align-items: center;
+  gap: var(--nb-space-1);
+}
+
+/* Søkefelt */
+.nb-search {
+  display: flex;
+  align-items: center;
+  background-color: var(--nb-color-bg-elevated);
+  border: 1.5px solid var(--nb-color-neutral-200);
+  border-radius: var(--nb-radius-full);
+  overflow: hidden;
+  max-width: 480px;
+  transition: border-color var(--nb-transition-fast), box-shadow var(--nb-transition-fast);
+}
+
+.nb-search:focus-within {
+  border-color: var(--nb-color-primary-active);
+  box-shadow: 0 0 0 3px rgba(85, 0, 41, 0.15);
+  outline: none;
+}
+
+.nb-search__input {
+  flex: 1;
+  padding: var(--nb-space-3) var(--nb-space-4);
+  font-family: var(--nb-font-body);
+  font-size: var(--nb-text-base);
+  color: var(--nb-color-text-primary);
+  background: transparent;
+  border: none;
+  outline: none;
+  min-height: 44px;
+}
+
+.nb-search__btn {
+  padding: var(--nb-space-2) var(--nb-space-4);
+  background: var(--nb-color-primary-active);
+  color: var(--nb-color-white);
+  border: none;
+  cursor: pointer;
+  font-size: var(--nb-text-base);
+  min-height: 44px;
+  min-width: 44px;
+  transition: background-color var(--nb-transition-fast);
+}
+
+.nb-search__btn:hover {
+  background-color: var(--nb-color-primary);
+}
+
+
+/* ══════════════════════════════════════════
+   10. RESPONSIVT
+   WCAG: 1.3.4 Visningsretning, 1.4.10 Dynamisk tilpasning (Reflow)
+══════════════════════════════════════════ */
+
+/* Tablet og mobil: 768px og ned */
+@media (max-width: 768px) {
+
+  .nb-header__topnav {
+    display: none;                 /* Skjules på mobil */
+  }
+
+  .nb-header__menu-btn {
+    display: flex;
+    margin-left: auto;
+  }
+
+  /* Navigasjon – trekkspillmeny på mobil */
+  .nb-nav {
+    display: none;
+    border-top: none;
+    box-shadow: var(--nb-shadow-md);
+  }
+
+  .nb-nav.nb-nav--open {
+    display: block;
+  }
+
+  .nb-nav__list {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .nb-nav__link {
+    border-bottom: 1px solid var(--nb-color-neutral-50);
+    padding: var(--nb-space-4) var(--nb-gutter);
+  }
+
+  .nb-nav__link::after {
+    display: none;
+  }
+
+  .nb-footer__main {
+    flex-direction: column;
+    gap: 0;
+    padding: 0 var(--nb-gutter);
+  }
+
+  .nb-footer__main > div {
+    padding-top: var(--nb-space-10);
+    padding-bottom: var(--nb-space-10);
+    border-bottom: 1px solid rgba(23, 24, 27, 0.08);
+  }
+
+  .nb-footer__main > div:last-child {
+    border-bottom: none;
+  }
+
+  .nb-footer__bottom {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--nb-space-4);
+  }
+
+  .nb-footer__ask-btn {
+    bottom: var(--nb-space-4);
+    right: var(--nb-space-4);
+  }
+}
+
+/* Støtte for økt tekststørrelse (WCAG 1.4.4, 1.4.10) */
+@media (min-width: 1280px) {
+  .nb-header__inner {
+    padding: 0 var(--nb-space-8);
+  }
+}
+
+/* Utskrift */
+@media print {
+  .nb-header,
+  .nb-footer,
+  .nb-skip-link,
+  .nb-footer__ask-btn,
+  .nb-header__menu-btn {
+    display: none !important;
+  }
+
+  body {
+    font-size: 12pt;
+    color: #000;
+    background: #fff;
+  }
+
+  a::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #666;
+  }
+}
+
+
+/* ══════════════════════════════════════════
+   UTILITY – Universell utforming
+══════════════════════════════════════════ */
+
+/* Skjult for synlige brukere, men lesbart av skjermlesere (WCAG 1.1.1, 4.1.2) */
+.nb-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Ikke-tekstlig innhold med beskrivelse (WCAG 1.1.1) */
+[role="img"][aria-label] { /* Bruk: <div role="img" aria-label="Beskrivelse"> */ }
+
+/* Ikoner som er dekorative – skjules for AT (WCAG 1.1.1) */
+.nb-icon-decorative {
+  aria-hidden: true;
+  focusable: false;
+}
+
+  </style>
 
   <style>
     /* Sidespesifikke tillegg – bygger på nb-framework-tokens */
@@ -615,7 +1893,10 @@
       }
 
       function csvCell(v) {
-        const s = String(v == null ? '' : v);
+        let s = String(v == null ? '' : v);
+        // Hindre formel-/CSV-injeksjon: celler som starter med = + - @ (eller
+        // tab/CR) kan kjøres som formel i Excel/Sheets. Prefiks med apostrof.
+        if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
         return /[";\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
       }
 
