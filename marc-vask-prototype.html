@@ -3,143 +3,239 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MARC-vask for Tibi – prototype</title>
+<!-- Sikkerhet: blokkerer all scriptet nettverkstrafikk (fetch/XHR/WebSocket/beacon).
+     Verktøyet gjør ingen slike kall – posten forblir lokalt i nettleseren. -->
+<meta http-equiv="Content-Security-Policy" content="connect-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="description" content="Internt verktøy som vasker en kopiert MARC-post til Tibi-format, klar for «Lim inn post» i M2-int. Kjører lokalt i nettleseren – ingen data sendes over nett.">
+<meta name="theme-color" content="#550029">
+<title>MARC-vask for Tibi | Nasjonalbiblioteket</title>
+<link rel="preconnect" href="https://www.nb.no">
+<link rel="stylesheet" href="nb-framework/css/nb-all.css">
 <style>
-  :root {
-    --tibi-blå: #1a4d6e;
-    --grønn: #2e7d32;
-    --rød: #c62828;
-    --gul: #f9a825;
-    --grå: #f4f5f7;
-  }
-  * { box-sizing: border-box; }
-  body {
-    font-family: "Segoe UI", system-ui, sans-serif;
-    margin: 0;
-    background: var(--grå);
-    color: #222;
-  }
-  header {
-    background: var(--tibi-blå);
-    color: #fff;
-    padding: 16px 24px;
-  }
-  header h1 { margin: 0; font-size: 1.3rem; font-weight: 600; }
-  header p { margin: 4px 0 0; opacity: .85; font-size: .85rem; }
-  main {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px 24px 40px;
-  }
-  .kolonner {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
+  /* Verktøy-spesifikk stil – bygger på NB Framework (nb-tokens/nb-framework). */
+  .verktoy { max-width: var(--nb-max-width, 1280px); margin: 0 auto; padding: var(--nb-space-8, 2rem) var(--nb-gutter, 1.5rem); }
+  .verktoy h1 { margin: 0 0 .25rem; }
+  .verktoy .ingress { color: var(--nb-color-text-secondary, #4a4a4a); margin: 0 0 1.5rem; max-width: 70ch; }
+
+  .kolonner { display: grid; grid-template-columns: 1fr 1fr; gap: var(--nb-space-6, 1.5rem); }
   @media (max-width: 900px) { .kolonner { grid-template-columns: 1fr; } }
+
   .panel {
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,.12);
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
+    background: var(--nb-color-bg-surface, #fff);
+    border: 1px solid var(--nb-color-border, #d8d2d1);
+    border-radius: 16px; padding: var(--nb-space-4, 1rem);
+    display: flex; flex-direction: column;
   }
-  .panel h2 { margin: 0 0 8px; font-size: 1rem; color: var(--tibi-blå); }
-  textarea {
-    width: 100%;
-    min-height: 340px;
-    font-family: "Consolas", "Menlo", monospace;
-    font-size: .85rem;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    padding: 10px;
-    resize: vertical;
-    white-space: pre;
+  /* Felles utseende på alle seksjonstitler (summary / boks-overskrifter) */
+  .oria-seksjon > summary,
+  .verktoy h2 {
+    font-family: system-ui, "Segoe UI", Arial, sans-serif;
+    font-size: 1.05rem; font-weight: 700; line-height: 1.3;
+    color: var(--nb-color-text-primary, #17181B);
+    margin: 0 0 .85rem;
   }
-  textarea:focus { outline: 2px solid var(--tibi-blå); }
-  .knapperad { margin: 16px 0; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-  button {
-    font-size: .95rem;
-    padding: 10px 22px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
+
+  textarea.kode {
+    width: 100%; min-height: 340px;
+    font-family: "Consolas", "Menlo", ui-monospace, monospace;
+    font-size: .85rem; border: 1px solid var(--nb-color-border, #b9b1b0);
+    border-radius: 8px; padding: 10px; resize: vertical; white-space: pre;
+    color: var(--nb-color-text-primary, #17181B); background: #fff;
   }
-  #vaskBtn { background: var(--tibi-blå); color: #fff; }
-  #vaskBtn:hover { background: #143c57; }
-  .sekundær { background: #e0e3e8; color: #222; font-weight: 500; }
-  .sekundær:hover { background: #d2d6dd; }
-  #kopierBtn.kopiert { background: var(--grønn); color: #fff; }
+
+  .knapperad { margin: var(--nb-space-6, 1.5rem) 0; display: flex; gap: .625rem; flex-wrap: wrap; align-items: center; }
+
   fieldset {
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    margin: 0 0 16px;
-    padding: 10px 14px;
-    background: #fff;
+    border: 1px solid var(--nb-color-border, #d8d2d1);
+    border-radius: 16px; margin: 0 0 1rem; padding: 1rem;
+    background: var(--nb-color-bg-surface, #fff);
   }
-  fieldset legend { font-size: .85rem; font-weight: 600; color: var(--tibi-blå); padding: 0 6px; }
-  fieldset label { display: block; font-size: .85rem; margin: 4px 0; cursor: pointer; }
+  fieldset label { display: block; font-size: .9rem; margin: 6px 0 6px 8px; cursor: pointer; }
+  fieldset select { margin-left: .5rem; }
+  .regelgruppe { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #595959; margin: 14px 0 2px; }
+  .regelgruppe:first-of-type { margin-top: 4px; }
+  .hjelp { font-size: .8rem; color: #595959; margin: 6px 0 0; }
+
   #logg { list-style: none; padding: 0; margin: 8px 0 0; font-size: .85rem; }
-  #logg li { padding: 5px 8px; border-left: 4px solid #ccc; margin-bottom: 4px; background: #fafafa; border-radius: 0 4px 4px 0; }
-  #logg li.slettet { border-color: var(--rød); }
-  #logg li.endret { border-color: var(--gul); }
-  #logg li.opprettet { border-color: var(--grønn); }
-  #logg li.advarsel { border-color: var(--rød); background: #fdecea; font-weight: 600; }
-  #logg code { background: #eef1f4; padding: 1px 4px; border-radius: 3px; }
-  .fotnote { font-size: .78rem; color: #666; margin-top: 14px; line-height: 1.5; }
+  #logg li { padding: 6px 10px; border-left: 4px solid #ccc; margin-bottom: 4px; background: #faf8f8; border-radius: 0 6px 6px 0; }
+  #logg li.slettet { border-color: #c62828; }
+  #logg li.endret { border-color: #b06a00; }
+  #logg li.opprettet { border-color: #2e7d32; }
+  #logg li.advarsel { border-color: #c62828; background: #fdecea; font-weight: 600; }
+  #logg code, .verktoy code { background: #efeae9; padding: 1px 4px; border-radius: 4px; font-size: .92em; }
+
+  code { font-family: "Consolas", "Menlo", ui-monospace, monospace; }
+
+  /* Oria-uttrekk – kollapsbar seksjon med innebygd verktøy */
+  .oria-seksjon {
+    border: 1px solid var(--nb-color-border, #d8d2d1);
+    border-radius: 16px; background: var(--nb-color-bg-surface, #fff);
+    margin-bottom: 1rem; overflow: hidden;
+  }
+  .oria-seksjon > summary {
+    cursor: pointer; padding: 1rem; margin: 0;
+    list-style: none; display: flex; align-items: center; gap: .5rem;
+  }
+  .oria-seksjon > summary::-webkit-details-marker { display: none; }
+  .oria-seksjon > summary::before { content: "▸"; color: var(--nb-color-primary-active, #550029); }
+  .oria-seksjon[open] > summary::before { content: "▾"; }
+  .oria-seksjon > summary .summary-hjelp { font-weight: 400; font-size: .82rem; color: #595959; margin-left: auto; }
+  .oria-body { padding: 0 1rem 1rem; }
+  .oria-iframe {
+    width: 100%; height: 210px; border: 1px solid var(--nb-color-border, #d8d2d1);
+    border-radius: 10px; background: #f4f2ed; display: block;
+    transition: height .2s ease;
+  }
+
+  /* Footer: tre spalter justert på samme linje */
+  .nb-footer__main { align-items: center; }
+  .nb-footer__main h2,
+  .nb-footer__main p,
+  .nb-footer__main ul { margin: 0; }
+  .nb-footer__main ul { padding: 0; list-style: none; }
 </style>
 </head>
 <body>
 
-<header>
-  <h1>MARC-vask for Tibi <span style="font-weight:300">· prototype</span></h1>
-  <p>Lim inn en kopiert MARC-post (fra Eksternbasen, Oria e.l.) – få ut en Tibi-tilpasset post klar for «Lim inn post» i M2-int.</p>
+<a href="#main-content" class="nb-skip-link">Hopp til hovedinnholdet</a>
+
+<header class="nb-header nb-bg-hero" role="banner">
+  <div class="nb-header__inner">
+    <a href="https://www.nb.no/" class="nb-header__logo"
+       aria-label="Nasjonalbiblioteket – gå til forsiden">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 26" height="26" width="20"
+           aria-hidden="true" focusable="false">
+        <path d="M1.33333 7.49151C2.06971 7.49151 2.66666 6.89962 2.66666 6.16948C2.66666 5.43934 2.06971 4.84744 1.33333 4.84744C0.596953 4.84744 0 5.43934 0 6.16948C0 6.89962 0.596953 7.49151 1.33333 7.49151Z" fill="currentColor"/>
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M20 0H4.44448V21.5932H20V0ZM15.1111 6.16948C15.1111 6.8996 14.5142 7.4915 13.7778 7.4915C13.0414 7.4915 12.4444 6.8996 12.4444 6.16948C12.4444 5.43935 13.0414 4.84746 13.7778 4.84746C14.5142 4.84746 15.1111 5.43935 15.1111 6.16948ZM8.88888 6.16948C8.88888 6.8996 8.29192 7.4915 7.55556 7.4915C6.8192 7.4915 6.22224 6.8996 6.22224 6.16948C6.22224 5.43935 6.8192 4.84746 7.55556 4.84746C8.29192 4.84746 8.88888 5.43935 8.88888 6.16948ZM13.7778 13.661C14.5142 13.661 15.1111 13.0691 15.1111 12.339C15.1111 11.6088 14.5142 11.017 13.7778 11.017C13.0414 11.017 12.4444 11.6088 12.4444 12.339C12.4444 13.0691 13.0414 13.661 13.7778 13.661ZM15.1111 18.5085C15.1111 19.2386 14.5142 19.8305 13.7778 19.8305C13.0414 19.8305 12.4444 19.2386 12.4444 18.5085C12.4444 17.7783 13.0414 17.1864 13.7778 17.1864C14.5142 17.1864 15.1111 17.7783 15.1111 18.5085Z" fill="currentColor"/>
+        <path d="M13.7778 26C14.5142 26 15.1111 25.4081 15.1111 24.678C15.1111 23.9478 14.5142 23.3559 13.7778 23.3559C13.0414 23.3559 12.4445 23.9478 12.4445 24.678C12.4445 25.4081 13.0414 26 13.7778 26Z" fill="currentColor"/>
+      </svg>
+      <span class="nb-header__logo-text">Nasjonalbiblioteket</span>
+    </a>
+  </div>
 </header>
 
-<main>
-  <fieldset>
-    <legend>Regler som kjøres</legend>
-    <label><input type="checkbox" id="r336" checked> Slett *336, *337, *338</label>
-    <label><input type="checkbox" id="r596" checked> Bygg *596 fra *260/*264 ($a sted, $b forlag, $c år) + *250 → $d utgave + *300 → $e sider + *020$a → $f original-ISBN. Originaltaggene fjernes.</label>
-    <label><input type="checkbox" id="rEmne" checked> Slett nynorske emneord ($9 nno), behold bokmål men fjern språkkoden ($9 nob)</label>
-    <label><input type="checkbox" id="rBlank" checked> Fjern blanke linjer og overflødige mellomrom</label>
-  </fieldset>
+<main id="main-content" role="main" tabindex="-1">
+  <div class="verktoy">
 
-  <div class="kolonner">
-    <div class="panel">
-      <h2>1 · Lim inn kopiert post</h2>
-      <textarea id="inn" spellcheck="false" placeholder="*000 ...
+    <h1>MARC-vask for Tibi</h1>
+    <p class="ingress">Intern prototype for Tibi – biblioteket for tilrettelagt litteratur.</p>
+
+    <details class="oria-seksjon" open>
+      <summary>Hent MARC-post fra Oria<span class="summary-hjelp">Søk → kopier linjeformat → lim inn nedenfor</span></summary>
+      <div class="oria-body">
+        <p class="hjelp">Søk opp en post i BIBSYS/Alma (katalogen bak Oria), trykk «Kopier til bruk», så legges posten rett i «Lim inn kopiert post» under. Denne seksjonen kontakter BIBSYS direkte.</p>
+        <iframe class="oria-iframe" src="oria-sru-uttrekk.html" title="MARC-uttrekk via SRU fra Oria/BIBSYS" loading="lazy"></iframe>
+      </div>
+    </details>
+
+    <div class="kolonner">
+      <div class="panel">
+        <h2 id="inn-tittel">Lim inn kopiert post</h2>
+        <textarea id="inn" class="kode" aria-labelledby="inn-tittel" spellcheck="false" placeholder="*000 ...
 *245 10$aTittelen$bundertittel$cforfatter
 *260  $aOslo$bForlaget$c2024
 ..."></textarea>
+      </div>
+      <div class="panel">
+        <h2 id="ut-tittel">Vasket post – klar for Bibliofil</h2>
+        <textarea id="ut" class="kode" aria-labelledby="ut-tittel" spellcheck="false" readonly placeholder="Resultatet vises her ..."></textarea>
+      </div>
     </div>
+
+    <fieldset aria-labelledby="format-tittel">
+      <h2 id="format-tittel">Format – felt som legges til automatisk</h2>
+      <label class="nb-label" for="format">Velg format</label>
+      <select id="format" class="nb-input" style="max-width:440px">
+        <option value="">– ingen (ikke legg til format-felt) –</option>
+        <option value="lydbok">Lydopptak – CD/annet (dc,dj)</option>
+        <option value="ebok">E-bok (ga,la)</option>
+        <option value="epub">EPUB – internt produksjonsformat (la)</option>
+        <option value="punktskrift">Punktskrift (za)</option>
+        <option value="dtbook">DTBook – studielitteratur (gt) · utkast</option>
+      </select>
+      <label><input type="checkbox" id="rFormat" checked> Sett <code>*019$b</code> og legg til format-spesifikke felt (tomme maler – fylles ut i M2-int)</label>
+      <p class="hjelp">Lydbok, e-bok og punktskrift er avledet fra ekte Tibi-poster. EPUB (internt format) og DTBook er foreløpig utkast. Juster <code>FORMAT_REGLER</code> øverst i koden.</p>
+    </fieldset>
+
+    <div class="knapperad">
+      <button id="vaskBtn" class="nb-btn nb-btn--primary" type="button">Vask posten</button>
+      <button id="kopierBtn" class="nb-btn nb-btn--secondary" type="button">Kopier resultat</button>
+      <button id="eksempelBtn" class="nb-btn nb-btn--ghost" type="button">Vis eksempelpost</button>
+      <button id="tomBtn" class="nb-btn nb-btn--ghost" type="button">Tøm</button>
+    </div>
+
+    <fieldset aria-labelledby="regler-tittel">
+      <h2 id="regler-tittel">Regler som kjøres</h2>
+
+      <p class="regelgruppe">Kontrollfelt</p>
+      <label><input type="checkbox" id="rDelKontroll" checked> Slett kildens <code>*001</code> (kontrollnummer) og <code>*005</code> (tidsstempel)</label>
+      <label><input type="checkbox" id="r003" checked> Sett <code>*003 → NO-LaBS</code> (eierkode for kontrollnummeret)</label>
+      <label><input type="checkbox" id="rRda" checked> Slett <code>*336</code>/<code>*337</code>/<code>*338</code> (RDA – re-settes korrekt per format)</label>
+      <label><input type="checkbox" id="r852" checked> Slett <code>*852</code> (beholdning fra kilde)</label>
+      <label><input type="checkbox" id="r856" checked> Slett <code>*856</code> (elektronisk lokalisering/URN fra kilde)</label>
+      <label><input type="checkbox" id="rKilde" checked> Slett kilde-/systemfelt: <code>*035</code>, <code>*040</code>, <code>*913</code> og alle felt med bokstavtag (<code>*AVA</code>, <code>*avd</code> …)</label>
+
+      <p class="regelgruppe">Forelegg</p>
+      <label><input type="checkbox" id="r596" checked> Bygg <code>*596</code> fra <code>*260/*264</code> ($a sted, $b forlag, $c år) + <code>*250</code> → $d utgave + <code>*300</code> → $e sider + <code>*020$a</code> → $f original-ISBN. Originaltaggene fjernes.</label>
+
+      <p class="regelgruppe">Emneord</p>
+      <label><input type="checkbox" id="rEmneNno" checked> Slett nynorske emneord (<code>$9 nno</code>) i 600/610/611/630/647/648/650/651/653/655</label>
+      <label><input type="checkbox" id="rEmneNob" checked> Fjern språkkoden <code>$9 nob</code> fra bokmålsemneord (beholder selve emneordet)</label>
+
+      <p class="regelgruppe">Opprydding</p>
+      <label><input type="checkbox" id="rBlank" checked> Fjern blanke linjer og overflødige mellomrom</label>
+    </fieldset>
+
     <div class="panel">
-      <h2>2 · Vasket post – klar for M2-int</h2>
-      <textarea id="ut" spellcheck="false" readonly placeholder="Resultatet vises her ..."></textarea>
+      <h2 id="logg-tittel">Endringslogg</h2>
+      <ul id="logg" aria-labelledby="logg-tittel"><li>Ingen post vasket ennå.</li></ul>
+    </div>
+
+    <div class="nb-alert nb-alert--info" role="note" style="margin-top:1.5rem">
+      <strong>Merk:</strong> Format (<code>*019$b</code>) og tomme mal-felt legges til automatisk ut fra valgt format – verdiene i [hakeparentes] fylles ut i M2-int. Gjenstår fortsatt manuelt: tittelnummer, Tibi-ISBN i <code>*020$a</code>, «Tilpass med mal», autorisering av navn/emneord og forhåndsvisning. Selve vaskingen skjer lokalt i nettleseren – kun «Hent MARC-post fra Oria»-seksjonen øverst kontakter BIBSYS/Alma for å hente poster.
+    </div>
+
+  </div>
+</main>
+
+<footer class="nb-footer nb-bg-hero" role="contentinfo">
+  <div class="nb-footer__main">
+    <div>
+      <p class="nb-footer__text">Internt katalogiseringsverktøy – prototype.</p>
+    </div>
+    <div>
+      <h2 class="nb-footer__section-title"><a href="https://www.nb.no/tibi/">Tibi – Biblioteket for tilrettelagt litteratur</a></h2>
+    </div>
+    <div>
+      <ul class="nb-footer__links">
+        <li><a href="mailto:tm@nb.no" aria-label="Send e-post til tm@nb.no">Support: tm@nb.no</a></li>
+      </ul>
     </div>
   </div>
+</footer>
 
-  <div class="knapperad">
-    <button id="vaskBtn">Vask posten</button>
-    <button id="kopierBtn" class="sekundær">Kopier resultat</button>
-    <button id="eksempelBtn" class="sekundær">Vis eksempelpost</button>
-    <button id="tomBtn" class="sekundær">Tøm</button>
-  </div>
+<a href="https://www.nb.no/spor-nasjonalbiblioteket/"
+   class="nb-footer__ask-btn"
+   aria-label="Spør biblioteket – få hjelp fra Nasjonalbiblioteket">
+  Spør biblioteket
+</a>
 
-  <div class="panel">
-    <h2>Endringslogg</h2>
-    <ul id="logg"><li>Ingen post vasket ennå.</li></ul>
-  </div>
-
-  <p class="fotnote">
-    Prototype. Gjenstår alltid manuelt i M2-int: tittelnummer, format (*019$b), Tibi-ISBN i *020$a,
-    «Tilpass med mal», autorisering og forhåndsvisning. Regelen for nynorske emneord forutsetter at
-    språk er angitt med $9 nno / $9 nob – juster om lokal praksis er annerledes. Verktøyet sender
-    ingenting over nett; alt skjer i nettleseren.
-  </p>
-</main>
+<!-- WCAG 4.1.3: NB-rammeverkets aria-live-region (definerer window.nbAnnounce) -->
+<script>
+  (function () {
+    'use strict';
+    const liveRegion = document.createElement('div');
+    liveRegion.setAttribute('aria-live', 'polite');
+    liveRegion.setAttribute('aria-atomic', 'true');
+    liveRegion.classList.add('nb-sr-only');
+    liveRegion.id = 'nb-live-region';
+    document.body.appendChild(liveRegion);
+    window.nbAnnounce = function (message) {
+      liveRegion.textContent = '';
+      requestAnimationFrame(function () { liveRegion.textContent = message; });
+    };
+  }());
+</script>
 
 <script>
 (function () {
@@ -148,6 +244,121 @@
   const inn = document.getElementById("inn");
   const ut = document.getElementById("ut");
   const logg = document.getElementById("logg");
+  let gjeldendeFelter = []; // den vaskede posten, felt for felt
+
+  // HTML-escaping for all brukerdata som settes inn i loggen (XSS-herding)
+  const esc = s => String(s).replace(/[&<>"]/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  // aria-live-varsling for skjermlesere (WCAG 4.1.3) – bruker NB-rammeverkets
+  // window.nbAnnounce hvis tilgjengelig
+  function nbAnnounce(tekst) {
+    if (window.nbAnnounce) window.nbAnnounce(tekst);
+  }
+
+  // ===================================================================
+  // FORMAT_REGLER. Avledet fra tre ekte Tibi-poster (lyd/e-bok/punktskrift).
+  // For hvert format (alle nøkler er valgfrie):
+  //   felt019              : hele innholdet i *019 etter taggen (erstatter eksisterende *019)
+  //   materialbetegnelse245h: verdi som settes i *245$h
+  //   rda                  : *336/*337/*338 som re-settes (gamle fjernes først)
+  //   leggTil              : felt som legges til (eksakt duplikat hoppes over)
+  // Tokens: {{DATO}} → dagens dato dd.mm.åå · {{MNDÅR}} → inneværende måned + år
+  // ===================================================================
+  const FORMAT_REGLER = {
+    lydbok: {
+      navn: "Lydopptak – CD/annet",
+      felt007: "sr",
+      felt009: "     cim",
+      felt019: "$bdc,dj$dR",
+      materialbetegnelse245h: "daisy 2.02",
+      rda: [
+        "*336 #$atale$2rdaco",
+        "*337 #$alydmedier$2rdamt",
+        "*338 #$alydplate$2rdact"
+      ],
+      leggTil: [
+        "*020 #$a[ISBN Daisy – fylles ut]",
+        "*091  $aI produksjon NLB",
+        "*500 #$aI prod. per {{MNDÅR}}",
+        "*591  $a{{DATO}}",
+        "*697  $aLydbok med tekst",
+        "*850 #$aTibi/L"
+      ]
+    },
+    ebok: {
+      navn: "E-bok",
+      felt007: "ta",
+      felt009: "     cam",
+      felt019: "$bga,la$dR",
+      materialbetegnelse245h: "elektronisk ressurs",
+      rda: [
+        "*336 #$atekst$2rdaco",
+        "*337 #$adatamaskin$2rdamt",
+        "*338 #$aonline (nettilkoblet) ressurs$2rdact"
+      ],
+      leggTil: [
+        "*020 #$a[ISBN e-bok – fylles ut]",
+        "*091  $aI produksjon NLB",
+        "*500 #$aI prod. per {{MNDÅR}}",
+        "*591  $a{{DATO}}",
+        "*582  $ano$depub$fTil Lydhør/online-spiller$p1",
+        "*582  $ast$depub$fTil Nettleserbok$p2",
+        "*582  $adl$depub$fLast ned EPUB$p3",
+        "*582  $adl$dhtml$fLast ned HTML$p4",
+        "*582  $aki$depub$fTil Kindle/PocketBook$p5",
+        "*697  $aE-bok",
+        "*850 #$aTibi/L"
+      ]
+    },
+    epub: {
+      // EPUB er internt produksjonsformat – ikke ferdig spesifisert av bruker.
+      navn: "EPUB (internt produksjonsformat)",
+      felt007: "ta",                        // utkast – bekreft
+      felt009: "     cam",
+      felt019: "$bla$dR",
+      materialbetegnelse245h: "elektronisk ressurs",
+      leggTil: [
+        "*091  $aI produksjon NLB",
+        "*500 #$aI prod. per {{MNDÅR}}",
+        "*591  $a{{DATO}}"
+      ]
+    },
+    punktskrift: {
+      navn: "Punktskrift",
+      felt007: "fb",
+      felt009: "     cam",
+      felt019: "$bza$dR$ete",
+      materialbetegnelse245h: "punktskrift",
+      rda: [
+        "*336 #$ataktil tekst$2rdaco",
+        "*337 #$auformidlet$2rdamt",
+        "*338 #$abind$2rdact"
+      ],
+      leggTil: [
+        "*020 #$a[ISBN punktskrift – fylles ut]",
+        "*091  $aI produksjon NLB",
+        "*300 #$a[X hefter (Y s.)]",
+        "*500 #$aI prod. per {{MNDÅR}}",
+        "*533 #$aPunktskrift",
+        "*591  $a{{DATO}}",
+        "*850 #$aTibi/B"
+      ]
+    },
+    dtbook: {
+      // Studielitteratur – ikke ferdig spesifisert; juster mot katalogiseringsmal.
+      navn: "DTBook – studielitteratur (utkast)",
+      felt007: "ta",                        // utkast – bekreft
+      felt009: "     cam",
+      felt019: "$bgt$dR",
+      leggTil: [
+        "*091  $aI produksjon NLB",
+        "*300 #$a[omfang – AVKLARES for DTBook]",
+        "*500 #$aI prod. per {{MNDÅR}}",
+        "*591  $a{{DATO}}"
+      ]
+    }
+  };
 
   function loggLinje(tekst, klasse) {
     const li = document.createElement("li");
@@ -163,7 +374,7 @@
     for (const rå of linjer) {
       const linje = rå.replace(/\s+$/, "");
       if (linje.trim() === "") continue; // blanke linjer fjernes ved parsing
-      if (/^\*\d{3}/.test(linje.trim())) {
+      if (/^\*[A-Za-z0-9]{3}/.test(linje.trim())) {
         felter.push(linje.trim());
       } else if (felter.length > 0) {
         felter[felter.length - 1] += " " + linje.trim();
@@ -175,7 +386,7 @@
   }
 
   function tag(felt) {
-    const m = felt.match(/^\*(\d{3})/);
+    const m = felt.match(/^\*([A-Za-z0-9]{3})/);
     return m ? m[1] : null;
   }
 
@@ -190,18 +401,65 @@
     if (!original.trim()) {
       loggLinje("Lim inn en post først.", "advarsel");
       ut.value = "";
+      nbAnnounce("Ingen post limt inn. Lim inn en post først.");
       return;
     }
 
     const antallBlanke = (original.match(/^\s*$/gm) || []).length;
     let felter = tilFelter(original);
 
-    // ---- Regel 1: slett 336/337/338 ----
-    if (document.getElementById("r336").checked) {
+    // ---- Regel 1: kontrollfelt (granulert) ----
+    // Slett kildens *001 og *005
+    if (document.getElementById("rDelKontroll").checked) {
+      const før = felter.length;
+      felter = felter.filter(f => !["001", "005"].includes(tag(f)));
+      const slettet = før - felter.length;
+      if (slettet > 0) loggLinje("Slettet " + slettet + " kontrollfelt: <code>*001 / *005</code>", "slettet");
+    }
+
+    // Sett *003 → NO-LaBS
+    if (document.getElementById("r003").checked) {
+      const i003 = felter.findIndex(f => tag(f) === "003");
+      if (i003 >= 0 && felter[i003] !== "*003NO-LaBS") {
+        const gammel = felter[i003].replace(/^\*003/, "");
+        felter[i003] = "*003NO-LaBS";
+        loggLinje("Endret <code>*003</code> til <code>NO-LaBS</code> (var <code>" + esc(gammel) + "</code>)", "endret");
+      }
+    }
+
+    // Slett *336/*337/*338 (re-settes per format hvis format er valgt)
+    if (document.getElementById("rRda").checked) {
       const før = felter.length;
       felter = felter.filter(f => !["336", "337", "338"].includes(tag(f)));
       const slettet = før - felter.length;
-      if (slettet > 0) loggLinje("Slettet " + slettet + " felt: <code>*336/*337/*338</code>", "slettet");
+      if (slettet > 0) loggLinje("Slettet " + slettet + " felt: <code>*336 / *337 / *338</code>", "slettet");
+    }
+
+    // Slett *852
+    if (document.getElementById("r852").checked) {
+      const før = felter.length;
+      felter = felter.filter(f => tag(f) !== "852");
+      if (før - felter.length > 0) loggLinje("Slettet <code>*852</code> (beholdning fra kilde)", "slettet");
+    }
+
+    // Slett *856
+    if (document.getElementById("r856").checked) {
+      const før = felter.length;
+      felter = felter.filter(f => tag(f) !== "856");
+      if (før - felter.length > 0) loggLinje("Slettet <code>*856</code> (elektronisk lokalisering fra kilde)", "slettet");
+    }
+
+    // Slett kilde-/systemfelt: *035/*040/*913 + alle felt med bokstavtag (*AVA, *avd …)
+    if (document.getElementById("rKilde").checked) {
+      const før = felter.length;
+      felter = felter.filter(f => {
+        const t = tag(f);
+        if (["035", "040", "913"].includes(t)) return false;
+        if (t !== null && !/^\d{3}$/.test(t)) return false; // bokstavtagger
+        return true;
+      });
+      const slettet = før - felter.length;
+      if (slettet > 0) loggLinje("Slettet " + slettet + " kilde-/systemfelt (<code>*035/*040/*913</code> + felt med bokstavtag)", "slettet");
     }
 
     // ---- Regel 2: bygg *596, fjern 260/264/250/300/020 ----
@@ -249,7 +507,7 @@
           if (!plassert) nye.push(ny596);
           felter = nye;
 
-          loggLinje("Opprettet <code>" + ny596.replace(/</g, "&lt;") + "</code>", "opprettet");
+          loggLinje("Opprettet <code>" + esc(ny596) + "</code>", "opprettet");
           if (utgFelt) loggLinje("Fjernet <code>*" + tag(utgFelt) + "</code> (utgivelsesinfo → *596 $a/$b/$c)", "endret");
           if (f250) loggLinje("Fjernet <code>*250</code> (utgave → *596$d)", "endret");
           if (f300) loggLinje("Fjernet <code>*300</code> (omfang → *596$e – *300 fylles ut på nytt ved ferdigstilling)", "endret");
@@ -258,14 +516,20 @@
       }
     }
 
-    // ---- Regel 3: nynorske emneord ----
-    if (document.getElementById("rEmne").checked) {
-      const emneTagger = ["600", "610", "611", "630", "650", "651", "653", "655"];
-      let slettetNno = 0, vasketNob = 0;
-      felter = felter.filter(f => {
-        if (emneTagger.includes(tag(f)) && /\$9\s*nno\b/i.test(f)) { slettetNno++; return false; }
-        return true;
-      });
+    // ---- Regel 3: emneord (granulert) ----
+    const emneTagger = ["600", "610", "611", "630", "647", "648", "650", "651", "653", "655"];
+
+    // Slett nynorske emneord ($9 nno)
+    if (document.getElementById("rEmneNno").checked) {
+      const før = felter.length;
+      felter = felter.filter(f => !(emneTagger.includes(tag(f)) && /\$9\s*nno\b/i.test(f)));
+      const slettetNno = før - felter.length;
+      if (slettetNno > 0) loggLinje("Slettet " + slettetNno + " nynorske emneord (<code>$9 nno</code>)", "slettet");
+    }
+
+    // Fjern språkkode $9 nob fra bokmålsemneord
+    if (document.getElementById("rEmneNob").checked) {
+      let vasketNob = 0;
       felter = felter.map(f => {
         if (emneTagger.includes(tag(f)) && /\$9\s*nob\b/i.test(f)) {
           vasketNob++;
@@ -273,7 +537,6 @@
         }
         return f;
       });
-      if (slettetNno > 0) loggLinje("Slettet " + slettetNno + " nynorske emneord (<code>$9 nno</code>)", "slettet");
       if (vasketNob > 0) loggLinje("Fjernet språkkode <code>$9 nob</code> fra " + vasketNob + " emneord", "endret");
     }
 
@@ -282,27 +545,160 @@
       loggLinje("Fjernet " + antallBlanke + " blank(e) linje(r) – disse gjør at innliming feiler i M2-int", "slettet");
     }
 
+    // ---- Regel 5: format → *019$b + format-spesifikke felt ----
+    const valgtFormat = document.getElementById("format").value;
+    if (document.getElementById("rFormat").checked && valgtFormat && FORMAT_REGLER[valgtFormat]) {
+      const regel = FORMAT_REGLER[valgtFormat];
+
+      // Dynamiske datoverdier
+      const MND = ["januar","februar","mars","april","mai","juni","juli",
+                   "august","september","oktober","november","desember"];
+      const nå = new Date();
+      const datoToken = String(nå.getDate()).padStart(2, "0") + "." +
+                        String(nå.getMonth() + 1).padStart(2, "0") + "." +
+                        String(nå.getFullYear());
+      const mndÅrToken = MND[nå.getMonth()] + " " + nå.getFullYear();
+      const settInnTokens = s => s.replace(/\{\{DATO\}\}/g, datoToken)
+                                  .replace(/\{\{MNDÅR\}\}/g, mndÅrToken);
+
+      // Materialbetegnelse i eksisterende *245$h
+      if (regel.materialbetegnelse245h) {
+        const i245 = felter.findIndex(f => tag(f) === "245");
+        const verdi = "$h" + regel.materialbetegnelse245h;
+        if (i245 < 0) {
+          loggLinje("Fant ingen <code>*245</code> – materialbetegnelse <code>" + esc(verdi) + "</code> ble ikke lagt inn", "advarsel");
+        } else if (/\$h/.test(felter[i245])) {
+          felter[i245] = felter[i245].replace(/\$h[^$]*/, verdi);
+          loggLinje("Oppdaterte <code>*245$h</code> til <code>" + regel.materialbetegnelse245h + "</code>", "endret");
+        } else {
+          // Tibi-praksis: $h etter $c, dvs. før $n/$p hvis de finnes, ellers sist
+          let m = felter[i245].match(/\$n/) || felter[i245].match(/\$p/);
+          if (m) felter[i245] = felter[i245].slice(0, m.index) + verdi + felter[i245].slice(m.index);
+          else felter[i245] = felter[i245].replace(/\s+$/, "") + verdi;
+          loggLinje("La til materialbetegnelse <code>*245$h" + regel.materialbetegnelse245h + "</code>", "opprettet");
+        }
+      }
+
+      // Sett *007 (kontrollfelt, erstatter eksisterende)
+      if (regel.felt007) {
+        const nytt007 = "*007" + regel.felt007;
+        const i007 = felter.findIndex(f => tag(f) === "007");
+        if (i007 >= 0) {
+          if (felter[i007] !== nytt007) {
+            const gammel = felter[i007].replace(/^\*007/, "").trim();
+            felter[i007] = nytt007;
+            loggLinje("Satte <code>" + esc(nytt007) + "</code> (var <code>" + esc(gammel) + "</code>)", "endret");
+          }
+        } else {
+          felter.push(nytt007);
+          loggLinje("Opprettet <code>" + esc(nytt007) + "</code> (" + esc(regel.navn) + ")", "opprettet");
+        }
+      }
+
+      // Sett *009 (kontrollfelt, erstatter eksisterende eller legges til)
+      if (regel.felt009) {
+        const nytt009 = "*009" + regel.felt009;
+        const i009 = felter.findIndex(f => tag(f) === "009");
+        if (i009 >= 0) {
+          if (felter[i009] !== nytt009) {
+            felter[i009] = nytt009;
+            loggLinje("Satte <code>*009</code> = <code>" + esc(regel.felt009.trim()) + "</code> (" + esc(regel.navn) + ")", "endret");
+          }
+        } else {
+          felter.push(nytt009);
+          loggLinje("Opprettet <code>*009</code> = <code>" + esc(regel.felt009.trim()) + "</code> (" + esc(regel.navn) + ")", "opprettet");
+        }
+      }
+
+      // Sett hele *019 (erstatter eksisterende *019)
+      if (regel.felt019) {
+        const nytt019 = "*019  " + regel.felt019;
+        const i019 = felter.findIndex(f => tag(f) === "019");
+        if (i019 >= 0) {
+          if (felter[i019] === nytt019) {
+            loggLinje("<code>*019</code> var allerede korrekt (" + regel.navn + ")");
+          } else {
+            felter[i019] = nytt019;
+            loggLinje("Satte <code>" + esc(nytt019) + "</code> (" + esc(regel.navn) + ")", "endret");
+          }
+        } else {
+          felter.push(nytt019);
+          loggLinje("Opprettet <code>" + esc(nytt019) + "</code> (" + esc(regel.navn) + ")", "opprettet");
+        }
+      }
+
+      // Re-sett *336/*337/*338 med format-riktige verdier (gamle fjernes)
+      if (regel.rda) {
+        const før = felter.length;
+        felter = felter.filter(f => !["336", "337", "338"].includes(tag(f)));
+        if (før - felter.length > 0) loggLinje("Fjernet " + (før - felter.length) + " gamle <code>*336/*337/*338</code> (erstattes med format-riktige)", "slettet");
+        regel.rda.forEach(f => {
+          felter.push(f);
+          loggLinje("La til <code>" + esc(f) + "</code>", "opprettet");
+        });
+      }
+
+      // Legg til format-spesifikke felt (eksakt duplikat hoppes over)
+      regel.leggTil.forEach(mal => {
+        const nyttFelt = settInnTokens(mal);
+        if (felter.includes(nyttFelt)) {
+          loggLinje("<code>" + esc(nyttFelt) + "</code> finnes allerede – ikke duplisert", "endret");
+        } else {
+          felter.push(nyttFelt);
+          loggLinje("La til <code>" + esc(nyttFelt) + "</code>", "opprettet");
+        }
+      });
+
+      // Sorter felter på tag-nummer så nye felt havner riktig
+      felter.sort((a, b) => {
+        const ta = tag(a), tb = tag(b);
+        if (ta === null || tb === null) return 0;
+        const na = Number(ta), nb = Number(tb);
+        return (isNaN(na) ? 9999 : na) - (isNaN(nb) ? 9999 : nb);
+      });
+    }
+
     if (logg.children.length === 0) {
       loggLinje("Ingen endringer var nødvendige – posten var allerede ren.");
     }
 
+    gjeldendeFelter = felter;
     ut.value = felter.join("\n");
+    nbAnnounce("Posten er vasket. " + felter.length + " felt i resultatet, " +
+               logg.children.length + " hendelser i endringsloggen.");
   }
 
   document.getElementById("vaskBtn").addEventListener("click", vask);
 
   document.getElementById("kopierBtn").addEventListener("click", function () {
     if (!ut.value) return;
-    navigator.clipboard.writeText(ut.value).then(() => {
-      this.textContent = "Kopiert ✓";
-      this.classList.add("kopiert");
-      setTimeout(() => { this.textContent = "Kopier resultat"; this.classList.remove("kopiert"); }, 1500);
-    });
+    const knapp = this;
+    function kvitter() {
+      knapp.textContent = "Kopiert ✓";
+      knapp.classList.add("kopiert");
+      nbAnnounce("Resultatet er kopiert til utklippstavlen.");
+      setTimeout(() => { knapp.textContent = "Kopier resultat"; knapp.classList.remove("kopiert"); }, 1500);
+    }
+    // navigator.clipboard krever sikker kontekst (https/localhost) – fall tilbake til markering
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(ut.value).then(kvitter).catch(reserveKopi);
+    } else {
+      reserveKopi();
+    }
+    function reserveKopi() {
+      ut.removeAttribute("readonly");
+      ut.select();
+      try { document.execCommand("copy"); kvitter(); }
+      catch (e) { nbAnnounce("Kunne ikke kopiere automatisk. Marker teksten og kopier med Ctrl+C."); }
+      ut.setAttribute("readonly", "");
+    }
   });
 
   document.getElementById("tomBtn").addEventListener("click", function () {
     inn.value = ""; ut.value = "";
+    gjeldendeFelter = [];
     logg.innerHTML = "<li>Ingen post vasket ennå.</li>";
+    nbAnnounce("Feltene er tømt.");
   });
 
   document.getElementById("eksempelBtn").addEventListener("click", function () {
@@ -311,7 +707,7 @@
       "*008                          nob",
       "*019  $bl",
       "*020  $a9788234567890$bib.$cNkr 399.00",
-      "*100 10$aHansen, Maja Lunde$d1975-",
+      "*100 10$aLunde, Maja$d1975-",
       "*245 10$aBienes historie$broman$cMaja Lunde",
       "*250  $a1. utgave",
       "*260  $aOslo$bAschehoug$c2015",
@@ -326,7 +722,29 @@
       "*650  $aKlimaendringar$9nno",
       "*655  $aRomaner$9nob"
     ].join("\n");
+    document.getElementById("format").value = "lydbok";
     vask();
+  });
+
+  // Meldinger fra Oria-rammen (iframe)
+  window.addEventListener("message", function (e) {
+    const d = e.data;
+    if (!d || typeof d !== "object") return;
+
+    // Auto-høyde: gjør seksjonen kompakt før søk, utvider den ved treff
+    if (d.type === "oria-height") {
+      const ramme = document.querySelector(".oria-iframe");
+      const h = Number(d.height);
+      if (ramme && h > 0) ramme.style.height = Math.min(2400, Math.max(180, h + 4)) + "px";
+    }
+
+    // «Kopier til bruk»: legg posten rett i feltet «Lim inn kopiert post»
+    if (d.type === "oria-bruk" && typeof d.text === "string") {
+      inn.value = d.text;
+      inn.focus();
+      inn.scrollIntoView({ behavior: "smooth", block: "center" });
+      nbAnnounce("Posten er lagt inn i feltet for innliming. Klar til å vaskes.");
+    }
   });
 })();
 </script>
