@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- Sikkerhet: blokkerer all scriptet nettverkstrafikk (fetch/XHR/WebSocket/beacon).
-     Verktøyet gjør ingen slike kall – posten forblir lokalt i nettleseren. -->
-<meta http-equiv="Content-Security-Policy" content="connect-src 'none'; base-uri 'none'; form-action 'none'">
+<!-- Sikkerhet: kun tilkobling til BIBSYS/Alma (Oria-søket) er tillatt; all annen
+     scriptet nettverkstrafikk blokkeres. Vaskingen skjer lokalt i nettleseren. -->
+<meta http-equiv="Content-Security-Policy" content="connect-src https://bibsys.alma.exlibrisgroup.com; base-uri 'none'; form-action 'none'">
 <meta name="description" content="Internt verktøy som vasker en kopiert MARC-post til Tibi-format, klar for «Lim inn post» i M2-int. Kjører lokalt i nettleseren – ingen data sendes over nett.">
 <meta name="theme-color" content="#550029">
 <title>MARC-vask for Tibi | Nasjonalbiblioteket</title>
@@ -1404,7 +1404,568 @@ pre {
       <summary>Hent MARC-post fra Oria<span class="summary-hjelp">Søk → kopier linjeformat → lim inn nedenfor</span></summary>
       <div class="oria-body">
         <p class="hjelp">Søk opp en post i BIBSYS/Alma (katalogen bak Oria), trykk «Kopier til bruk», så legges posten rett i «Lim inn kopiert post» under. Denne seksjonen kontakter BIBSYS direkte.</p>
-        <iframe class="oria-iframe" src="oria-sru-uttrekk.html" title="MARC-uttrekk via SRU fra Oria/BIBSYS" loading="lazy"></iframe>
+        <iframe class="oria-iframe" srcdoc="<!DOCTYPE html>
+<html lang=&quot;no&quot;>
+<head>
+<meta charset=&quot;utf-8&quot;>
+<meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;>
+<title>SRU · MARC-uttrekk (BIBSYS/Alma)</title>
+<style>
+  :root{
+    --bg:#f4f2ed; --panel:#fbfaf7; --ink:#211f1c; --muted:#6f6a62;
+    --line:#d5d3ca; --line-strong:#bdbab0;
+    --accent:#8c2f2a; --accent-ink:#fff; --accent-soft:#f1e4e2;
+    --brass:#8a6d34; --ok:#2f6b46; --warn:#9a5a14;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,&quot;Liberation Mono&quot;,monospace;
+    --sans:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    --serif:Georgia,&quot;Iowan Old Style&quot;,&quot;Times New Roman&quot;,serif;
+    --r:7px;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  html,body{margin:0}
+  body{
+    background:var(--bg); color:var(--ink); font-family:var(--sans);
+    line-height:1.5; -webkit-font-smoothing:antialiased;
+    padding:14px 16px 24px;
+  }
+  .wrap{max-width:1180px;margin:0 auto}
+
+  header.head{margin-bottom:22px}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+  h1{font-family:var(--serif);font-weight:600;font-size:30px;line-height:1.1;
+    margin:0 0 6px;letter-spacing:-.01em}
+  .sub{color:var(--muted);font-size:14px;margin:0;max-width:60ch}
+  .sub code{font-family:var(--mono);font-size:12.5px;background:#fff;
+    border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+
+  .panel{background:var(--panel);border:1px solid var(--line);
+    border-radius:var(--r);padding:18px}
+  .panel + .panel{margin-top:16px}
+
+  .controls{display:grid;grid-template-columns:1fr;gap:14px}
+  label.lab{display:block;font-size:12px;font-weight:600;letter-spacing:.02em;
+    text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+  .field{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch}
+  input[type=text]{
+    flex:1 1 260px;min-width:0;font-family:var(--mono);font-size:15px;
+    padding:11px 12px;border:1px solid var(--line-strong);border-radius:6px;
+    background:#fff;color:var(--ink)}
+  input[type=text]:focus,select:focus,button:focus-visible{
+    outline:2px solid var(--accent);outline-offset:1px}
+  select,input[type=number]{
+    font-family:var(--sans);font-size:14px;padding:10px 11px;
+    border:1px solid var(--line-strong);border-radius:6px;background:#fff;color:var(--ink)}
+  input[type=number]{width:84px;font-family:var(--mono)}
+
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+  .row > div{display:flex;flex-direction:column}
+
+  button{
+    font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;
+    border:1px solid var(--line-strong);background:#fff;color:var(--ink);
+    border-radius:6px;padding:10px 14px;transition:background .12s,border-color .12s}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+  button.primary:hover{background:#76251f}
+  button.ghost{padding:7px 11px;font-size:12.5px;font-weight:500;color:var(--muted)}
+  button:disabled{opacity:.55;cursor:default}
+
+  .detect{font-size:12.5px;color:var(--muted);min-height:18px}
+  .detect b{color:var(--ink);font-family:var(--mono)}
+
+  .filterline{display:flex;align-items:center;gap:8px}
+  .chk{display:inline-flex;align-items:center;gap:9px;font-size:13.5px;
+    color:var(--ink);cursor:pointer;user-select:none}
+  .chk input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;margin:0}
+  .chk span{color:var(--muted);font-size:12.5px}
+
+  .urlbox{margin-top:4px}
+  .urlbox .lab{display:flex;justify-content:space-between;align-items:center}
+  .url{font-family:var(--mono);font-size:12.5px;word-break:break-all;
+    background:#fff;border:1px solid var(--line);border-radius:6px;
+    padding:10px 12px;color:#3a3733}
+  .url .q{color:var(--accent)}
+  .urlactions{display:flex;gap:8px;margin-top:8px}
+  .urlactions a{font-size:12.5px;color:var(--accent);text-decoration:none;
+    align-self:center}
+  .urlactions a:hover{text-decoration:underline}
+
+  /* status */
+  .status{font-size:13.5px;margin:0}
+  .status.err{color:var(--accent)}
+  .status.ok{color:var(--ok)}
+  .spin{display:inline-block;width:13px;height:13px;border:2px solid var(--line-strong);
+    border-top-color:var(--accent);border-radius:50%;vertical-align:-2px;margin-right:7px;
+    animation:sp .7s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  /* records */
+  #out{margin-top:16px;display:none}
+  .reccount{font-size:13px;color:var(--muted);font-family:var(--mono);margin:0 0 12px}
+  .reccount b{color:var(--ink)}
+  .rec{border:1px solid var(--line);border-radius:var(--r);background:var(--panel);
+    margin-bottom:14px;overflow:hidden;animation:fade .25s ease both}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .rec-head{display:flex;justify-content:space-between;align-items:center;gap:12px;
+    flex-wrap:wrap;padding:11px 16px;border-bottom:1px solid var(--line);background:#fff}
+  .rec-title{font-family:var(--serif);font-size:16px;font-weight:600;margin:0;line-height:1.25;flex:1 1 auto}
+  .rec-right{display:flex;align-items:center;gap:12px;flex:0 0 auto}
+  .rec-meta{font-family:var(--mono);font-size:11.5px;color:var(--muted);white-space:nowrap}
+  .copybtn{white-space:nowrap;padding:6px 11px;font-size:12px}
+  .copybtn:hover{border-color:var(--accent);color:var(--accent)}
+  .copybtn.done{color:var(--ok);border-color:var(--ok)}
+  .rawbar{padding:0 16px 10px;display:flex;justify-content:flex-end}
+
+  .leader{font-family:var(--mono);font-size:12px;padding:9px 16px;color:var(--muted);
+    border-bottom:1px solid var(--line);background:#faf8f4}
+  .leader b{color:var(--brass);letter-spacing:.06em}
+  .leader span{color:var(--ink)}
+
+  table.marc{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px}
+  table.marc td{padding:4px 8px;vertical-align:top;border-bottom:1px solid #ece9e1}
+  table.marc tr:last-child td{border-bottom:none}
+  .tag{color:var(--accent);font-weight:600;width:42px;white-space:nowrap}
+  .ind{color:var(--muted);width:34px;letter-spacing:.18em;white-space:nowrap}
+  .val{color:var(--ink);width:100%;word-break:break-word}
+  .sf{display:inline}
+  .sfc{color:var(--brass);font-weight:600}
+  .sfc::before{content:&quot;‡&quot;}
+  .ctrl .val{white-space:pre-wrap}
+
+  details.raw{border-top:1px solid var(--line)}
+  details.raw>summary{cursor:pointer;list-style:none;padding:9px 16px;
+    font-size:12px;color:var(--muted);font-family:var(--sans);user-select:none}
+  details.raw>summary::-webkit-details-marker{display:none}
+  details.raw>summary:hover{color:var(--accent)}
+  details.raw>summary::before{content:&quot;▸ &quot;;color:var(--accent)}
+  details.raw[open]>summary::before{content:&quot;▾ &quot;}
+  pre.xml{margin:0;padding:0 16px 14px;font-family:var(--mono);font-size:11.5px;
+    line-height:1.45;white-space:pre-wrap;word-break:break-word;color:#3a3733;max-height:340px;overflow:auto}
+
+  /* fallback */
+  #fallback{display:none;margin-top:14px;border-color:var(--accent);background:var(--accent-soft)}
+  #fallback h3{margin:0 0 6px;font-family:var(--serif);font-size:16px}
+  #fallback p{margin:0 0 10px;font-size:13.5px;color:#5d4744}
+  textarea{width:100%;min-height:120px;font-family:var(--mono);font-size:12px;
+    border:1px solid var(--line-strong);border-radius:6px;padding:10px;resize:vertical;background:#fff}
+
+  footer{margin-top:26px;font-size:12px;color:var(--muted);font-family:var(--mono);
+    border-top:1px solid var(--line);padding-top:12px}
+  footer code{color:var(--ink)}
+
+  @media (max-width:540px){
+    h1{font-size:25px}
+    .rec-meta{display:none}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+  }
+</style>
+</head>
+<body>
+<div class=&quot;wrap&quot;>
+  <section class=&quot;panel controls&quot;>
+    <div>
+      <label class=&quot;lab&quot; for=&quot;q&quot;>Søk</label>
+      <div class=&quot;field&quot;>
+        <input id=&quot;q&quot; type=&quot;text&quot; placeholder=&quot;f.eks. 9788203190940, 990000… eller fritekst&quot; autocomplete=&quot;off&quot; spellcheck=&quot;false&quot;>
+        <button id=&quot;go&quot; class=&quot;primary&quot; type=&quot;button&quot;>Hent post</button>
+      </div>
+      <div class=&quot;detect&quot; id=&quot;detect&quot; hidden>&amp;nbsp;</div>
+    </div>
+
+    <div class=&quot;row&quot;>
+      <div hidden>
+        <label class=&quot;lab&quot; for=&quot;type&quot;>Tolk som</label>
+        <select id=&quot;type&quot;>
+          <option value=&quot;auto&quot;>Auto</option>
+          <option value=&quot;isbn&quot;>ISBN (alma.isbn)</option>
+          <option value=&quot;mms&quot;>MMS-ID (alma.mms_id)</option>
+          <option value=&quot;text&quot;>Fritekst (alma.all_for_ui)</option>
+        </select>
+      </div>
+      <div hidden>
+        <label class=&quot;lab&quot; for=&quot;zone&quot;>Sone</label>
+        <select id=&quot;zone&quot;>
+          <option value=&quot;47BIBSYS_NETWORK&quot;>Nettverk (47BIBSYS_NETWORK)</option>
+          <option value=&quot;47BIBSYS_NB&quot; selected>NB-institusjon (47BIBSYS_NB)</option>
+        </select>
+      </div>
+      <div>
+        <label class=&quot;lab&quot; for=&quot;max&quot;>Maks poster</label>
+        <input id=&quot;max&quot; type=&quot;number&quot; min=&quot;1&quot; max=&quot;50&quot; value=&quot;5&quot;>
+      </div>
+    </div>
+
+    <div class=&quot;filterline&quot; hidden>
+      <label class=&quot;chk&quot; for=&quot;booksOnly&quot;>
+        <input type=&quot;checkbox&quot; id=&quot;booksOnly&quot;>
+        Bare bøker <span>(tekstlige monografier — LDR 06=a/t, 07=m)</span>
+      </label>
+    </div>
+
+    <div class=&quot;urlbox&quot; hidden>
+      <div class=&quot;lab&quot;><span>Forespørsel</span>
+        <button class=&quot;ghost&quot; id=&quot;copy&quot; type=&quot;button&quot;>Kopier URL</button></div>
+      <div class=&quot;url&quot; id=&quot;url&quot;></div>
+      <div class=&quot;urlactions&quot;>
+        <a id=&quot;open&quot; href=&quot;#&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Åpne i ny fane ↗</a>
+      </div>
+    </div>
+
+    <p class=&quot;status&quot; id=&quot;status&quot;>&amp;nbsp;</p>
+  </section>
+
+  <section id=&quot;out&quot;>
+    <p class=&quot;reccount&quot; id=&quot;reccount&quot;></p>
+    <div id=&quot;records&quot;></div>
+  </section>
+
+  <section class=&quot;panel&quot; id=&quot;fallback&quot;>
+    <h3>Direkte­kall blokkert</h3>
+    <p>Nettleseren fikk ikke lese svaret direkte (typisk CORS i denne sandkassen). Åpne forespørselen i ny fane via lenken over, kopier hele XML-svaret hit, og tolk det lokalt:</p>
+    <textarea id=&quot;paste&quot; placeholder=&quot;Lim inn MARCXML her…&quot; spellcheck=&quot;false&quot;></textarea>
+    <div style=&quot;margin-top:10px&quot;><button id=&quot;parsePaste&quot; type=&quot;button&quot;>Tolk innliming</button></div>
+  </section>
+
+  <footer>
+    Vert: <code>bibsys.alma.exlibrisgroup.com</code> · skjema <code>marcxml</code> · CQL-spørrespråk.
+    Bytt <code>operation=explain</code> i URL-en for å se alle indekser.
+  </footer>
+</div>
+
+<script>
+(function(){
+  &quot;use strict&quot;;
+  var HOST = &quot;https://bibsys.alma.exlibrisgroup.com/view/sru/&quot;;
+  var $ = function(id){ return document.getElementById(id); };
+  var qEl=$(&quot;q&quot;), typeEl=$(&quot;type&quot;), zoneEl=$(&quot;zone&quot;), maxEl=$(&quot;max&quot;),
+      urlEl=$(&quot;url&quot;), openEl=$(&quot;open&quot;), statusEl=$(&quot;status&quot;),
+      detectEl=$(&quot;detect&quot;), outEl=$(&quot;out&quot;), recsEl=$(&quot;records&quot;),
+      countEl=$(&quot;reccount&quot;), fbEl=$(&quot;fallback&quot;);
+
+  function clean(s){ return (s||&quot;&quot;).trim(); }
+
+  // returns {index, label, cql} for current input
+  function resolve(){
+    var raw = clean(qEl.value);
+    var forced = typeEl.value;
+    var digits = raw.replace(/[\s-]/g,&quot;&quot;);
+    var allDigits = /^[0-9]+$/.test(digits);
+    var kind = forced;
+    if(forced===&quot;auto&quot;){
+      if(allDigits &amp;&amp; digits.length>=16) kind=&quot;mms&quot;;
+      else if(allDigits &amp;&amp; (digits.length===10 || digits.length===13)) kind=&quot;isbn&quot;;
+      else if(raw===&quot;&quot;) kind=&quot;&quot;;
+      else kind=&quot;text&quot;;
+    }
+    var index, label, value;
+    if(kind===&quot;isbn&quot;){ index=&quot;alma.isbn&quot;; label=&quot;ISBN&quot;; value=digits; }
+    else if(kind===&quot;mms&quot;){ index=&quot;alma.mms_id&quot;; label=&quot;MMS-ID&quot;; value=digits; }
+    else if(kind===&quot;text&quot;){ index=&quot;alma.all_for_ui&quot;; label=&quot;fritekst&quot;; value=raw; }
+    else { index=&quot;&quot;; label=&quot;&quot;; value=&quot;&quot;; }
+    var base = index ? (index+'=&quot;'+value+'&quot;') : &quot;&quot;;
+    var booksOnly = $(&quot;booksOnly&quot;).checked;
+    var full = (base &amp;&amp; booksOnly) ? (base + &quot; and alma.bib_level=m&quot;) : base;
+    return {kind:kind, index:index, label:label, value:value,
+            cql: base, cqlFull: full, booksOnly: booksOnly};
+  }
+
+  function buildUrl(r){
+    var zone = zoneEl.value;
+    var max = Math.max(1, Math.min(50, parseInt(maxEl.value,10)||5));
+    var base = HOST + zone + &quot;?version=1.2&amp;operation=searchRetrieve&amp;recordSchema=marcxml&amp;maximumRecords=&quot; + max;
+    if(!r.cqlFull) return {full: base + &quot;&amp;query=&quot;, display: base, q:&quot;&quot;};
+    var q = encodeURIComponent(r.cqlFull);
+    return {full: base + &quot;&amp;query=&quot; + q, display: base, q: r.cqlFull};
+  }
+
+  function render(){
+    var r = resolve();
+    var u = buildUrl(r);
+    // url display with highlighted query
+    urlEl.innerHTML = escapeHtml(u.display) + &quot;&amp;amp;query=&quot; +
+      (u.q ? '<span class=&quot;q&quot;>'+escapeHtml(u.q)+'</span>' : &quot;&quot;);
+    openEl.href = u.full;
+    if(r.kind &amp;&amp; r.value){
+      detectEl.innerHTML = &quot;Tolket som <b>&quot;+r.label+&quot;</b> → <b>&quot;+escapeHtml(r.cqlFull)+&quot;</b>&quot;;
+    } else {
+      detectEl.innerHTML = &quot;&amp;nbsp;&quot;;
+    }
+    return u;
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&amp;<>&quot;]/g,function(c){
+      return {&quot;&amp;&quot;:&quot;&amp;amp;&quot;,&quot;<&quot;:&quot;&amp;lt;&quot;,&quot;>&quot;:&quot;&amp;gt;&quot;,'&quot;':&quot;&amp;quot;&quot;}[c];
+    });
+  }
+
+  // ---- MARC rendering ----
+  var MARCNS = &quot;http://www.loc.gov/MARC21/slim&quot;;
+
+  function getTitle(rec){
+    var df = rec.querySelectorAll(&quot;datafield&quot;);
+    for(var i=0;i<df.length;i++){
+      if(df[i].getAttribute(&quot;tag&quot;)===&quot;245&quot;){
+        var parts=[], sf=df[i].querySelectorAll(&quot;subfield&quot;);
+        for(var j=0;j<sf.length;j++){
+          var c=sf[j].getAttribute(&quot;code&quot;);
+          if(c===&quot;a&quot;||c===&quot;b&quot;||c===&quot;n&quot;||c===&quot;p&quot;) parts.push(sf[j].textContent.trim());
+        }
+        return parts.join(&quot; &quot;).replace(/\s*[\/:]\s*$/,&quot;&quot;);
+      }
+    }
+    return &quot;(uten tittel)&quot;;
+  }
+  function getControl(rec,tag){
+    var cf=rec.querySelectorAll(&quot;controlfield&quot;);
+    for(var i=0;i<cf.length;i++) if(cf[i].getAttribute(&quot;tag&quot;)===tag) return cf[i].textContent.trim();
+    return &quot;&quot;;
+  }
+
+  // book = textual monograph: leader/06 (record type) in {a,t}, leader/07 (bib level) in {a,m}
+  function isBook(rec){
+    var l=rec.querySelector(&quot;leader&quot;);
+    if(!l) return false;
+    var s=l.textContent;
+    return &quot;at&quot;.indexOf(s.charAt(6))>-1 &amp;&amp; &quot;am&quot;.indexOf(s.charAt(7))>-1;
+  }
+
+  function indDisp(v){ return (v===&quot; &quot;||v===&quot;&quot;)? &quot;_&quot; : v; }
+
+  // BIBSYS/NORMARC line format: &quot;*245 10$aTitle$bsub&quot; ; control fields &quot;*001 value&quot;
+  function indLF(v){ return (v===&quot; &quot;||v===&quot;&quot;||v==null) ? &quot; &quot; : v; }
+  function recToLineFormat(rec){
+    var lines=[], fields=rec.children;
+    for(var i=0;i<fields.length;i++){
+      var f=fields[i], name=f.localName;
+      if(name===&quot;controlfield&quot;){
+        lines.push(&quot;*&quot;+f.getAttribute(&quot;tag&quot;)+f.textContent);
+      } else if(name===&quot;datafield&quot;){
+        var s=&quot;*&quot;+f.getAttribute(&quot;tag&quot;)+indLF(f.getAttribute(&quot;ind1&quot;))+indLF(f.getAttribute(&quot;ind2&quot;));
+        var sfs=f.querySelectorAll(&quot;subfield&quot;);
+        for(var k=0;k<sfs.length;k++){ s+=&quot;$&quot;+sfs[k].getAttribute(&quot;code&quot;)+sfs[k].textContent; }
+        lines.push(s);
+      }
+    }
+    return lines.join(&quot;\n&quot;);
+  }
+
+  function flashCopied(btn){
+    var old=btn.getAttribute(&quot;data-label&quot;)||btn.textContent;
+    btn.setAttribute(&quot;data-label&quot;,old);
+    btn.textContent=&quot;Kopiert ✓&quot;; btn.classList.add(&quot;done&quot;);
+    setTimeout(function(){ btn.textContent=old; btn.classList.remove(&quot;done&quot;); },1400);
+  }
+  function copyText(t,btn){
+    if(navigator.clipboard &amp;&amp; navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t).then(function(){ flashCopied(btn); },function(){ legacyCopy(t,btn); });
+    } else { legacyCopy(t,btn); }
+  }
+  function legacyCopy(t,btn){
+    var ta=document.createElement(&quot;textarea&quot;);
+    ta.value=t; ta.style.position=&quot;fixed&quot;; ta.style.top=&quot;-1000px&quot;; ta.style.opacity=&quot;0&quot;;
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try{ document.execCommand(&quot;copy&quot;); flashCopied(btn); }
+    catch(e){ btn.textContent=&quot;Kopier manuelt&quot;; }
+    document.body.removeChild(ta);
+  }
+
+  function renderRecord(rec){
+    var div=document.createElement(&quot;div&quot;);
+    div.className=&quot;rec&quot;;
+
+    var head=document.createElement(&quot;div&quot;);
+    head.className=&quot;rec-head&quot;;
+    var t=document.createElement(&quot;p&quot;); t.className=&quot;rec-title&quot;; t.textContent=getTitle(rec);
+    var right=document.createElement(&quot;div&quot;); right.className=&quot;rec-right&quot;;
+    var m=document.createElement(&quot;span&quot;); m.className=&quot;rec-meta&quot;;
+    m.textContent = (getControl(rec,&quot;001&quot;)||&quot;–&quot;);
+    var copyLF=document.createElement(&quot;button&quot;);
+    copyLF.type=&quot;button&quot;; copyLF.className=&quot;ghost copybtn&quot;; copyLF.textContent=&quot;Kopier linjeformat&quot;;
+    var bruk=document.createElement(&quot;button&quot;);
+    bruk.type=&quot;button&quot;; bruk.className=&quot;copybtn primary&quot;; bruk.textContent=&quot;Kopier til bruk&quot;;
+    right.appendChild(m); right.appendChild(copyLF); right.appendChild(bruk);
+    head.appendChild(t); head.appendChild(right);
+    div.appendChild(head);
+
+    var lf=recToLineFormat(rec);
+    copyLF.addEventListener(&quot;click&quot;,function(){ copyText(lf,copyLF); });
+    bruk.addEventListener(&quot;click&quot;,function(){
+      // Send linjeformatet til vaskeverktøyet (felt «1 · Lim inn kopiert post»)
+      try { parent.postMessage({ type:&quot;oria-bruk&quot;, text: lf }, &quot;*&quot;); } catch(e){}
+      var old=bruk.textContent;
+      bruk.textContent=&quot;Lagt inn ✓&quot;; bruk.classList.add(&quot;done&quot;);
+      setTimeout(function(){ bruk.textContent=old; bruk.classList.remove(&quot;done&quot;); },1600);
+    });
+
+    var leader = rec.querySelector(&quot;leader&quot;);
+    if(leader){
+      var ld=document.createElement(&quot;div&quot;); ld.className=&quot;leader&quot;;
+      ld.innerHTML='<b>LEADER</b> <span>'+escapeHtml(leader.textContent)+'</span>';
+      div.appendChild(ld);
+    }
+
+    var table=document.createElement(&quot;table&quot;); table.className=&quot;marc&quot;;
+    var fields=rec.children;
+    for(var i=0;i<fields.length;i++){
+      var f=fields[i], name=f.localName;
+      if(name===&quot;controlfield&quot;){
+        var tr=document.createElement(&quot;tr&quot;); tr.className=&quot;ctrl&quot;;
+        tr.innerHTML='<td class=&quot;tag&quot;>*'+escapeHtml(f.getAttribute(&quot;tag&quot;))+'</td>'+
+          '<td class=&quot;ind&quot;></td>'+
+          '<td class=&quot;val&quot;>'+escapeHtml(f.textContent)+'</td>';
+        table.appendChild(tr);
+      } else if(name===&quot;datafield&quot;){
+        var sfs=f.querySelectorAll(&quot;subfield&quot;), html=&quot;&quot;;
+        for(var k=0;k<sfs.length;k++){
+          html += '<span class=&quot;sf&quot;><span class=&quot;sfc&quot;>'+escapeHtml(sfs[k].getAttribute(&quot;code&quot;))+
+                  '</span> '+escapeHtml(sfs[k].textContent)+'</span>  ';
+        }
+        var tr2=document.createElement(&quot;tr&quot;);
+        tr2.innerHTML='<td class=&quot;tag&quot;>*'+escapeHtml(f.getAttribute(&quot;tag&quot;))+'</td>'+
+          '<td class=&quot;ind&quot;>'+escapeHtml(indDisp(f.getAttribute(&quot;ind1&quot;)))+escapeHtml(indDisp(f.getAttribute(&quot;ind2&quot;)))+'</td>'+
+          '<td class=&quot;val&quot;>'+html+'</td>';
+        table.appendChild(tr2);
+      }
+    }
+    div.appendChild(table);
+
+    // raw xml
+    var det=document.createElement(&quot;details&quot;); det.className=&quot;raw&quot;;
+    var sum=document.createElement(&quot;summary&quot;); sum.textContent=&quot;Rå MARCXML&quot;;
+    var bar=document.createElement(&quot;div&quot;); bar.className=&quot;rawbar&quot;;
+    var copyXml=document.createElement(&quot;button&quot;);
+    copyXml.type=&quot;button&quot;; copyXml.className=&quot;ghost copybtn&quot;; copyXml.textContent=&quot;Kopier XML&quot;;
+    var xmlStr=prettyXml(serialize(rec));
+    copyXml.addEventListener(&quot;click&quot;,function(){ copyText(xmlStr,copyXml); });
+    bar.appendChild(copyXml);
+    var pre=document.createElement(&quot;pre&quot;); pre.className=&quot;xml&quot;;
+    pre.textContent=xmlStr;
+    det.appendChild(sum); det.appendChild(bar); det.appendChild(pre);
+    div.appendChild(det);
+    return div;
+  }
+
+  function serialize(node){ return new XMLSerializer().serializeToString(node); }
+  function prettyXml(xml){
+    var formatted=&quot;&quot;, reg=/(>)(<)(\/*)/g, pad=0;
+    xml=xml.replace(reg,&quot;$1\n$2$3&quot;);
+    xml.split(&quot;\n&quot;).forEach(function(node){
+      var indent=0;
+      if(node.match(/.+<\/\w[^>]*>$/)) indent=0;
+      else if(node.match(/^<\/\w/)){ if(pad>0) pad-=1; }
+      else if(node.match(/^<\w[^>]*[^\/]>.*$/)) indent=1;
+      formatted += new Array(pad+1).join(&quot;  &quot;)+node+&quot;\n&quot;;
+      pad+=indent;
+    });
+    return formatted.trim();
+  }
+
+  function showRecords(xmlText){
+    var doc=new DOMParser().parseFromString(xmlText,&quot;application/xml&quot;);
+    if(doc.querySelector(&quot;parsererror&quot;)){
+      setStatus(&quot;Klarte ikke å tolke XML-svaret.&quot;,&quot;err&quot;); return false;
+    }
+    var diag=doc.getElementsByTagNameNS(&quot;*&quot;,&quot;diagnostic&quot;);
+    if(diag.length){
+      var msg=diag[0].getElementsByTagNameNS(&quot;*&quot;,&quot;message&quot;)[0];
+      setStatus(&quot;SRU-diagnose: &quot;+(msg?msg.textContent:&quot;ukjent feil&quot;),&quot;err&quot;); return false;
+    }
+    var numEl=doc.getElementsByTagNameNS(&quot;*&quot;,&quot;numberOfRecords&quot;)[0];
+    var num=numEl?numEl.textContent:&quot;?&quot;;
+    var recs=doc.getElementsByTagNameNS(MARCNS,&quot;record&quot;);
+    recsEl.innerHTML=&quot;&quot;;
+    if(!recs.length){
+      countEl.innerHTML=&quot;<b>0</b> poster funnet&quot;;
+      outEl.style.display=&quot;block&quot;;
+      setStatus(&quot;Ingen treff.&quot;,&quot;ok&quot;);
+      return true;
+    }
+    var shownAll=[];
+    for(var i=0;i<recs.length;i++) shownAll.push(recs[i]);
+    var booksOnly=$(&quot;booksOnly&quot;).checked, shown=0, hidden=0;
+    for(var j=0;j<shownAll.length;j++){
+      if(booksOnly &amp;&amp; !isBook(shownAll[j])){ hidden++; continue; }
+      recsEl.appendChild(renderRecord(shownAll[j])); shown++;
+    }
+    var extra = hidden ? &quot; · filtrert bort (ikke bok): <b>&quot;+hidden+&quot;</b>&quot; : &quot;&quot;;
+    countEl.innerHTML=&quot;Treff totalt: <b>&quot;+escapeHtml(num)+&quot;</b> · viser <b>&quot;+shown+&quot;</b>&quot;+extra;
+    outEl.style.display=&quot;block&quot;;
+    if(shown===0 &amp;&amp; hidden>0){
+      setStatus(&quot;Ingen bøker i utvalget (&quot;+hidden+&quot; andre poster filtrert bort).&quot;,&quot;ok&quot;);
+    } else {
+      setStatus(&quot;Hentet &quot;+shown+&quot; post&quot;+(shown!==1?&quot;er&quot;:&quot;&quot;)+&quot;.&quot;,&quot;ok&quot;);
+    }
+    return true;
+  }
+
+  function setStatus(msg,cls){
+    statusEl.className=&quot;status&quot;+(cls?(&quot; &quot;+cls):&quot;&quot;);
+    statusEl.innerHTML=msg;
+  }
+
+  function fetchNow(){
+    var r=resolve();
+    if(!r.value){ setStatus(&quot;Skriv inn noe å søke etter.&quot;,&quot;err&quot;); qEl.focus(); return; }
+    var u=render();
+    fbEl.style.display=&quot;none&quot;;
+    setStatus('<span class=&quot;spin&quot;></span>Henter fra SRU…','');
+    $(&quot;go&quot;).disabled=true;
+    fetch(u.full,{headers:{&quot;Accept&quot;:&quot;application/xml&quot;}})
+      .then(function(res){
+        if(!res.ok) throw new Error(&quot;HTTP &quot;+res.status+&quot; &quot;+res.statusText);
+        return res.text();
+      })
+      .then(function(txt){ showRecords(txt); })
+      .catch(function(err){
+        outEl.style.display=&quot;none&quot;;
+        setStatus(&quot;Direkte­kall mislyktes: &quot;+escapeHtml(err.message)+&quot;. Bruk innliming under.&quot;,&quot;err&quot;);
+        fbEl.style.display=&quot;block&quot;;
+      })
+      .finally(function(){ $(&quot;go&quot;).disabled=false; });
+  }
+
+  // events
+  [&quot;input&quot;,&quot;change&quot;].forEach(function(ev){
+    qEl.addEventListener(ev,render); typeEl.addEventListener(ev,render);
+    zoneEl.addEventListener(ev,render); maxEl.addEventListener(ev,render);
+  });
+  $(&quot;booksOnly&quot;).addEventListener(&quot;change&quot;,render);
+  $(&quot;go&quot;).addEventListener(&quot;click&quot;,fetchNow);
+  qEl.addEventListener(&quot;keydown&quot;,function(e){ if(e.key===&quot;Enter&quot;) fetchNow(); });
+  $(&quot;copy&quot;).addEventListener(&quot;click&quot;,function(){
+    var u=buildUrl(resolve());
+    navigator.clipboard &amp;&amp; navigator.clipboard.writeText(u.full);
+    var b=$(&quot;copy&quot;), old=b.textContent; b.textContent=&quot;Kopiert ✓&quot;;
+    setTimeout(function(){ b.textContent=old; },1400);
+  });
+  $(&quot;parsePaste&quot;).addEventListener(&quot;click&quot;,function(){
+    var txt=clean($(&quot;paste&quot;).value);
+    if(!txt){ setStatus(&quot;Lim inn XML først.&quot;,&quot;err&quot;); return; }
+    fbEl.style.display=&quot;none&quot;;
+    if(showRecords(txt)) window.scrollTo({top:outEl.offsetTop-20,behavior:&quot;smooth&quot;});
+  });
+
+  render();
+
+  // Rapporter høyde til foreldre-rammen, så seksjonen er kompakt før søk
+  // og utvides automatisk når treff vises.
+  function postHeight(){
+    var h = Math.ceil(document.documentElement.getBoundingClientRect().height);
+    try { parent.postMessage({ type:&quot;oria-height&quot;, height:h }, &quot;*&quot;); } catch(e){}
+  }
+  if (window.ResizeObserver) { new ResizeObserver(postHeight).observe(document.body); }
+  window.addEventListener(&quot;load&quot;, postHeight);
+  setTimeout(postHeight, 60);
+})();
+</script>
+</body>
+</html>
+" title="MARC-uttrekk via SRU fra Oria/BIBSYS" loading="lazy"></iframe>
       </div>
     </details>
 
@@ -2008,14 +2569,16 @@ pre {
 
   // Meldinger fra Oria-rammen (iframe)
   window.addEventListener("message", function (e) {
+    const ramme = document.querySelector(".oria-iframe");
+    // Sikkerhet: godta kun meldinger som faktisk kommer fra Oria-rammen
+    if (!ramme || e.source !== ramme.contentWindow) return;
     const d = e.data;
     if (!d || typeof d !== "object") return;
 
     // Auto-høyde: gjør seksjonen kompakt før søk, utvider den ved treff
     if (d.type === "oria-height") {
-      const ramme = document.querySelector(".oria-iframe");
       const h = Number(d.height);
-      if (ramme && h > 0) ramme.style.height = Math.min(2400, Math.max(180, h + 4)) + "px";
+      if (h > 0) ramme.style.height = Math.min(2400, Math.max(180, h + 4)) + "px";
     }
 
     // «Kopier til bruk»: legg posten rett i feltet «Lim inn kopiert post»
