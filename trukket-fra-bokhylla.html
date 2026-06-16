@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Trukket fra Bokhylla | Nasjonalbiblioteket</title>
+  <meta name="description" content="Søk i bøker som er trukket ut av Bokhylla-avtalen (withdrawnbokhylla). Filtrer på tittel, forfatter og forlag, og se omslag, utgivelsesår og forlag.">
+
+  <meta property="og:title"       content="Trukket fra Bokhylla | Nasjonalbiblioteket">
+  <meta property="og:description" content="Søk i bøker trukket ut av Bokhylla-avtalen.">
+  <meta property="og:type"        content="website">
+  <meta property="og:locale"      content="nb_NO">
+
+  <meta name="theme-color" content="#550029">
+
+  <link rel="preconnect" href="https://www.nb.no">
+  <link rel="preconnect" href="https://api.nb.no">
+  <link rel="stylesheet" href="nb-framework/css/nb-all.css">
+
+  <style>
+    /* Sidespesifikke tillegg – bygger på nb-framework-tokens */
+    .tfb-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: var(--nb-space-4, 1rem);
+      margin-bottom: var(--nb-space-8, 2rem);
+    }
+    .tfb-field { display: flex; flex-direction: column; flex: 1 1 200px; min-width: 180px; }
+    .tfb-field--wide { flex: 2 1 260px; }
+    .tfb-field--year { flex: 0 0 auto; width: 200px; }
+    .tfb-field--sort { flex: 0 0 auto; width: 150px; }
+    .tfb-year-range { display: flex; align-items: center; gap: .4rem; }
+    .tfb-year-range input { width: 100%; min-width: 0; }
+    /* Rad 2 holder år, sortering og knapper samlet på én linje */
+    .tfb-toolbar--row2 { margin-top: -.5rem; }
+    .tfb-actions { display: flex; gap: var(--nb-space-2, .5rem); flex: 0 0 auto; }
+
+    .tfb-resultbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--nb-space-4, 1rem);
+      margin-bottom: var(--nb-space-6, 1.5rem);
+    }
+    .tfb-count { font-weight: 600; margin: 0; }
+
+    .tfb-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: var(--nb-space-4, 1rem);
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    /* Horisontalt kort: lite omslag til venstre, tekst til høyre */
+    .tfb-card {
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      height: 100%;
+      gap: var(--nb-space-4, 1rem);
+      padding: var(--nb-space-4, 1rem);
+    }
+    .tfb-card .nb-card__body {
+      display: flex; flex-direction: column; gap: .2rem;
+      min-width: 0; flex: 1 1 auto; padding: 0;
+    }
+    .tfb-thumb-wrap {
+      flex: 0 0 auto;
+      width: 86px;
+      height: 128px;
+      background: var(--nb-color-bg-hero, #E4DFDE);
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+      border-radius: 8px;
+    }
+    .tfb-thumb-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .tfb-thumb-fallback {
+      display: flex; align-items: center; justify-content: center;
+      width: 100%; height: 100%;
+      color: var(--nb-color-text-primary, #17181B);
+      font-size: .72rem; text-align: center; padding: .5rem; opacity: .6;
+    }
+    /* Boktitler i Bureau Sans (brødtekstfont) i stedet for Clearface */
+    .tfb-card .nb-card__title,
+    .tfb-card .nb-card__title a {
+      font-family: var(--nb-font-body, "Bureau Sans", sans-serif);
+      font-weight: 600;
+    }
+    .tfb-meta { font-size: .9rem; color: var(--nb-color-text-primary, #17181B); margin: 0; }
+    .tfb-meta strong { font-weight: 600; }
+
+    .tfb-pagination {
+      display: flex; align-items: center; justify-content: center;
+      gap: var(--nb-space-4, 1rem);
+      margin-top: var(--nb-space-16, 4rem);
+    }
+    .tfb-pagination[hidden] { display: none; }
+
+    .tfb-progress { margin: 0 0 var(--nb-space-6, 1.5rem); }
+    .tfb-progress[hidden] { display: none; }
+    .tfb-progress__label {
+      display: flex; justify-content: space-between;
+      font-size: .9rem; margin-bottom: .35rem;
+    }
+    .tfb-progress__track {
+      width: 100%; height: 10px; border-radius: 999px; overflow: hidden;
+      background: var(--nb-color-bg-hero, #E4DFDE);
+    }
+    .tfb-progress__bar {
+      height: 100%; width: 0%;
+      background: var(--nb-color-primary-active, #550029);
+      transition: width .2s ease;
+    }
+    @media (prefers-reduced-motion: reduce) { .tfb-progress__bar { transition: none; } }
+
+    .tfb-status { margin: var(--nb-space-8, 2rem) 0; }
+    .tfb-spinner {
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 4px solid var(--nb-color-bg-hero, #E4DFDE);
+      border-top-color: var(--nb-color-primary-active, #550029);
+      animation: tfb-spin .8s linear infinite;
+      margin: 0 auto;
+    }
+    @keyframes tfb-spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .tfb-spinner { animation: none; } }
+  </style>
+</head>
+
+<body>
+
+  <a href="#main-content" class="nb-skip-link">Hopp til hovedinnholdet</a>
+
+  <!-- ─── HEADER ─────────────────────────────────────────────── -->
+  <header class="nb-header nb-bg-hero" role="banner">
+    <div class="nb-header__inner">
+      <a href="https://www.nb.no/" class="nb-header__logo"
+         aria-label="Nasjonalbiblioteket – gå til forsiden">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 26" height="26" width="20"
+             aria-hidden="true" focusable="false">
+          <path d="M1.33333 7.49151C2.06971 7.49151 2.66666 6.89962 2.66666 6.16948C2.66666 5.43934 2.06971 4.84744 1.33333 4.84744C0.596953 4.84744 0 5.43934 0 6.16948C0 6.89962 0.596953 7.49151 1.33333 7.49151Z" fill="currentColor"/>
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M20 0H4.44448V21.5932H20V0ZM15.1111 6.16948C15.1111 6.8996 14.5142 7.4915 13.7778 7.4915C13.0414 7.4915 12.4444 6.8996 12.4444 6.16948C12.4444 5.43935 13.0414 4.84746 13.7778 4.84746C14.5142 4.84746 15.1111 5.43935 15.1111 6.16948ZM8.88888 6.16948C8.88888 6.8996 8.29192 7.4915 7.55556 7.4915C6.8192 7.4915 6.22224 6.8996 6.22224 6.16948C6.22224 5.43935 6.8192 4.84746 7.55556 4.84746C8.29192 4.84746 8.88888 5.43935 8.88888 6.16948ZM13.7778 13.661C14.5142 13.661 15.1111 13.0691 15.1111 12.339C15.1111 11.6088 14.5142 11.017 13.7778 11.017C13.0414 11.017 12.4444 11.6088 12.4444 12.339C12.4444 13.0691 13.0414 13.661 13.7778 13.661ZM15.1111 18.5085C15.1111 19.2386 14.5142 19.8305 13.7778 19.8305C13.0414 19.8305 12.4444 19.2386 12.4444 18.5085C12.4444 17.7783 13.0414 17.1864 13.7778 17.1864C14.5142 17.1864 15.1111 17.7783 15.1111 18.5085Z" fill="currentColor"/>
+          <path d="M13.7778 26C14.5142 26 15.1111 25.4081 15.1111 24.678C15.1111 23.9478 14.5142 23.3559 13.7778 23.3559C13.0414 23.3559 12.4445 23.9478 12.4445 24.678C12.4445 25.4081 13.0414 26 13.7778 26Z" fill="currentColor"/>
+        </svg>
+        <span class="nb-header__logo-text">Nasjonalbiblioteket</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- ─── HOVEDINNHOLD ───────────────────────────────────────── -->
+  <main id="main-content" role="main" tabindex="-1">
+
+    <section class="nb-section" aria-labelledby="page-heading">
+      <div class="nb-container">
+
+        <h1 id="page-heading">Trukket fra Bokhylla</h1>
+        <p>
+          Søk i bøker som er <strong>trukket ut av Bokhylla-avtalen</strong>
+          (tilgangsklassen <code>withdrawnbokhylla</code>). Hvert kort viser omslag,
+          forfatter, forlag og utgivelsesår, og lenker til posten på nb.no.
+          Du kan laste ned trefflisten som csv for videre bruk.
+        </p>
+
+        <div class="nb-alert nb-alert--info" role="note" style="margin-top:1rem;">
+          <strong>Merk:</strong> Disse titlene er tatt ut av Bokhylla-avtalen og
+          kan derfor ikke leses på nett. Metadataene er åpne.
+        </div>
+
+        <!-- ─── SØKE- OG FILTERSKJEMA ─── -->
+        <form id="tfb-form" role="search" aria-labelledby="page-heading"
+              style="margin-top:2rem;" novalidate>
+          <!-- Rad 1: tekstsøk -->
+          <div class="tfb-toolbar">
+
+            <div class="tfb-field tfb-field--wide">
+              <label class="nb-label" for="f-fritekst">Fritekst</label>
+              <input class="nb-input" type="search" id="f-fritekst" name="fritekst"
+                     placeholder="Søk i alt …" autocomplete="off">
+            </div>
+
+            <div class="tfb-field">
+              <label class="nb-label" for="f-tittel">Tittel</label>
+              <input class="nb-input" type="search" id="f-tittel" name="tittel"
+                     placeholder="f.eks. Norge" autocomplete="off">
+            </div>
+
+            <div class="tfb-field">
+              <label class="nb-label" for="f-forfatter">Forfatter</label>
+              <input class="nb-input" type="search" id="f-forfatter" name="forfatter"
+                     placeholder="f.eks. Navn Navnesen" autocomplete="off">
+            </div>
+
+            <div class="tfb-field">
+              <label class="nb-label" for="f-forlag">Forlag</label>
+              <input class="nb-input" type="search" id="f-forlag" name="forlag"
+                     placeholder="f. eks. Bokutgiver" autocomplete="off">
+            </div>
+          </div>
+
+          <!-- Rad 2: utgivelsesår, sortering og handlinger -->
+          <div class="tfb-toolbar tfb-toolbar--row2">
+
+            <div class="tfb-field tfb-field--year">
+              <label class="nb-label" for="f-aar-fra">Utgivelsesår</label>
+              <div class="tfb-year-range">
+                <input class="nb-input" type="number" id="f-aar-fra" name="aarFra"
+                       placeholder="fra" inputmode="numeric" min="0" max="2100"
+                       aria-label="Utgivelsesår fra" autocomplete="off">
+                <span aria-hidden="true">–</span>
+                <input class="nb-input" type="number" id="f-aar-til" name="aarTil"
+                       placeholder="til" inputmode="numeric" min="0" max="2100"
+                       aria-label="Utgivelsesår til" autocomplete="off">
+              </div>
+            </div>
+
+            <div class="tfb-field tfb-field--sort">
+              <label class="nb-label" for="f-sort">Sorter</label>
+              <select class="nb-select" id="f-sort" name="sort">
+                <option value="">Relevans</option>
+                <option value="title,asc">Tittel A–Å</option>
+                <option value="date,desc">Nyeste først</option>
+                <option value="date,asc">Eldste først</option>
+              </select>
+            </div>
+
+            <div class="tfb-actions">
+              <button type="submit" class="nb-btn nb-btn--primary">Søk</button>
+              <button type="reset" class="nb-btn nb-btn--ghost" id="tfb-reset">Nullstill</button>
+            </div>
+          </div>
+        </form>
+
+        <!-- ─── RESULTATER ─── -->
+        <div class="tfb-resultbar">
+          <p class="tfb-count" id="tfb-count" aria-live="polite"></p>
+          <button type="button" class="nb-btn nb-btn--secondary" id="tfb-csv" disabled>
+            Last ned CSV
+          </button>
+        </div>
+
+        <div class="tfb-progress" id="tfb-progress" hidden>
+          <div class="tfb-progress__label">
+            <span id="tfb-progress-text">Forbereder nedlasting …</span>
+            <span id="tfb-progress-pct">0 %</span>
+          </div>
+          <div class="tfb-progress__track">
+            <div class="tfb-progress__bar" id="tfb-progress-bar"
+                 role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
+                 aria-label="Nedlastingsframdrift"></div>
+          </div>
+        </div>
+
+        <div class="tfb-status" id="tfb-status" aria-hidden="true">
+          <div class="tfb-spinner" role="status" aria-label="Laster resultater"></div>
+        </div>
+
+        <ul class="tfb-grid" id="tfb-results"></ul>
+
+        <nav class="tfb-pagination" id="tfb-pagination" aria-label="Sidenavigering" hidden>
+          <button type="button" class="nb-btn nb-btn--secondary" id="tfb-prev">← Forrige</button>
+          <span id="tfb-pageinfo" aria-live="polite"></span>
+          <button type="button" class="nb-btn nb-btn--secondary" id="tfb-next">Neste →</button>
+        </nav>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ─── FOOTER ─────────────────────────────────────────────── -->
+  <footer class="nb-footer nb-bg-hero" role="contentinfo">
+    <div class="nb-footer__main">
+      <div>
+        <h2 class="nb-footer__section-title">Åpningstider</h2>
+        <p class="nb-footer__text">Mandag–fredag: 09:00 – 22:00</p>
+        <p class="nb-footer__text">Lørdag: 10:00 – 20:00</p>
+        <p class="nb-footer__text">Søndag: Stengt</p>
+        <a href="https://www.nb.no/apningstider/" class="nb-footer__text" style="display:block;">
+          Les mer om åpningstider og tilbud
+        </a>
+
+        <h2 class="nb-footer__section-title" style="margin-top: 48px;">Besøksadresse</h2>
+        <a href="https://maps.google.com/?q=Henrik+Ibsens+gate+110,+Oslo"
+           class="nb-footer__text" style="display:block;"
+           rel="noopener noreferrer"
+           aria-label="Henrik Ibsens gate 110, Oslo – åpner i Google Maps">
+          Henrik Ibsens gate 110, Oslo
+        </a>
+        <a href="https://maps.google.com/?q=Finsetveien+2,+Mo+i+Rana"
+           class="nb-footer__text" style="display:block;"
+           rel="noopener noreferrer"
+           aria-label="Finsetveien 2, Mo i Rana – åpner i Google Maps">
+          Finsetveien 2, Mo i Rana
+        </a>
+
+        <h2 class="nb-footer__section-title" style="margin-top: 48px;">Kontaktinformasjon</h2>
+        <ul class="nb-footer__links">
+          <li><a href="mailto:nb@nb.no" aria-label="Send e-post til nb@nb.no">E-post: nb@nb.no</a></li>
+          <li><a href="tel:+4723276000" aria-label="Ring 23 27 60 00">Telefon: 23 27 60 00</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 class="nb-footer__section-title">Snarveier</h2>
+        <ul class="nb-footer__links" role="list">
+          <li><a href="https://www.nb.no/en/" lang="en" hreflang="en">NB in English</a></li>
+          <li><a href="https://www.nb.no/spor-nasjonalbiblioteket/">Spør Nasjonalbiblioteket</a></li>
+          <li><a href="https://www.nb.no/om-nb/ledige-stillinger/">Ledige stillinger</a></li>
+          <li><a href="https://www.nb.no/tjenester/standardnummerering/">Standardnummerering</a></li>
+          <li><a href="https://www.nb.no/om-nb/kontaktadresser/">Adresseoversikt</a></li>
+          <li><a href="https://www.nb.no/hjelp-og-informasjon/">Hjelp og informasjon</a></li>
+          <li><a href="https://uustatus.no/nb/erklaringer/publisert/fcb9322a-04cf-441d-bf1c-9e68b3b9855e" rel="noopener noreferrer">Tilgjengelighetserklæring</a></li>
+          <li><a href="https://www.nb.no/om-nb/presse/">Presse</a></li>
+          <li><a href="https://einnsyn.no/sok?stat0=http%3A%2F%2Fdata.einnsyn.no%2Fvirksomhet%2Foepeksport_content_provider_126" rel="noopener noreferrer">Offentlig postjournal</a></li>
+          <li><a href="https://www.nb.no/om-nb/">Om oss</a></li>
+          <li><a href="https://www.nb.no/pliktavlevering/">Pliktavlevering</a></li>
+          <li><a href="https://www.nb.no/personvernerklaering/">Personvernerklæring</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 class="nb-footer__section-title">Ansvarlig redaktør</h2>
+        <p class="nb-footer__text">Åse Wetås</p>
+
+        <h2 class="nb-footer__section-title" style="margin-top: 48px;">Organisasjonsnummer</h2>
+        <p class="nb-footer__text">976 029 100</p>
+
+        <h2 class="nb-footer__section-title" style="margin-top: 48px;">Sosiale medier</h2>
+        <ul class="nb-footer__social" role="list">
+          <li>
+            <a href="https://www.instagram.com/nasjonalbiblioteket/" rel="noopener noreferrer" target="_blank">
+              <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+              </svg>
+              Instagram
+            </a>
+          </li>
+          <li>
+            <a href="https://www.facebook.com/nasjonalbiblioteket/" rel="noopener noreferrer" target="_blank">
+              <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+              </svg>
+              Facebook
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </footer>
+
+  <a href="https://www.nb.no/spor-nasjonalbiblioteket/"
+     class="nb-footer__ask-btn"
+     aria-label="Spør biblioteket – få hjelp fra Nasjonalbiblioteket">
+    Spør biblioteket
+  </a>
+
+  <!-- WCAG 4.1.3: Dynamisk statusmelding-region -->
+  <script>
+    (function () {
+      'use strict';
+      const liveRegion = document.createElement('div');
+      liveRegion.setAttribute('aria-live', 'polite');
+      liveRegion.setAttribute('aria-atomic', 'true');
+      liveRegion.classList.add('nb-sr-only');
+      liveRegion.id = 'nb-live-region';
+      document.body.appendChild(liveRegion);
+      window.nbAnnounce = function (message) {
+        liveRegion.textContent = '';
+        requestAnimationFrame(function () { liveRegion.textContent = message; });
+      };
+    }());
+  </script>
+
+  <!-- ─── SØKELOGIKK MOT api.nb.no ───────────────────────────── -->
+  <script>
+    (function () {
+      'use strict';
+
+      const API   = 'https://api.nb.no/catalog/v1/items';
+      const SIZE  = 24;
+      // Grunnfilter: bøker som er trukket ut av Bokhylla-avtalen.
+      const BASE_FILTERS = ['contentClasses:withdrawnbokhylla', 'mediatype:bøker'];
+      // Utgangssøk: «vis alle treff». q=qwerty123 gir 0 treff i live-API-et,
+      // så denne sentinelen oversettes til q=* som faktisk returnerer alt.
+      const DEFAULT_Q = 'qwerty123';
+
+      const form   = document.getElementById('tfb-form');
+      const results= document.getElementById('tfb-results');
+      const countEl= document.getElementById('tfb-count');
+      const statusEl = document.getElementById('tfb-status');
+      const pagEl  = document.getElementById('tfb-pagination');
+      const prevBtn= document.getElementById('tfb-prev');
+      const nextBtn= document.getElementById('tfb-next');
+      const pageInfo = document.getElementById('tfb-pageinfo');
+      const csvBtn = document.getElementById('tfb-csv');
+
+      const el = {
+        fritekst:  document.getElementById('f-fritekst'),
+        tittel:    document.getElementById('f-tittel'),
+        forfatter: document.getElementById('f-forfatter'),
+        forlag:    document.getElementById('f-forlag'),
+        aarFra:    document.getElementById('f-aar-fra'),
+        aarTil:    document.getElementById('f-aar-til'),
+        sort:      document.getElementById('f-sort')
+      };
+
+      let state = { page: 0, totalPages: 0, total: 0 };
+
+      // Fjern Lucene-tegn som kan bryte spørringssyntaksen.
+      function clean(v) {
+        return (v || '').trim().replace(/[:()\[\]{}"~^\\\/]/g, ' ').replace(/\s+/g, ' ').trim();
+      }
+
+      // Snur «Etternavn, Fornavn» → «Fornavn Etternavn».
+      function flipName(name) {
+        const s = (name || '').trim();
+        const i = s.indexOf(',');
+        if (i === -1) return s;                       // ikke noe komma – la stå
+        if (s.indexOf(',') !== s.lastIndexOf(',')) return s; // flere komma – la stå
+        const last  = s.slice(0, i).trim();
+        const first = s.slice(i + 1).trim();
+        return first ? first + ' ' + last : last;
+      }
+
+      function escapeHtml(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      }
+
+      // Bygger q-strengen fra skjemafeltene.
+      function buildQuery() {
+        const parts = [];
+        const tittel    = clean(el.tittel.value);
+        const forfatter = clean(el.forfatter.value);
+        const forlag    = clean(el.forlag.value);
+        let   fritekst  = clean(el.fritekst.value);
+
+        if (tittel)    parts.push('api_title:(' + tittel + ')');
+        if (forfatter) parts.push('api_namecreators:(' + forfatter + ')');
+        if (forlag)    parts.push('publisher:(' + forlag + ')');
+
+        // Sentinel-håndtering: tomt felt eller «qwerty123» = vis alt.
+        if (fritekst && fritekst.toLowerCase() !== DEFAULT_Q) {
+          parts.push('(' + fritekst + ')');
+        }
+        return parts.length ? parts.join(' AND ') : '*';
+      }
+
+      // Bygger årsfilter fra «fra»/«til»-feltene → year:[fra TO til].
+      function yearFilter() {
+        const digits = v => { const m = (v || '').replace(/\D/g, ''); return m ? parseInt(m, 10) : null; };
+        let fra = digits(el.aarFra.value);
+        let til = digits(el.aarTil.value);
+        if (fra === null && til === null) return null;
+        if (fra !== null && til !== null && fra > til) { const t = fra; fra = til; til = t; }
+        return 'year:[' + (fra === null ? '*' : fra) + ' TO ' + (til === null ? '*' : til) + ']';
+      }
+
+      function buildUrl(q, page) {
+        const p = new URLSearchParams();
+        p.set('q', q);
+        BASE_FILTERS.forEach(f => p.append('filter', f));
+        const yf = yearFilter();
+        if (yf) p.append('filter', yf);
+        p.set('size', SIZE);
+        p.set('page', page);
+        const sort = el.sort.value;
+        if (sort) p.set('sort', sort);
+        return API + '?' + p.toString();
+      }
+
+      function showStatus(show) {
+        statusEl.setAttribute('aria-hidden', show ? 'false' : 'true');
+        statusEl.style.display = show ? 'block' : 'none';
+      }
+
+      // Henter omslag i 350px høyde. Bruker det templatede thumbnail_custom-
+      // lenket når det finnes, ellers skaleres en eksisterende thumbnail opp.
+      const THUMB_HEIGHT = 200;
+      function thumbHref(item) {
+        const links = item._links || {};
+        if (links.thumbnail_custom && links.thumbnail_custom.href) {
+          return links.thumbnail_custom.href.replace('{width},{height}', '0,' + THUMB_HEIGHT);
+        }
+        const t = links.thumbnail_large || links.thumbnail_medium || links.thumbnail_small;
+        if (t && t.href) {
+          return t.href.replace(/\/full\/[^/]+\//, '/full/0,' + THUMB_HEIGHT + '/');
+        }
+        return null;
+      }
+
+      function renderItems(items) {
+        results.innerHTML = '';
+        if (!items.length) {
+          results.innerHTML = '<li><div class="nb-alert nb-alert--warning" role="note">' +
+            '<strong>Ingen treff.</strong> Prøv andre søkeord eller nullstill filtrene.</div></li>';
+          return;
+        }
+        const frag = document.createDocumentFragment();
+        items.forEach(item => {
+          const m   = item.metadata || {};
+          const oi  = m.originInfo || {};
+          const title = m.title || 'Uten tittel';
+          const authors = Array.isArray(m.creators) && m.creators.length
+            ? m.creators.map(flipName).join(', ') : 'Ukjent forfatter';
+          const publisher = oi.publisher || '–';
+          const year = oi.issued || '–';
+          const href = 'https://www.nb.no/items/' + encodeURIComponent(item.id);
+          const thumb = thumbHref(item);
+
+          const li = document.createElement('li');
+          li.innerHTML =
+            '<article class="nb-card tfb-card">' +
+              '<a class="tfb-thumb-wrap" href="' + href + '" target="_blank" rel="noopener noreferrer" ' +
+                 'aria-label="Åpne «' + escapeHtml(title) + '» på nb.no" tabindex="-1">' +
+                (thumb
+                  ? '<img src="' + escapeHtml(thumb) + '" alt="Omslag: ' + escapeHtml(title) + '" loading="lazy" ' +
+                    'onerror="this.parentNode.innerHTML=\'<span class=&quot;tfb-thumb-fallback&quot;>Ingen omslagsbilde</span>\'">'
+                  : '<span class="tfb-thumb-fallback">Ingen omslagsbilde</span>') +
+              '</a>' +
+              '<div class="nb-card__body">' +
+                '<h3 class="nb-card__title" style="margin:0;font-size:1rem;">' +
+                  '<a href="' + href + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(title) + '</a>' +
+                '</h3>' +
+                '<p class="tfb-meta">' + escapeHtml(authors) + '</p>' +
+                '<p class="tfb-meta"><strong>Forlag:</strong> ' + escapeHtml(publisher) + '</p>' +
+                '<p class="tfb-meta"><strong>År:</strong> ' + escapeHtml(year) + '</p>' +
+              '</div>' +
+            '</article>';
+          frag.appendChild(li);
+        });
+        results.appendChild(frag);
+      }
+
+      function updatePagination() {
+        if (state.totalPages <= 1) { pagEl.hidden = true; return; }
+        pagEl.hidden = false;
+        prevBtn.disabled = state.page <= 0;
+        nextBtn.disabled = state.page >= state.totalPages - 1;
+        pageInfo.textContent = 'Side ' + (state.page + 1) + ' av ' + state.totalPages;
+      }
+
+      function search(page) {
+        const q = buildQuery();
+        const url = buildUrl(q, page);
+        showStatus(true);
+        countEl.textContent = '';
+        results.innerHTML = '';
+        pagEl.hidden = true;
+        csvBtn.disabled = true;
+
+        fetch(url, { headers: { 'Accept': 'application/json' } })
+          .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+          .then(data => {
+            const pg = data.page || {};
+            const items = (data._embedded && data._embedded.items) || [];
+            state.page = pg.number || 0;
+            state.total = pg.totalElements || 0;
+            state.totalPages = pg.totalPages || 0;
+
+            const fmt = state.total.toLocaleString('nb-NO');
+            countEl.textContent = state.total
+              ? fmt + ' bøker trukket fra Bokhylla'
+              : 'Ingen treff';
+            window.nbAnnounce(state.total + ' treff funnet.');
+
+            csvBtn.disabled = state.total === 0;
+            renderItems(items);
+            updatePagination();
+            showStatus(false);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          })
+          .catch(err => {
+            showStatus(false);
+            countEl.textContent = '';
+            results.innerHTML = '<li><div class="nb-alert nb-alert--error" role="alert">' +
+              '<strong>Feil ved henting:</strong> ' + escapeHtml(err.message) +
+              '. Sjekk nettforbindelsen og prøv igjen.</div></li>';
+          });
+      }
+
+      // ─── CSV-eksport av hele utvalget ───
+      const CSV_PAGE  = 100;     // maks per side i API-et
+      const PAGE_CAP  = 50;      // API-et tillater bare side 0–50
+      const MAX_ROWS  = 20000;   // sikkerhetstak
+
+      // Rollekode (MARC relator) → gruppe. Alt annet havner i «Andre».
+      const ROLE_GROUP = {
+        aut: 'forfatter', cre: 'forfatter', com: 'forfatter',
+        trl: 'oversetter',
+        ill: 'illustrator',
+        edt: 'redaktor', red: 'redaktor'
+      };
+
+      function allIsbns(m) {
+        const id = (m && m.identifiers) || {};
+        return [].concat(id.isbn13 || [], id.isbn10 || []);
+      }
+      // Bruker bok-ISBN (serie-/vert-ISBN fjernet) når den er funnet via MODS.
+      function isbnOf(m) {
+        if (m && m._isbnRefined) return m._isbnRefined.join(' ');
+        return allIsbns(m).join(' ');
+      }
+      function normIsbn(s) { return String(s).replace(/[^0-9Xx]/g, '').toUpperCase(); }
+
+      // URN → full lenke. Hele URN-en (inkl. «URN:NBN:no-») må være med,
+      // f.eks. https://www.nb.no/items/URN:NBN:no-nb_digibok_2020102007603
+      function urnUrl(m) {
+        const urn = (m && m.identifiers && m.identifiers.urn) || '';
+        return urn ? 'https://www.nb.no/items/' + urn : '';
+      }
+
+      function csvCell(v) {
+        const s = String(v == null ? '' : v);
+        return /[";\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+      }
+
+      function personGroup(p) {
+        const roles = p.roles || [];
+        for (let i = 0; i < roles.length; i++) {
+          const g = ROLE_GROUP[(roles[i].name || '').toLowerCase()];
+          if (g) return g;
+        }
+        return 'andre';
+      }
+
+      // Fordeler personene i én post på de seks faste gruppene.
+      // Hovedforfatter = forfatter merket usage:"primary", ellers første forfatter.
+      function groupPeople(item) {
+        const m = item.metadata || {};
+        const out = { hoved: '', forfattere: [], oversettere: [], illustratorer: [], redaktorer: [], andre: [] };
+
+        let people;
+        if (Array.isArray(m.people) && m.people.length) {
+          people = m.people.filter(p => p && p.name)
+            .map(p => ({ name: p.name, group: personGroup(p), primary: p.usage === 'primary' }));
+        } else if (Array.isArray(m.creators)) {  // fallback uten rolleinfo
+          people = m.creators.map((n, i) => ({ name: n, group: 'forfatter', primary: i === 0 }));
+        } else {
+          people = [];
+        }
+
+        const forfattere = people.filter(p => p.group === 'forfatter');
+        let hovedIdx = forfattere.findIndex(p => p.primary);
+        if (hovedIdx === -1 && forfattere.length) hovedIdx = 0;
+        if (hovedIdx !== -1) out.hoved = forfattere[hovedIdx].name;
+
+        people.forEach(p => {
+          if (p.group === 'forfatter') {
+            if (!(hovedIdx !== -1 && p === forfattere[hovedIdx])) out.forfattere.push(p.name);
+          } else if (p.group === 'oversetter')  out.oversettere.push(p.name);
+          else if (p.group === 'illustrator')   out.illustratorer.push(p.name);
+          else if (p.group === 'redaktor')      out.redaktorer.push(p.name);
+          else                                  out.andre.push(p.name);
+        });
+        return out;
+      }
+
+      function itemsToCsv(items) {
+        const header = ['Tittel', 'Hovedforfatter', 'Andre forfattere', 'Oversettere',
+                        'Illustratører', 'Redaktører', 'Andre bidragsytere',
+                        'Forlag', 'Utgivelsesår', 'ISBN', 'URN'];
+        const rows = [header.map(csvCell).join(';')];
+
+        items.forEach(item => {
+          const m = item.metadata || {};
+          const oi = m.originInfo || {};
+          const g = groupPeople(item);
+          rows.push([
+            m.title || '',
+            g.hoved,
+            g.forfattere.join('; '),
+            g.oversettere.join('; '),
+            g.illustratorer.join('; '),
+            g.redaktorer.join('; '),
+            g.andre.join('; '),
+            oi.publisher || '',
+            oi.issued || '',
+            isbnOf(m),
+            urnUrl(m)
+          ].map(csvCell).join(';'));
+        });
+
+        return rows.join('\r\n');
+      }
+
+      // Felles søkeparametere (uten page/size) for gjeldende utvalg.
+      function csvBaseParams() {
+        const p = new URLSearchParams();
+        p.set('q', buildQuery());
+        BASE_FILTERS.forEach(f => p.append('filter', f));
+        const yf = yearFilter();
+        if (yf) p.append('filter', yf);
+        const sort = el.sort.value;
+        if (sort) p.set('sort', sort);
+        return p;
+      }
+
+      async function getJson(url) {
+        const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      }
+
+      async function getText(url) {
+        const r = await fetch(url, { headers: { 'Accept': 'application/xml' } });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.text();
+      }
+
+      const MODS_BASE = API.replace(/\/items$/, '/metadata');
+
+      // Plukker ut serie-/vert-ISBN fra MODS (relatedItem type="host"/"series").
+      function parseSeriesIsbns(xml) {
+        const out = [];
+        const reRel = /<(?:\w+:)?relatedItem\b[^>]*\btype="(?:host|series)"[^>]*>([\s\S]*?)<\/(?:\w+:)?relatedItem>/gi;
+        let m;
+        while ((m = reRel.exec(xml))) {
+          const reIsbn = /<(?:\w+:)?identifier\b[^>]*\btype="isbn"[^>]*>([^<]+)</gi;
+          let i;
+          while ((i = reIsbn.exec(m[1]))) out.push(normIsbn(i[1]));
+        }
+        return out;
+      }
+
+      // For poster med flere ISBN: hent MODS og fjern serie-/vert-ISBN, slik at
+      // ISBN-kolonnen kun viser bokas eget nummer. Kjøres med begrenset parallellitet.
+      async function refineIsbns(items, onProgress) {
+        const targets = items.filter(it => allIsbns(it.metadata).length > 1);
+        const tot = targets.length;
+        if (!tot) { if (onProgress) onProgress(1, 1); return; }
+        let done = 0, idx = 0;
+        const CONC = 6;
+        async function worker() {
+          while (idx < targets.length) {
+            const it = targets[idx++];
+            try {
+              const xml = await getText(MODS_BASE + '/' + it.id + '/mods');
+              const series = parseSeriesIsbns(xml);
+              if (series.length) {
+                const sset = new Set(series);
+                const book = allIsbns(it.metadata).filter(x => !sset.has(normIsbn(x)));
+                it.metadata._isbnRefined = book.length ? book : allIsbns(it.metadata);
+              }
+            } catch (e) { /* ved feil: behold alle ISBN */ }
+            done++;
+            if (onProgress) onProgress(done, tot);
+          }
+        }
+        const ws = [];
+        for (let i = 0; i < Math.min(CONC, tot); i++) ws.push(worker());
+        await Promise.all(ws);
+      }
+
+      // ─── Statusbar ───
+      const progEl   = document.getElementById('tfb-progress');
+      const progBar  = document.getElementById('tfb-progress-bar');
+      const progText = document.getElementById('tfb-progress-text');
+      const progPct  = document.getElementById('tfb-progress-pct');
+
+      function showProgress(show) { progEl.hidden = !show; }
+      function setProgress(frac, text) {
+        const pct = Math.max(0, Math.min(100, Math.round(frac * 100)));
+        progBar.style.width = pct + '%';
+        progBar.setAttribute('aria-valuenow', pct);
+        progPct.textContent = pct + ' %';
+        if (text) progText.textContent = text;
+      }
+
+      // Pager /items?expand=metadata (gir rolleinfo, men maks ~5000 treff).
+      async function pageWithExpand(extraYear, total, onProgress) {
+        const out = [];
+        for (let page = 0; out.length < total && page <= PAGE_CAP; page++) {
+          const p = csvBaseParams();
+          if (extraYear) p.append('filter', extraYear);
+          p.set('expand', 'metadata');
+          p.set('size', CSV_PAGE);
+          p.set('page', page);
+          const data = await getJson(API + '?' + p.toString());
+          const items = (data._embedded && data._embedded.items) || [];
+          if (!items.length) break;
+          out.push.apply(out, items);
+          if (onProgress) onProgress(out.length);
+        }
+        return out;
+      }
+
+      // Henter alt via searchafter-cursoren (alle felt unntatt people).
+      async function searchafterAll(total, onProgress) {
+        const p = csvBaseParams();
+        p.set('size', CSV_PAGE);
+        p.set('page', 0);
+        p.set('searchAfterId', '*');
+        let url = API + '/searchafter?' + p.toString();
+        const out = [];
+        let guard = 0;
+        while (url && out.length < total && guard < 1000) {
+          guard++;
+          const data = await getJson(url);
+          const items = (data._embedded && data._embedded.items) || [];
+          if (!items.length) break;
+          out.push.apply(out, items);
+          if (onProgress) onProgress(out.length);
+          const next = data._links && data._links.next;
+          url = next && next.href ? next.href : null;
+        }
+        return out;
+      }
+
+      // Bygger id→people-kart ved å dele utvalget i årsintervaller < 5000.
+      async function peopleMapByYear(onProgress) {
+        const map = {};
+        let done = 0;
+        async function range(lo, hi) {
+          const cp = csvBaseParams();
+          cp.append('filter', 'year:[' + lo + ' TO ' + hi + ']');
+          cp.set('size', 0);
+          const cnt = (await getJson(API + '?' + cp.toString())).page.totalElements || 0;
+          if (!cnt) return;
+          if (cnt <= 5000 || lo >= hi) {
+            const base = done;
+            const items = await pageWithExpand('year:[' + lo + ' TO ' + hi + ']', cnt, function (n) {
+              if (onProgress) onProgress(base + n);
+            });
+            items.forEach(it => {
+              if (it.metadata && it.metadata.people) map[it.id] = it.metadata.people;
+            });
+            done = base + items.length;
+            if (onProgress) onProgress(done);
+          } else {
+            const mid = Math.floor((lo + hi) / 2);
+            await range(lo, mid);
+            await range(mid + 1, hi);
+          }
+        }
+        await range(0, 2100);
+        return map;
+      }
+
+      async function collectForCsv(report) {
+        const total = Math.min(state.total, MAX_ROWS) || 1;
+        let items;
+        if (total <= 5000) {
+          // Liten/filtrert utvalg: hent direkte med rolleinfo i ett strekk (0–70 %).
+          items = await pageWithExpand(null, total, function (n) {
+            report((n / total) * 0.7, 'Henter poster … ' + Math.min(n, total) + '/' + total);
+          });
+        } else {
+          // Stort utvalg: liste via searchafter (0–35 %) + roller via årsbøtter (35–70 %).
+          const list = await searchafterAll(total, function (n) {
+            report((n / total) * 0.35, 'Henter poster … ' + Math.min(n, total) + '/' + total);
+          });
+          const pmap = await peopleMapByYear(function (done) {
+            report(0.35 + (done / total) * 0.35, 'Henter rolleinformasjon … ' + Math.min(done, total) + '/' + total);
+          });
+          list.forEach(it => {
+            const pe = pmap[it.id];
+            if (pe) { it.metadata = it.metadata || {}; it.metadata.people = pe; }
+          });
+          items = list;
+        }
+        // Siste fase (70–100 %): rens ISBN for poster i serie (fjern serie-ISBN).
+        await refineIsbns(items, function (done, tot) {
+          report(0.7 + (done / tot) * 0.3, 'Sjekker ISBN … ' + done + '/' + tot);
+        });
+        return items;
+      }
+
+      async function downloadCsv() {
+        const original = csvBtn.textContent;
+        csvBtn.disabled = true;
+        csvBtn.textContent = 'Henter …';
+        showProgress(true);
+        setProgress(0, 'Forbereder nedlasting …');
+        try {
+          const items = await collectForCsv(setProgress);
+
+          setProgress(1, 'Lager fil …');
+          const csv = '﻿' + itemsToCsv(items);   // BOM for æøå i Excel
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          const stamp = new Date().toISOString().slice(0, 10);
+          a.href = url;
+          a.download = 'trukket-fra-bokhylla_' + stamp + '.csv';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          window.nbAnnounce(items.length + ' rader lastet ned som CSV.');
+        } catch (err) {
+          window.nbAnnounce('Nedlasting feilet: ' + err.message);
+          alert('Klarte ikke å laste ned CSV: ' + err.message);
+        } finally {
+          showProgress(false);
+          setProgress(0, '');
+          csvBtn.textContent = original;
+          csvBtn.disabled = state.total === 0;
+        }
+      }
+
+      csvBtn.addEventListener('click', downloadCsv);
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        search(0);
+      });
+
+      document.getElementById('tfb-reset').addEventListener('click', function () {
+        setTimeout(function () { search(0); }, 0);
+      });
+
+      prevBtn.addEventListener('click', function () {
+        if (state.page > 0) search(state.page - 1);
+      });
+      nextBtn.addEventListener('click', function () {
+        if (state.page < state.totalPages - 1) search(state.page + 1);
+      });
+
+      // Utgangssøk ved sidelast: vis alle treff.
+      el.fritekst.value = '';
+      search(0);
+    }());
+  </script>
+
+</body>
+</html>
