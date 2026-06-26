@@ -7,6 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:wght@400&display=swap" rel="stylesheet" />
+  <!-- lz-string: bygger ?data=-dyplenker til nb.no/flyfoto (plasseringsdialog) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -314,6 +316,95 @@
     .page-btn:disabled { opacity: .3; cursor: default; }
     .page-ellipsis { padding: .38rem .25rem; color: var(--muted); font-size: .83rem; }
 
+    /* ── VIEW TABS ── */
+    .view-tabs { display: flex; gap: .3rem; }
+    .view-tab {
+      padding: .3rem .85rem; border-radius: var(--r);
+      border: 1px solid var(--border); background: transparent; color: var(--muted);
+      font-size: .82rem; font-family: inherit; cursor: pointer; transition: all .15s; white-space: nowrap;
+    }
+    .view-tab:hover { border-color: var(--text); color: var(--text); }
+    .view-tab.active { background: var(--active); border-color: var(--active); color: #fff; font-weight: 600; }
+
+    /* ── MARKETING (Markedsmål) ── */
+    .mkt { display: none; }
+    .mkt.visible { display: block; }
+    .mkt-head { margin-bottom: 1.3rem; }
+    .mkt-title { font-family: var(--font-serif); font-size: 1.5rem; line-height: 1.25; margin-bottom: .4rem; }
+    .mkt-lead { color: var(--muted); font-size: .9rem; max-width: 60ch; }
+    .mkt-lead strong { color: var(--text); font-weight: 600; }
+
+    .mkt-stats { display: flex; gap: 1.5rem; flex-wrap: wrap; margin: 1rem 0 1.4rem; }
+    .mkt-stat { display: flex; flex-direction: column; gap: .15rem; }
+    .mkt-stat-num { font-size: 1.6rem; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+    .mkt-stat-label { font-size: .76rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+
+    .mkt-progress {
+      display: flex; align-items: center; gap: .6rem;
+      font-size: .85rem; color: var(--muted); padding: 2.5rem 0;
+    }
+    .mkt-spinner {
+      width: 1.05rem; height: 1.05rem; border: 2px solid var(--border);
+      border-top-color: var(--active); border-radius: 50%;
+      animation: spin .8s linear infinite; flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .mkt-section-title {
+      font-size: .7rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--muted); margin: 1.6rem 0 .7rem;
+    }
+
+    .mkt-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 2rem; align-items: start; }
+    @media (max-width: 920px) { .mkt-grid { grid-template-columns: 1fr; gap: 1rem; } }
+
+    /* ranked rows (shared by fylke + kommune) */
+    .rank-row {
+      display: grid; grid-template-columns: 1.6rem 1fr auto;
+      align-items: center; gap: .7rem;
+      padding: .5rem .2rem; border-bottom: 1px solid var(--border2);
+      position: relative;
+    }
+    .rank-row:last-child { border-bottom: none; }
+    .rank-pos { font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+    .rank-main { min-width: 0; }
+    .rank-name { font-size: .92rem; color: var(--text); line-height: 1.25; }
+    .rank-sub { font-size: .74rem; color: var(--muted); }
+    .rank-bar-track { height: 5px; background: var(--placeholder); border-radius: 3px; margin-top: .3rem; overflow: hidden; }
+    .rank-bar-fill { height: 100%; background: var(--active); border-radius: 3px; transition: width .4s ease; }
+    .rank-count { font-size: .95rem; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+    .kommune-row { transition: background .12s; border-radius: var(--r-sm); }
+    .kommune-row:hover { background: var(--bg); }
+    .fylke-row { cursor: pointer; border-radius: var(--r-sm); transition: background .12s; }
+    .fylke-row:hover { background: var(--bg); }
+    .rank-row.mkt-active { background: var(--bg); box-shadow: inset 3px 0 0 var(--active); }
+    .rank-row.mkt-active .rank-name { font-weight: 700; color: var(--active); }
+    html.dark .rank-row.mkt-active { box-shadow: inset 3px 0 0 var(--accent); }
+    html.dark .rank-row.mkt-active .rank-name { color: var(--accent); }
+    .kommune-actions { display: flex; gap: 1rem; margin-top: .35rem; }
+    .kommune-action {
+      font-size: .74rem; color: var(--active); cursor: pointer;
+      text-decoration: none; white-space: nowrap;
+    }
+    .kommune-action:hover { text-decoration: underline; }
+    html.dark .kommune-action { color: var(--accent); }
+    .kommune-action-disabled { color: var(--muted); cursor: default; }
+    .kommune-action-disabled:hover { text-decoration: none; }
+    html.dark .kommune-action-disabled { color: var(--muted); }
+
+    .mkt-toast {
+      position: fixed; bottom: 1.3rem; left: 50%; transform: translateX(-50%);
+      background: var(--text); color: var(--surface);
+      padding: .65rem 1.1rem; border-radius: var(--r); font-size: .83rem;
+      max-width: 90vw; text-align: center; z-index: 1100;
+      box-shadow: 0 4px 18px rgba(0,0,0,.28);
+      opacity: 0; transition: opacity .2s; pointer-events: none;
+    }
+    .mkt-toast.show { opacity: 1; }
+
+    .mkt-note { font-size: .78rem; color: var(--muted); margin-top: 1.4rem; padding-top: .9rem; border-top: 1px solid var(--border2); max-width: 70ch; }
+
     /* ── LIGHTBOX ── */
     .lightbox { display: none; position: fixed; inset: 0; background: rgba(23,24,27,.72); z-index: 1000; align-items: center; justify-content: center; padding: 1rem; }
     .lightbox.open { display: flex; }
@@ -454,6 +545,10 @@
 
 <!-- TOOLBAR -->
 <div class="toolbar">
+  <div class="view-tabs">
+    <button class="view-tab active" data-view="browse" id="tab-browse">Bilder</button>
+    <button class="view-tab" data-view="marketing" id="tab-marketing">Markedsmål · ikke plassert</button>
+  </div>
   <div class="toolbar-info" id="results-info"></div>
   <div class="toolbar-controls">
     <span class="toolbar-label">År:</span>
@@ -507,20 +602,32 @@
 
   <!-- MAIN -->
   <main class="main">
-    <div class="geo-crumb" id="geo-crumb">
-      <span class="crumb-label">Filtrert på:</span>
-      <span class="crumb-chip" id="county-chip" style="display:none">
-        <span id="county-chip-text"></span>
-        <button class="crumb-x" onclick="clearCounty()" title="Fjern">✕</button>
-      </span>
-      <span class="crumb-chip" id="muni-chip" style="display:none">
-        <span id="muni-chip-text"></span>
-        <button class="crumb-x" onclick="clearMunicipality()" title="Fjern">✕</button>
-      </span>
+    <!-- BROWSE VIEW -->
+    <div id="browse-view">
+      <div class="geo-crumb" id="geo-crumb">
+        <span class="crumb-label">Filtrert på:</span>
+        <span class="crumb-chip" id="county-chip" style="display:none">
+          <span id="county-chip-text"></span>
+          <button class="crumb-x" onclick="clearCounty()" title="Fjern">✕</button>
+        </span>
+        <span class="crumb-chip" id="muni-chip" style="display:none">
+          <span id="muni-chip-text"></span>
+          <button class="crumb-x" onclick="clearMunicipality()" title="Fjern">✕</button>
+        </span>
+      </div>
+      <div class="grid" id="grid"></div>
+      <div class="state-msg" id="state-msg" style="display:none"></div>
+      <div class="pagination" id="pagination"></div>
     </div>
-    <div class="grid" id="grid"></div>
-    <div class="state-msg" id="state-msg" style="display:none"></div>
-    <div class="pagination" id="pagination"></div>
+
+    <!-- MARKETING VIEW -->
+    <div class="mkt" id="marketing-view">
+      <div class="mkt-head">
+        <div class="mkt-title">Hvor bør vi rette markedsføringen?</div>
+        <div class="mkt-lead">Områder med flest <strong>nylig digitaliserte skråfoto som ennå ikke er plassert</strong> i kartet av publikum. Velg tidsvindu under «Digitalisert» i menyen til venstre.</div>
+      </div>
+      <div id="mkt-body"></div>
+    </div>
   </main>
 
 </div><!-- /content-row -->
@@ -534,7 +641,8 @@
       <div class="lightbox-title" id="lb-title"></div>
       <div class="lightbox-sub" id="lb-sub"></div>
       <div class="lightbox-actions">
-        <a class="lb-btn primary" id="lb-nb" href="#" target="_blank">Åpne i Nasjonalbiblioteket ↗</a>
+        <a class="lb-btn primary" id="lb-flyfoto" href="#" target="_blank" rel="noopener">Plasser i Flyfoto ↗</a>
+        <a class="lb-btn" id="lb-nb" href="#" target="_blank">Åpne i Nasjonalbiblioteket ↗</a>
         <a class="lb-btn" id="lb-iiif" href="#" target="_blank">IIIF Manifest ↗</a>
       </div>
     </div>
@@ -692,8 +800,12 @@ function renderPeriodList(options) {
 function handlePeriodClick(id) {
   state.digitalPeriod = id;
   loadPeriodCounts();
-  loadCountySidebar();   // refresh county counts to match selected period
-  fetchPhotos(0);
+  if (state.view === 'marketing') {
+    loadMarketing();     // refresh targeting ranking for the new window
+  } else {
+    loadCountySidebar(); // refresh county counts to match selected period
+    fetchPhotos(0);
+  }
 }
 
 // ── AGG URL BUILDER (respects all active state filters) ────
@@ -983,6 +1095,23 @@ function formatDate(raw) {
   return y;
 }
 
+// placeString is "Land;Fylke;Kommune;Sted;…" — pull out the parts we want
+function parsePlace(geo) {
+  const seg = (geo.placeString || '').split(';').map(s => s.trim());
+  const county       = geo.county || seg[1] || '';
+  const municipality = seg[2] || '';
+  const city         = geo.city || seg[3] || municipality || '';
+  return { city, municipality, county };
+}
+
+// "Sted" line under the place name: kommune · fylke (skipping duplicates)
+function placeSub(p) {
+  const parts = [];
+  if (p.municipality && p.municipality !== p.city) parts.push(p.municipality);
+  if (p.county) parts.push(p.county);
+  return parts.join(' · ');
+}
+
 // ── YEAR PILLS ─────────────────────────────────────────────
 let yearsRendered = false;
 function renderYearPills(aggs) {
@@ -1037,18 +1166,19 @@ function renderGrid(items) {
     const meta = item.metadata || {};
     const links = item._links || {};
     const geo = meta.geographic || {};
-    const city = geo.city || '–';
-    const county = geo.county || '';
+    const place = parsePlace(geo);
+    const city = place.city || '–';
+    const sub = placeSub(place);
     const date = formatDate(meta.dateCreated);
     const thumb = links.thumbnail_custom?.href?.replace('{width},{height}', '0,280') || '';
     const id = item.id;
     return `
-      <div class="card" onclick="openLightbox(${JSON.stringify(id)})">
+      <div class="card" onclick="goToFlyfoto('${id}')" title="Åpne og plasser dette fotoet på nb.no/flyfoto">
         <img class="card-thumb" src="${thumb}" alt="${city}" loading="lazy"
              onerror="this.style.background='var(--placeholder)'" />
         <div class="card-body">
           <div class="card-place">${city}</div>
-          ${county ? `<div class="card-county-label">${county}</div>` : ''}
+          ${sub ? `<div class="card-county-label">${sub}</div>` : ''}
           <div class="card-meta">
             <span class="tag">Skråfoto</span>
             <span class="card-date">${date}</span>
@@ -1097,17 +1227,57 @@ function showMessage(h, p) {
 function showError(msg) { document.getElementById('grid').innerHTML = ''; showMessage('Feil', msg); }
 
 // ── LIGHTBOX ───────────────────────────────────────────────
+// Bygg ?data=-dyplenke til nb.no/flyfoto som åpner plasseringsdialogen for fotoet
+function flyfotoPlasserUrl(urn) {
+  if (!urn || typeof LZString === 'undefined') return '';
+  const data = LZString.compressToBase64(JSON.stringify({ viewPlacementDialog: { open: true, urn } }));
+  return 'https://www.nb.no/flyfoto/?data=' + encodeURIComponent(data);
+}
+
+// Hent URN for et katalogfoto (rein URN, eller uttrekk fra bilde-URL)
+function fotoUrn(item) {
+  const meta = item?.metadata || {};
+  const href = item?._links?.thumbnail_custom?.href || '';
+  return meta.identifiers?.urn
+    || (href.match(/\/resolver\/(URN:NBN:[^/]+?)(?:_F_\d+)?\/full/)?.[1])
+    || '';
+}
+
+// Klikk på kort: åpne fotoet rett på nb.no/flyfoto (plasseringsdialog)
+function goToFlyfoto(id) {
+  const url = flyfotoPlasserUrl(fotoUrn(window._itemCache?.[id]));
+  if (url) window.open(url, '_blank', 'noopener');
+  else mktToast('Fant ikke URN for dette bildet.');
+}
+
 function openLightbox(id) {
   const item = window._itemCache?.[id];
   if (!item) return;
   const meta = item.metadata || {};
   const links = item._links || {};
   const geo = meta.geographic || {};
-  document.getElementById('lb-img').src = links.thumbnail_custom?.href?.replace('{width},{height}', '0,900') || '';
+  const lbImg = document.getElementById('lb-img');
+  lbImg.src = links.thumbnail_custom?.href?.replace('{width},{height}', '0,900') || '';
   document.getElementById('lb-title').textContent = meta.title || 'Uten tittel';
-  document.getElementById('lb-sub').textContent = [geo.city, geo.county, formatDate(meta.dateCreated)].filter(Boolean).join('  ·  ');
+  const lbPlace = parsePlace(geo);
+  document.getElementById('lb-sub').textContent =
+    [lbPlace.city, lbPlace.municipality, lbPlace.county, formatDate(meta.dateCreated)]
+      .filter((v, i, a) => v && a.indexOf(v) === i).join('  ·  ');
   document.getElementById('lb-nb').href = `https://www.nb.no/items/${id}`;
   document.getElementById('lb-iiif').href = links.presentation?.href || '#';
+
+  // URN → dyplenke til flyfoto-appen (plasseringsdialog). Klikk på bildet åpner samme.
+  const urn = meta.identifiers?.urn
+    || (links.thumbnail_custom?.href?.match(/\/resolver\/(URN:NBN:[^/]+?)(?:_F_\d+)?\/full/)?.[1])
+    || '';
+  const flyfotoUrl = flyfotoPlasserUrl(urn);
+  const lbFly = document.getElementById('lb-flyfoto');
+  if (flyfotoUrl) { lbFly.href = flyfotoUrl; lbFly.style.display = ''; }
+  else { lbFly.style.display = 'none'; }
+  lbImg.style.cursor = flyfotoUrl ? 'zoom-in' : 'default';
+  lbImg.title = flyfotoUrl ? 'Plasser dette flyfotoet på nb.no/flyfoto' : '';
+  lbImg.onclick = flyfotoUrl ? () => window.open(flyfotoUrl, '_blank', 'noopener') : null;
+
   document.getElementById('lightbox').classList.add('open');
 }
 document.getElementById('lb-close').onclick = () => document.getElementById('lightbox').classList.remove('open');
@@ -1131,7 +1301,424 @@ document.getElementById('sidebar-overlay').onclick = () => {
   document.getElementById('sidebar-overlay').classList.remove('visible');
 };
 
+// ════════════════════════════════════════════════════════════
+// ── MARKEDSMÅL (placement-status targeting via flyfoto API) ──
+// ════════════════════════════════════════════════════════════
+const FLYFOTO = 'https://api.nb.no/flyfoto/v1/photos';
+
+const FYLKE_NAMES = {
+  '03':'Oslo','11':'Rogaland','15':'Møre og Romsdal','18':'Nordland',
+  '31':'Østfold','32':'Akershus','33':'Buskerud','34':'Innlandet',
+  '39':'Vestfold','40':'Telemark','42':'Agder','46':'Vestland',
+  '50':'Trøndelag','55':'Troms','56':'Finnmark',
+};
+
+const KOMMUNE_NAMES = {"0301":"Oslo","1101":"Eigersund","1103":"Stavanger","1106":"Haugesund","1108":"Sandnes","1111":"Sokndal","1112":"Lund","1114":"Bjerkreim","1119":"Hå","1120":"Klepp","1121":"Time","1122":"Gjesdal","1124":"Sola","1127":"Randaberg","1130":"Strand","1133":"Hjelmeland","1134":"Suldal","1135":"Sauda","1144":"Kvitsøy","1145":"Bokn","1146":"Tysvær","1149":"Karmøy","1151":"Utsira","1160":"Vindafjord","1505":"Kristiansund","1506":"Molde","1508":"Ålesund","1511":"Vanylven","1514":"Sande","1515":"Herøy","1516":"Ulstein","1517":"Hareid","1520":"Ørsta","1525":"Stranda","1528":"Sykkylven","1531":"Sula","1532":"Giske","1535":"Vestnes","1539":"Rauma","1547":"Aukra","1554":"Averøy","1557":"Gjemnes","1560":"Tingvoll","1563":"Sunndal","1566":"Surnadal","1573":"Smøla","1576":"Aure","1577":"Volda","1578":"Fjord","1579":"Hustadvika","1580":"Haram","1804":"Bodø","1806":"Narvik","1811":"Bindal","1812":"Sømna","1813":"Brønnøy","1815":"Vega","1816":"Vevelstad","1818":"Herøy","1820":"Alstahaug","1822":"Leirfjord","1824":"Vefsn","1825":"Grane","1826":"Hattfjelldal","1827":"Dønna","1828":"Nesna","1832":"Hemnes","1833":"Rana","1834":"Lurøy","1835":"Træna","1836":"Rødøy","1837":"Meløy","1838":"Gildeskål","1839":"Beiarn","1840":"Saltdal","1841":"Fauske","1845":"Sørfold","1848":"Steigen","1851":"Lødingen","1853":"Evenes","1856":"Røst","1857":"Værøy","1859":"Flakstad","1860":"Vestvågøy","1865":"Vågan","1866":"Hadsel","1867":"Bø","1868":"Øksnes","1870":"Sortland","1871":"Andøy","1874":"Moskenes","1875":"Hamarøy","3101":"Halden","3103":"Moss","3105":"Sarpsborg","3107":"Fredrikstad","3110":"Hvaler","3112":"Råde","3114":"Våler","3116":"Skiptvet","3118":"Indre Østfold","3120":"Rakkestad","3122":"Marker","3124":"Aremark","3201":"Bærum","3203":"Asker","3205":"Lillestrøm","3207":"Nordre Follo","3209":"Ullensaker","3212":"Nesodden","3214":"Frogn","3216":"Vestby","3218":"Ås","3220":"Enebakk","3222":"Lørenskog","3224":"Rælingen","3226":"Aurskog-Høland","3228":"Nes","3230":"Gjerdrum","3232":"Nittedal","3234":"Lunner","3236":"Jevnaker","3238":"Nannestad","3240":"Eidsvoll","3242":"Hurdal","3301":"Drammen","3303":"Kongsberg","3305":"Ringerike","3310":"Hole","3312":"Lier","3314":"Øvre Eiker","3316":"Modum","3318":"Krødsherad","3320":"Flå","3322":"Nesbyen","3324":"Gol","3326":"Hemsedal","3328":"Ål","3330":"Hol","3332":"Sigdal","3334":"Flesberg","3336":"Rollag","3338":"Nore og Uvdal","3401":"Kongsvinger","3403":"Hamar","3405":"Lillehammer","3407":"Gjøvik","3411":"Ringsaker","3412":"Løten","3413":"Stange","3414":"Nord-Odal","3415":"Sør-Odal","3416":"Eidskog","3417":"Grue","3418":"Åsnes","3419":"Våler","3420":"Elverum","3421":"Trysil","3422":"Åmot","3423":"Stor-Elvdal","3424":"Rendalen","3425":"Engerdal","3426":"Tolga","3427":"Tynset","3428":"Alvdal","3429":"Folldal","3430":"Os","3431":"Dovre","3432":"Lesja","3433":"Skjåk","3434":"Lom","3435":"Vågå","3436":"Nord-Fron","3437":"Sel","3438":"Sør-Fron","3439":"Ringebu","3440":"Øyer","3441":"Gausdal","3442":"Østre Toten","3443":"Vestre Toten","3446":"Gran","3447":"Søndre Land","3448":"Nordre Land","3449":"Sør-Aurdal","3450":"Etnedal","3451":"Nord-Aurdal","3452":"Vestre Slidre","3453":"Øystre Slidre","3454":"Vang","3901":"Horten","3903":"Holmestrand","3905":"Tønsberg","3907":"Sandefjord","3909":"Larvik","3911":"Færder","4001":"Porsgrunn","4003":"Skien","4005":"Notodden","4010":"Siljan","4012":"Bamble","4014":"Kragerø","4016":"Drangedal","4018":"Nome","4020":"Midt-Telemark","4022":"Seljord","4024":"Hjartdal","4026":"Tinn","4028":"Kviteseid","4030":"Nissedal","4032":"Fyresdal","4034":"Tokke","4036":"Vinje","4201":"Risør","4202":"Grimstad","4203":"Arendal","4204":"Kristiansand","4205":"Lindesnes","4206":"Farsund","4207":"Flekkefjord","4211":"Gjerstad","4212":"Vegårshei","4213":"Tvedestrand","4214":"Froland","4215":"Lillesand","4216":"Birkenes","4217":"Åmli","4218":"Iveland","4219":"Evje og Hornnes","4220":"Bygland","4221":"Valle","4222":"Bykle","4223":"Vennesla","4224":"Åseral","4225":"Lyngdal","4226":"Hægebostad","4227":"Kvinesdal","4228":"Sirdal","4601":"Bergen","4602":"Kinn","4611":"Etne","4612":"Sveio","4613":"Bømlo","4614":"Stord","4615":"Fitjar","4616":"Tysnes","4617":"Kvinnherad","4618":"Ullensvang","4619":"Eidfjord","4620":"Ulvik","4621":"Voss","4622":"Kvam","4623":"Samnanger","4624":"Bjørnafjorden","4625":"Austevoll","4626":"Øygarden","4627":"Askøy","4628":"Vaksdal","4629":"Modalen","4630":"Osterøy","4631":"Alver","4632":"Austrheim","4633":"Fedje","4634":"Masfjorden","4635":"Gulen","4636":"Solund","4637":"Hyllestad","4638":"Høyanger","4639":"Vik","4640":"Sogndal","4641":"Aurland","4642":"Lærdal","4643":"Årdal","4644":"Luster","4645":"Askvoll","4646":"Fjaler","4647":"Sunnfjord","4648":"Bremanger","4649":"Stad","4650":"Gloppen","4651":"Stryn","5001":"Trondheim","5006":"Steinkjer","5007":"Namsos","5014":"Frøya","5020":"Osen","5021":"Oppdal","5022":"Rennebu","5025":"Røros","5026":"Holtålen","5027":"Midtre Gauldal","5028":"Melhus","5029":"Skaun","5031":"Malvik","5032":"Selbu","5033":"Tydal","5034":"Meråker","5035":"Stjørdal","5036":"Frosta","5037":"Levanger","5038":"Verdal","5041":"Snåsa","5042":"Lierne","5043":"Røyrvik","5044":"Namsskogan","5045":"Grong","5046":"Høylandet","5047":"Overhalla","5049":"Flatanger","5052":"Leka","5053":"Inderøy","5054":"Indre Fosen","5055":"Heim","5056":"Hitra","5057":"Ørland","5058":"Åfjord","5059":"Orkland","5060":"Nærøysund","5061":"Rindal","5501":"Tromsø","5503":"Harstad","5510":"Kvæfjord","5512":"Tjeldsund","5514":"Ibestad","5516":"Gratangen","5518":"Lavangen","5520":"Bardu","5522":"Salangen","5524":"Målselv","5526":"Sørreisa","5528":"Dyrøy","5530":"Senja","5532":"Balsfjord","5534":"Karlsøy","5536":"Lyngen","5538":"Storfjord","5540":"Kåfjord","5542":"Skjervøy","5544":"Nordreisa","5546":"Kvænangen","5601":"Alta","5603":"Hammerfest","5605":"Sør-Varanger","5607":"Vadsø","5610":"Karasjok","5612":"Kautokeino","5614":"Loppa","5616":"Hasvik","5618":"Måsøy","5620":"Nordkapp","5622":"Porsanger","5624":"Lebesby","5626":"Gamvik","5628":"Tana","5630":"Berlevåg","5632":"Båtsfjord","5634":"Vardø","5636":"Nesseby"};
+
+// Kommunenummer -> e-postadresser til lokalhistorielag/sogelag/bygdelag
+// (fra lokallag_kontakt.csv – Brønnøysund + nettsider). Brukes av "Send e-post".
+const KOMMUNE_EPOST = {"0301":["","","","","","","","","","","","","","",""],"1101":[""],"1103":["","","","",""],"1112":[""],"1119":[""],"1120":[""],"1124":[""],"1127":[""],"1130":[""],"1134":[""],"1135":[""],"1144":[""],"1145":[""],"1146":["","",""],"1149":["","","",""],"1160":["","",""],"1505":[""],"1506":["","","","","","","","","","",""],"1508":["","","",""],"1511":["","",""],"1514":[""],"1515":[""],"1516":["",""],"1517":[""],"1520":["","","",""],"1528":["",""],"1531":[""],"1532":["",""],"1535":["","","",""],"1539":["","",""],"1554":["","","","",""],"1557":["","",""],"1560":["",""],"1563":["","",""],"1566":[""],"1573":["","",""],"1577":["",""],"1578":[""],"1579":["","",""],"1580":["","",""],"1804":["","",""],"1806":["",""],"1811":[""],"1812":[""],"1815":[""],"1816":[""],"1818":[""],"1820":["","",""],"1824":["","",""],"1825":["",""],"1828":["",""],"1832":["","",""],"1833":["","",""],"1836":[""],"1837":["",""],"1839":[""],"1840":[""],"1841":["","",""],"1848":[""],"1851":[""],"1853":[""],"1865":["",""],"1866":["","","",""],"1867":["","","",""],"1868":[""],"1870":[""],"1871":["","","",""],"1875":[""],"3101":["",""],"3103":["",""],"3105":["",""],"3107":["","","",""],"3112":[""],"3116":[""],"3118":["","",""],"3120":["",""],"3122":["",""],"3124":[""],"3203":["","","","","","",""],"3205":["","","","",""],"3207":["",""],"3209":["",""],"3212":[""],"3214":[""],"3216":["",""],"3218":[""],"3220":[""],"3222":[""],"3224":[""],"3226":["",""],"3228":[""],"3230":[""],"3232":[""],"3240":[""],"3242":[""],"3301":["","",""],"3303":["","","",""],"3305":["","",""],"3310":[""],"3312":[""],"3316":["",""],"3318":[""],"3330":[""],"3334":["",""],"3336":[""],"3401":["","",""],"3403":[""],"3405":[""],"3407":["","",""],"3411":["","","",""],"3412":[""],"3413":[""],"3415":[""],"3416":[""],"3418":[""],"3420":["",""],"3421":["",""],"3423":[""],"3426":[""],"3428":[""],"3431":[""],"3432":[""],"3437":["",""],"3438":[""],"3439":[""],"3446":[""],"3449":[""],"3450":[""],"3453":[""],"3901":[""],"3903":["","",""],"3905":["",""],"3907":["",""],"3909":["","","","","",""],"3911":[""],"4001":["",""],"4003":["","","",""],"4005":["",""],"4012":[""],"4014":["",""],"4016":[""],"4018":[""],"4020":["","",""],"4022":[""],"4024":["",""],"4026":[""],"4030":[""],"4032":[""],"4034":[""],"4036":["",""],"4201":["",""],"4202":["",""],"4203":["","","","","",""],"4204":["","","","","",""],"4205":["","","","",""],"4206":[""],"4212":[""],"4213":[""],"4214":["",""],"4215":["","",""],"4216":[""],"4218":[""],"4219":[""],"4221":[""],"4223":["","","",""],"4225":["","",""],"4226":["",""],"4601":["","","","","","",""],"4602":["","","","","","",""],"4612":["",""],"4613":[""],"4614":[""],"4616":["",""],"4617":["","","","","","","","","","","","",""],"4618":["","","","",""],"4619":[""],"4621":["","","",""],"4622":["",""],"4623":[""],"4624":[""],"4625":["","",""],"4626":["","","",""],"4627":["","",""],"4628":[""],"4630":["",""],"4631":["","","","","","","","","","","","","",""],"4632":["",""],"4633":[""],"4635":["",""],"4636":["",""],"4638":["",""],"4639":["","",""],"4640":["","",""],"4642":[""],"4643":[""],"4644":["","","","","",""],"4645":[""],"4647":[""],"4648":[""],"4649":["",""],"4650":["",""],"4651":[""],"5001":["","","","","","","",""],"5006":["","","","","","",""],"5007":["","",""],"5021":[""],"5022":[""],"5025":["","",""],"5027":["",""],"5028":["",""],"5031":["",""],"5032":[""],"5034":[""],"5035":["","","",""],"5036":[""],"5037":[""],"5038":[""],"5041":[""],"5045":[""],"5046":[""],"5053":["","","",""],"5054":[""],"5055":["","",""],"5056":[""],"5058":[""],"5060":[""],"5501":["","","","","","","","","","","","","",""],"5503":["","","",""],"5510":["",""],"5512":["",""],"5514":[""],"5516":[""],"5518":[""],"5520":[""],"5522":[""],"5524":["","",""],"5526":[""],"5528":[""],"5530":["","","","","","","","","","","","",""],"5532":["","",""],"5534":["",""],"5536":["",""],"5542":["","","","",""],"5544":["",""],"5546":[""],"5601":["","","","","","","","","","","",""],"5603":["","","","","",""],"5605":["","","","",""],"5607":["","","","",""],"5610":[""],"5612":[""],"5614":["","",""],"5616":[""],"5618":[""],"5620":[""],"5622":["","","","","","",""],"5624":["",""],"5626":[""],"5628":["","","","","","","","","","","","","","",""],"5634":[""],"5636":["",""]}; // adresser fjernet for deling (knapper beholdt)
+
+const kommuneName = nr => KOMMUNE_NAMES[nr] || (nr ? `Kommune ${nr}` : 'Ukjent kommune');
+const fylkeName   = nr => FYLKE_NAMES[nr] || (nr ? `Fylke ${nr}` : 'Ukjent fylke');
+
+const MKT_MAX_PAGES   = 220;  // safety cap (×1000); covers all ~160k unplaced photos for "Alle"
+const MKT_PAGE_SIZE   = 1000;
+const MKT_CONCURRENCY = 8;    // pages fetched in parallel per batch
+const MKT_CACHE_TTL   = 3 * 3600 * 1000; // 3h client cache
+let mktLoadToken = 0;         // guards against overlapping loads
+let mktFylke = '';            // valgt fylke-filter (fylkesnummer) i Markedsmål
+let mktLast = null;           // siste aggregering, for re-render ved fylke-klikk
+
+function mktWindowDays() {
+  const opt = PERIOD_OPTIONS.find(o => o.id === state.digitalPeriod);
+  return opt ? opt.days : null; // null = "Alle": no date limit, count every unplaced photo
+}
+function mktWindowLabel() {
+  const opt = PERIOD_OPTIONS.find(o => o.id === state.digitalPeriod);
+  return opt ? opt.label.toLowerCase() : 'hele samlingen (uten datoavgrensning)';
+}
+
+const mktPageUrl = page =>
+  `${FLYFOTO}?status=UNTOUCHED&sort=firstDigitalContentTime,desc&size=${MKT_PAGE_SIZE}&page=${page}`;
+
+async function fetchMktPage(page) {
+  const res = await fetch(mktPageUrl(page));
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return (await res.json())._embedded?.photos || [];
+}
+
+function aggregatePhoto(byKommune, p) {
+  const kNr = p.kommunenummer || '';
+  const rec = byKommune.get(kNr) || { count: 0, fylke: p.fylkesnummer || (kNr ? kNr.slice(0,2) : '') };
+  rec.count++;
+  byKommune.set(kNr, rec);
+}
+
+async function loadMarketing() {
+  const token = ++mktLoadToken;
+  const days = mktWindowDays();
+  const cutoff = days ? new Date(Date.now() - days * 86400000).toISOString() : null;
+  const body = document.getElementById('mkt-body');
+
+  // 1) instant render from client cache, if fresh
+  const cached = mktCacheGet(state.digitalPeriod || 'def');
+  if (cached) {
+    renderMarketing(rehydrate(cached.byKommune), cached.total, days, cached.capped, cached.ts);
+  } else {
+    body.innerHTML = `<div class="mkt-progress"><span class="mkt-spinner"></span>
+      Henter ikke-plasserte bilder …</div>`;
+  }
+
+  const byKommune = new Map();
+  let total = 0, stop = false, capped = false, page = 0;
+
+  const renderProgress = () => {
+    if (cached) return; // keep showing cached data while refreshing
+    body.innerHTML = `<div class="mkt-progress"><span class="mkt-spinner"></span>
+      Henter ikke-plasserte bilder … <strong style="color:var(--text);margin-left:.2rem">${total.toLocaleString('no')}</strong>&nbsp;funnet</div>`;
+  };
+
+  try {
+    // 2) fetch in parallel batches, stop once a batch crosses the cutoff date
+    while (!stop && page < MKT_MAX_PAGES) {
+      const batch = [];
+      for (let i = 0; i < MKT_CONCURRENCY && page + i < MKT_MAX_PAGES; i++) batch.push(page + i);
+      const results = await Promise.all(batch.map(fetchMktPage));
+      if (token !== mktLoadToken) return; // superseded by a newer load
+
+      let shortPage = false;
+      for (const photos of results) {
+        if (photos.length < MKT_PAGE_SIZE) shortPage = true;
+        for (const p of photos) {
+          const t = p.firstDigitalContentTime;
+          if (cutoff) {                       // windowed: skip undated + stop past cutoff
+            if (!t) continue;
+            if (t < cutoff) { stop = true; continue; }
+          }
+          aggregatePhoto(byKommune, p);        // "Alle": count every unplaced photo
+          total++;
+        }
+      }
+      page += batch.length;
+      if (shortPage) break;
+      if (!stop && !cached) renderMarketing(byKommune, total, days, false, null, true); // progressive
+    }
+    if (token !== mktLoadToken) return;
+    if (page >= MKT_MAX_PAGES && !stop) capped = true;
+
+    const ts = Date.now();
+    renderMarketing(byKommune, total, days, capped, ts);
+    mktCacheSet(state.digitalPeriod || 'def', byKommune, total, capped, ts);
+  } catch (e) {
+    if (token !== mktLoadToken) return;
+    if (!cached) body.innerHTML = `<div class="state-msg"><h2>Kunne ikke hente data</h2><p>Flyfoto-API-et svarte ikke. Prøv igjen.</p></div>`;
+    console.error(e);
+  }
+}
+
+// ── CLIENT CACHE (localStorage) ────────────────────────────
+function mktCacheGet(key) {
+  try {
+    const raw = localStorage.getItem('mkt_' + key);
+    if (!raw) return null;
+    const o = JSON.parse(raw);
+    if (Date.now() - o.ts > MKT_CACHE_TTL) return null;
+    return o;
+  } catch { return null; }
+}
+function mktCacheSet(key, byKommune, total, capped, ts) {
+  try {
+    const obj = { ts, total, capped, byKommune: Object.fromEntries(byKommune) };
+    localStorage.setItem('mkt_' + key, JSON.stringify(obj));
+  } catch {}
+}
+function rehydrate(obj) { return new Map(Object.entries(obj)); }
+
+function renderMarketing(byKommune, total, days, capped, ts, progressive) {
+  const body = document.getElementById('mkt-body');
+
+  if (!total) {
+    body.innerHTML = `<div class="state-msg"><h2>Ingen ikke-plasserte bilder</h2>
+      <p>Ingen nylig digitaliserte skråfoto mangler plassering i valgt tidsvindu.</p></div>`;
+    return;
+  }
+
+  mktLast = { byKommune, total, days, capped, ts };  // for re-render ved fylke-klikk
+
+  // kommune ranking (alle)
+  const kommuner = [...byKommune.entries()]
+    .map(([nr, rec]) => ({ nr, count: rec.count, fylke: rec.fylke,
+                           navn: kommuneName(nr), fylkeNavn: fylkeName(rec.fylke) }))
+    .sort((a, b) => b.count - a.count);
+
+  // fylke roll-up
+  const fylkeMap = new Map();
+  kommuner.forEach(k => fylkeMap.set(k.fylke, (fylkeMap.get(k.fylke) || 0) + k.count));
+  const fylker = [...fylkeMap.entries()]
+    .map(([nr, count]) => ({ nr, count, navn: fylkeName(nr) }))
+    .sort((a, b) => b.count - a.count);
+
+  if (mktFylke && !fylkeMap.has(mktFylke)) mktFylke = '';   // ugyldig valg → nullstill
+
+  // kommuner filtrert på valgt fylke (eller alle)
+  const visKommuner = mktFylke ? kommuner.filter(k => k.fylke === mktFylke) : kommuner;
+
+  const maxFylke = fylker[0].count;
+  const maxKommune = visKommuner[0] ? visKommuner[0].count : 1;
+
+  // statistikk — globalt eller for valgt fylke
+  const statTotal = mktFylke ? visKommuner.reduce((s, k) => s + k.count, 0) : total;
+  const statTop = visKommuner[0] || kommuner[0];
+  const omrade = mktFylke ? fylkeName(mktFylke) : 'hele landet';
+
+  // fylke-rader (klikkbare filtre) + «Alle fylker»-rad for å nullstille
+  const fylkeAlleRow = `
+    <div class="rank-row fylke-row${mktFylke ? '' : ' mkt-active'}" onclick="setMktFylke('')">
+      <span class="rank-pos">·</span>
+      <div class="rank-main"><div class="rank-name">Alle fylker</div></div>
+      <span class="rank-count">${total.toLocaleString('no')}</span>
+    </div>`;
+  const fylkeRows = fylkeAlleRow + fylker.map((f, i) => `
+    <div class="rank-row fylke-row${mktFylke === f.nr ? ' mkt-active' : ''}" onclick="setMktFylke('${f.nr}')" title="Vis topp-kommuner i ${f.navn}">
+      <span class="rank-pos">${i + 1}</span>
+      <div class="rank-main">
+        <div class="rank-name">${f.navn}</div>
+        <div class="rank-bar-track"><div class="rank-bar-fill" style="width:${(f.count / maxFylke * 100).toFixed(1)}%"></div></div>
+      </div>
+      <span class="rank-count">${f.count.toLocaleString('no')}</span>
+    </div>`).join('');
+
+  const kommuneRows = visKommuner.slice(0, 50).map((k, i) => `
+    <div class="rank-row kommune-row">
+      <span class="rank-pos">${i + 1}</span>
+      <div class="rank-main">
+        <div class="rank-name">${k.navn}</div>
+        <div class="rank-sub">${k.fylkeNavn}</div>
+        <div class="rank-bar-track"><div class="rank-bar-fill" style="width:${(k.count / maxKommune * 100).toFixed(1)}%"></div></div>
+        <div class="kommune-actions">
+          <a class="kommune-action" onclick="goToKommune('${k.nr}')">Vis bilder her</a>
+          <a class="kommune-action" onclick="openInFlyfoto('${k.nr}')">Åpne i Flyfoto ↗</a>
+          ${(KOMMUNE_EPOST[k.nr] && KOMMUNE_EPOST[k.nr].length)
+            ? `<a class="kommune-action" onclick="sendEpost('${k.nr}', ${k.count})">Send e-post (${KOMMUNE_EPOST[k.nr].length}) ✉</a>
+               <a class="kommune-action" onclick="htmlEpost('${k.nr}', ${k.count})" title="Åpne ferdig HTML-e-post i ny fane">HTML ↗</a>`
+            : `<span class="kommune-action kommune-action-disabled">Ingen e-post</span>`}
+        </div>
+      </div>
+      <span class="rank-count">${k.count.toLocaleString('no')}</span>
+    </div>`).join('');
+
+  const kommuneTittel = mktFylke
+    ? `Kommuner i ${fylkeName(mktFylke)} — topp ${Math.min(50, visKommuner.length)}`
+    : `Kommuner — topp ${Math.min(50, kommuner.length)}`;
+
+  body.innerHTML = `
+    <div class="mkt-stats">
+      <div class="mkt-stat"><span class="mkt-stat-num">${statTotal.toLocaleString('no')}</span>
+        <span class="mkt-stat-label">Ikke plassert · ${omrade}</span></div>
+      <div class="mkt-stat"><span class="mkt-stat-num">${visKommuner.length}</span>
+        <span class="mkt-stat-label">Kommuner${mktFylke ? ' i fylket' : ' berørt'}</span></div>
+      <div class="mkt-stat"><span class="mkt-stat-num">${statTop.navn}</span>
+        <span class="mkt-stat-label">Største mål · ${statTop.count.toLocaleString('no')} bilder</span></div>
+    </div>
+
+    <div class="mkt-grid">
+      <div>
+        <div class="mkt-section-title">Fylker${mktFylke ? ' — «Alle fylker» nullstiller' : ' — klikk for å filtrere'}</div>
+        ${fylkeRows}
+      </div>
+      <div>
+        <div class="mkt-section-title">${kommuneTittel}</div>
+        ${kommuneRows}
+      </div>
+    </div>
+
+    <div class="mkt-note">
+      ${progressive
+        ? `<span class="mkt-spinner" style="display:inline-block;vertical-align:-2px;width:.8rem;height:.8rem;border-width:2px"></span> Oppdaterer tallene …`
+        : (ts ? `Oppdatert kl. ${new Date(ts).toLocaleTimeString('no',{hour:'2-digit',minute:'2-digit'})}.` : '')}
+      Tallene viser skråfoto med status «ikke plassert» (UNTOUCHED) som er digitalisert i løpet av ${mktWindowLabel()}, hentet direkte fra Nasjonalbibliotekets flyfoto-API.
+      ${capped ? `<br><strong>Merk:</strong> datamengden ble avkortet ved ${(MKT_MAX_PAGES * MKT_PAGE_SIZE).toLocaleString('no')} bilder — velg et kortere tidsvindu for fullstendige tall.` : ''}
+      Klikk et fylke til venstre for å få topp 50-kommunene i det fylket.
+    </div>`;
+}
+
+// Filtrer kommunelista på et fylke (toggle), og tegn på nytt fra siste aggregering
+function setMktFylke(nr) {
+  mktFylke = (mktFylke === nr) ? '' : nr;
+  if (mktLast) renderMarketing(mktLast.byKommune, mktLast.total, mktLast.days, mktLast.capped, mktLast.ts);
+}
+
+// Jump from a marketing target to the browse grid, filtered to that place
+function goToKommune(nr) {
+  const navn = kommuneName(nr);
+  state.query = navn;
+  document.getElementById('search-input').value = navn;
+  switchView('browse');
+  fetchPhotos(0);
+}
+
+// Open the official Flyfoto placement app. It has no URL parameter for a
+// specific municipality, so we copy the name to the clipboard and the user
+// pastes it into the app's search box to jump to the kommune.
+function openInFlyfoto(nr) {
+  const navn = kommuneName(nr);
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(navn).then(
+      () => mktToast(`«${navn}» er kopiert. Lim inn i søkefeltet i Flyfoto for å gå til kommunen.`),
+      () => mktToast(`Søk på «${navn}» i Flyfoto for å gå til kommunen.`)
+    );
+  } else {
+    mktToast(`Søk på «${navn}» i Flyfoto for å gå til kommunen.`);
+  }
+  window.open('https://www.nb.no/flyfoto/', '_blank', 'noopener');
+}
+
+function mktToast(msg) {
+  let t = document.getElementById('mkt-toast');
+  if (!t) { t = document.createElement('div'); t.id = 'mkt-toast'; t.className = 'mkt-toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(mktToast._t);
+  mktToast._t = setTimeout(() => t.classList.remove('show'), 4500);
+}
+
+// Open the mail client with all local-association e-mails for the kommune as BCC
+// (BCC keeps recipients hidden from each other) and a ready-made subject line.
+const EPOST_EMNE = 'Invitasjon til flyfotodugnad';
+
+// Ferdig brødtekst. Sendes som én e-post til alle lagene i kommunen (blindkopi),
+// så lagsnavnet er generalisert. {antall} = totalt ikke-plasserte foto i kommunen.
+function epostTekst(antall, kommune) {
+  return [
+    'Hei!',
+    '',
+    `Visste du at det finnes ${antall} flyfoto fra ${kommune} kommune som vi ikke vet hvor hører hjemme på kartet?`,
+    '',
+    'Nasjonalbiblioteket digitaliserer alle norske flyfoto, og vi søker etter folk som kan bidra med å plassere dem riktig. ' +
+      'Vi tar kontakt med deg fordi du står oppført med denne e-postadressen i Brønnøysundregisteret som kontaktperson ' +
+      `for et lokalhistorie-, soge- eller bygdelag i ${kommune} kommune.`,
+    '',
+    'Gå inn på https://www.nb.no/flyfoto og søk opp ditt sted. Spre gjerne denne e-posten til andre du tenker kan bli med på denne dugnaden.',
+    '',
+    'Gi beskjed dersom du ikke ønsker å bli kontaktet.',
+    '',
+    'Vennlig hilsen',
+    'Nasjonalbiblioteket',
+  ].join('\r\n');
+}
+
+// Synkron: åpner ferdig utfylt e-post med én gang (innenfor klikket, så
+// e-postklienten åpner pålitelig). `antall` er tallet som vises i lista for
+// kommunen – lik totalen når tidsvinduet er «Alle».
+function sendEpost(nr, antall) {
+  const liste = KOMMUNE_EPOST[nr] || [];
+  if (!liste.length) { mktToast('Ingen registrert e-post for denne kommunen.'); return; }
+  const kommune = kommuneName(nr);
+  const antallStr = (typeof antall === 'number') ? antall.toLocaleString('no') : 'mange';
+
+  const ren = liste.filter(e => e && e.trim());   // tomme adresser (delingsversjon) hoppes over
+  const bcc = ren.map(encodeURIComponent).join(',');
+  const subject = encodeURIComponent(EPOST_EMNE);
+  const body = encodeURIComponent(epostTekst(antallStr, kommune));
+  window.location.href = `mailto:?bcc=${bcc}&subject=${subject}&body=${body}`;
+  mktToast(`Åpner ferdig e-post om ${antallStr} foto til ${ren.length} lag i ${kommune} (adresser i blindkopi).`);
+}
+
+// ── HTML-E-POST ────────────────────────────────────────────
+// NB-stylet HTML-mal. [KOMMUNE] og [ANTALL] flettes inn ved klikk.
+const EPOST_HTML_MAL = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;font-family:'Helvetica Neue',Arial,Helvetica,sans-serif;color:#181c23;"><tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:100%;background:#ffffff;border-radius:12px;overflow:hidden;">
+<tr><td style="background:#00458f;padding:18px 28px;"><span style="color:#fff;font-size:15px;font-weight:700;">Nasjonalbiblioteket</span><span style="color:#9dc0f0;font-size:15px;">&nbsp;/&nbsp;</span><span style="color:#fff;font-size:15px;">✈ Flyfoto</span></td></tr>
+<tr><td style="padding:0;"><a href="https://www.nb.no/flyfoto"><img src="https://www.nb.no/services/image/resolver/URN:NBN:no-nb_digifoto_AE0100049416_0406_F_01/full/600,/0/native.jpg" width="600" alt="Historisk skråfoto" style="display:block;width:100%;max-width:600px;height:auto;border:0;"></a></td></tr>
+<tr><td style="padding:32px 28px 8px;">
+<h1 style="margin:0 0 16px;font-size:24px;line-height:1.25;color:#181c23;">Bli med på flyfotodugnaden i [KOMMUNE]!</h1>
+<p style="margin:0 0 16px;font-size:16px;line-height:1.6;">Hei!</p>
+<p style="margin:0 0 16px;font-size:16px;line-height:1.6;">Visste du at det finnes <strong style="color:#00458f;">[ANTALL] flyfoto fra [KOMMUNE] kommune</strong> som vi ennå ikke vet hvor hører hjemme på kartet?</p>
+<p style="margin:0 0 16px;font-size:16px;line-height:1.6;">Nasjonalbiblioteket digitaliserer alle norske flyfoto – tusenvis av skråbilder av gårder, grender og tettsteder, tatt fra fly gjennom hele etterkrigstiden. Mange av dem er ikke stedfestet, og her trenger vi hjelp fra folk som kjenner lokalmiljøet: <strong>dere</strong>.</p>
+<p style="margin:0 0 24px;font-size:16px;line-height:1.6;">Vi tar kontakt fordi dere står oppført i Brønnøysundregisteret som et lokalhistorie-, soge- eller bygdelag i [KOMMUNE]. Ingen kjenner husene, gårdene og landskapet bedre enn dere.</p></td></tr>
+<tr><td style="padding:0 28px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eff2fb;border-radius:10px;"><tr><td style="padding:20px 22px;">
+<p style="margin:0 0 14px;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#00458f;">Slik blir du med</p>
+<p style="margin:0 0 10px;font-size:15px;line-height:1.55;"><strong style="color:#005cbb;">1.</strong> Gå til <a href="https://www.nb.no/flyfoto" style="color:#005cbb;font-weight:600;">nb.no/flyfoto</a> og søk opp [KOMMUNE].</p>
+<p style="margin:0 0 10px;font-size:15px;line-height:1.55;"><strong style="color:#005cbb;">2.</strong> Opprett konto og logg inn.</p>
+<p style="margin:0 0 10px;font-size:15px;line-height:1.55;"><strong style="color:#005cbb;">3.</strong> Kjenner du igjen et bilde? Plasser det på riktig sted på kartet.</p>
+<p style="margin:0;font-size:15px;line-height:1.55;"><strong style="color:#005cbb;">4.</strong> Del gjerne med andre – jo flere som blir med, jo mer av historien får vi tatt vare på.</p></td></tr></table></td></tr>
+<tr><td align="center" style="padding:28px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="background:#005cbb;border-radius:8px;"><a href="https://www.nb.no/flyfoto" style="display:inline-block;padding:14px 30px;font-size:16px;font-weight:700;color:#fff;text-decoration:none;">Bli med på dugnaden &nbsp;→</a></td></tr></table></td></tr>
+<tr><td style="padding:0 28px 8px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td width="50%" style="padding:0 6px 0 0;"><img src="https://www.nb.no/services/image/resolver/URN:NBN:no-nb_digifoto_AE0100049321_0805_F_01/full/400,/0/native.jpg" alt="Skråfoto" width="276" style="display:block;width:100%;height:auto;border-radius:8px;border:0;"></td><td width="50%" style="padding:0 0 0 6px;"><img src="https://www.nb.no/services/image/resolver/URN:NBN:no-nb_digifoto_AE0100049839_0184_F_01/full/400,/0/native.jpg" alt="Skråfoto" width="276" style="display:block;width:100%;height:auto;border-radius:8px;border:0;"></td></tr></table></td></tr>
+<tr><td style="padding:20px 28px 8px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-left:4px solid #005cbb;background:#f9f9ff;"><tr><td style="padding:16px 20px;"><p style="margin:0;font-size:15px;line-height:1.6;"><strong>Spre ordet!</strong> Videresend gjerne denne e-posten til medlemmer, naboer og andre lag i [KOMMUNE] som kan kjenne igjen et sted.</p></td></tr></table></td></tr>
+<tr><td style="padding:24px 28px 8px;"><p style="margin:0 0 16px;font-size:16px;line-height:1.6;">Tusen takk for at dere er med på å ta vare på den norske bildehistorien!</p><p style="margin:0;font-size:16px;line-height:1.6;">Vennlig hilsen<br><strong>Nasjonalbiblioteket</strong></p></td></tr>
+<tr><td style="padding:24px 28px 28px;"><hr style="border:0;border-top:1px solid #e0e2ec;margin:0 0 16px;"><p style="margin:0;font-size:12px;line-height:1.5;color:#717785;">Du får denne e-posten fordi adressen er registrert som kontaktinfo for et lag i [KOMMUNE] i Brønnøysundregisteret. Gi beskjed dersom du ikke ønsker å bli kontaktet. · <a href="https://www.nb.no/flyfoto" style="color:#005cbb;">nb.no/flyfoto</a></p></td></tr>
+</table></td></tr></table>`;
+
+// Standardbildene i malen (byttes med lokale bilder fra kommunen når mulig)
+const EPOST_DEF_BILDER = {
+  hero: 'https://www.nb.no/services/image/resolver/URN:NBN:no-nb_digifoto_AE0100049416_0406_F_01/full/600,/0/native.jpg',
+  a:    'https://www.nb.no/services/image/resolver/URN:NBN:no-nb_digifoto_AE0100049321_0805_F_01/full/400,/0/native.jpg',
+  b:    'https://www.nb.no/services/image/resolver/URN:NBN:no-nb_digifoto_AE0100049839_0184_F_01/full/400,/0/native.jpg',
+};
+
+// Hent lokale flyfoto-miniatyrer (thumbnail-href med {width},{height}) for en kommune
+async function hentLokaleBilder(kommune) {
+  try {
+    const url = `${BASE}?q=${encodeURIComponent('contentClasses:BilderSet625')}`
+      + `&filter=mediatype:bilder&filter=contentClasses:jp2`
+      + `&filter=municipality:${encodeURIComponent(kommune)}&profile=nbdigital&size=8`;
+    const res = await fetch(url);
+    const data = await res.json();
+    return (data._embedded?.items || [])
+      .map(it => it._links?.thumbnail_custom?.href)
+      .filter(Boolean);
+  } catch { return []; }
+}
+
+// Generer ferdig HTML-e-post med LOKALE bilder: åpne i ny fane + kopier mottakere
+function htmlEpost(nr, antall) {
+  const liste = KOMMUNE_EPOST[nr] || [];
+  if (!liste.length) { mktToast('Ingen registrert e-post for denne kommunen.'); return; }
+  const kommune = kommuneName(nr);
+  const antallStr = (typeof antall === 'number') ? antall.toLocaleString('no') : 'mange';
+
+  const ren = liste.filter(e => e && e.trim());   // tomme adresser (delingsversjon) hoppes over
+  const w = window.open('', '_blank');   // åpne fanen innenfor klikket (unngår popup-blokk)
+  if (w) w.document.write(`<p style="font-family:'Helvetica Neue',Arial,sans-serif;padding:24px;color:#414754;">Lager e-post for ${kommune} …</p>`);
+  if (navigator.clipboard && ren.length) navigator.clipboard.writeText(ren.join(', ')).catch(() => {});
+
+  hentLokaleBilder(kommune).then(bilder => {
+    let mal = EPOST_HTML_MAL.split('[KOMMUNE]').join(kommune).split('[ANTALL]').join(antallStr);
+    // bytt standardbilder med lokale bilder fra kommunen (beholder standard som fallback)
+    if (bilder[0]) mal = mal.replace(EPOST_DEF_BILDER.hero, bilder[0].replace('{width},{height}', '600,'));
+    if (bilder[1]) mal = mal.replace(EPOST_DEF_BILDER.a, bilder[1].replace('{width},{height}', '400,'));
+    if (bilder[2]) mal = mal.replace(EPOST_DEF_BILDER.b, bilder[2].replace('{width},{height}', '400,'));
+
+    const side =
+      `<!doctype html><html lang="no"><head><meta charset="utf-8"><title>E-post – ${kommune}</title></head>` +
+      `<body style="margin:0;background:#f4f4f4;">` +
+      `<div style="max-width:640px;margin:0 auto;padding:14px 16px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#414754;">` +
+      `<strong>Emne:</strong> ${EPOST_EMNE}<br><strong>Blindkopi (${ren.length}):</strong> ${ren.join('; ') || '(ingen adresser i denne versjonen)'}` +
+      `<div style="margin-top:6px;color:#717785;">Mottakerne er kopiert til utklippstavla. Merk alt nedenfor (Cmd/Ctrl+A), kopier, og lim inn i e-posten din.</div></div>` +
+      mal + `</body></html>`;
+    if (w) { w.document.open(); w.document.write(side); w.document.close(); }
+  });
+
+  mktToast(`HTML-e-post for ${kommune} åpnes. ${ren.length} mottakere kopiert (blindkopi).`);
+}
+
+// ── VIEW SWITCHING ─────────────────────────────────────────
+function switchView(view) {
+  state.view = view;
+  document.getElementById('browse-view').style.display    = view === 'browse'    ? '' : 'none';
+  document.getElementById('marketing-view').classList.toggle('visible', view === 'marketing');
+  document.getElementById('tab-browse').classList.toggle('active', view === 'browse');
+  document.getElementById('tab-marketing').classList.toggle('active', view === 'marketing');
+  // sort/year controls only apply to the browse grid
+  document.querySelector('.toolbar-controls').style.visibility = view === 'browse' ? '' : 'hidden';
+  if (view === 'marketing') loadMarketing();
+}
+document.getElementById('tab-browse').onclick    = () => switchView('browse');
+document.getElementById('tab-marketing').onclick = () => switchView('marketing');
+
 // ── INIT ───────────────────────────────────────────────────
+state.view = 'browse';
 fetchPhotos(0);
 loadCountySidebar();
 loadPeriodCounts();
