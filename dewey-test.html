@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- dewey-test.html · versjon 2026-07-08 11:16 -->
+<!-- dewey-test.html · versjon 2026-07-08 11:19 -->
 <html lang="no">
 <head>
 <meta charset="utf-8">
@@ -220,6 +220,7 @@
       <button class="dw-wbtn primary" id="dwUseBuild" type="button">✓ Bruk</button>
       <button class="dw-wbtn" id="dwUndoBuild" type="button">↶ Angre</button>
       <button class="dw-wbtn" id="dwClrBuild" type="button">Tøm</button>
+      <button class="dw-wbtn" id="dwCopyBuild" type="button">⧉ Kopier</button>
     </div>
     <div id="dwBuildView" class="dw-buildview" style="display:none"></div>
     <div id="dwValid" class="dw-valid" style="display:none"></div>
@@ -275,7 +276,7 @@
 (function(){
   "use strict";
   var $=function(id){return document.getElementById(id);};
-  var APP_VERSION="2026-07-08 11:16";   // ← oppdater ved ny opplasting
+  var APP_VERSION="2026-07-08 11:19";   // ← oppdater ved ny opplasting
   (function(){ var e=$("appver"); if(e) e.textContent="Versjon "+APP_VERSION; })();
   function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
   function status(msg){$("status").innerHTML=msg||"";}
@@ -819,6 +820,7 @@
     setOut(n);status("Valgt 082: "+n);});
   $("dwUndoBuild").addEventListener("click",function(){if(!dwUndoStack.length){status("Ingenting å angre.");return;}dwState=dwUndoStack.pop();dwRenderBuild();status("Angret → "+(dwStateStr()||"(tomt)"));});
   $("dwClrBuild").addEventListener("click",function(){dwPushUndo();dwState={base:"",parts:[]};dwRenderBuild();});
+  $("dwCopyBuild").addEventListener("click",function(){var n=$("dwBuild").value.trim();if(!n){status("Byggefeltet er tomt.");return;}if(navigator.clipboard)navigator.clipboard.writeText(n).then(function(){status("Kopiert: "+n);},function(){status(n);});else status(n);});
   $("copy082").addEventListener("click",function(){var t=$("out082").textContent;if(navigator.clipboard)navigator.clipboard.writeText(t).then(function(){status("Kopiert: "+t);},function(){status(t);});else status(t);});
 
   /* ---------- Start ---------- */
