@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- dewey-test.html · versjon 2026-07-08 11:19 -->
+<!-- dewey-test.html · versjon 2026-07-08 11:30 -->
 <html lang="no">
 <head>
 <meta charset="utf-8">
@@ -40,6 +40,9 @@
   #status{font-size:12.5px;color:var(--muted);min-height:18px;margin:4px 2px}
   .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--line-strong);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:4px}
   @keyframes sp{to{transform:rotate(360deg)}}
+  /* Tydelig fokusmarkering på alle interaktive elementer (tastaturnavigasjon) */
+  a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+  @media (prefers-reduced-motion: reduce){ .spin{animation:none} *{transition:none!important} }
 
   /* --- Dewey-bygger (som i hovedverktøyet) --- */
   .dwbuild{border:1px solid var(--line-strong);border-radius:10px;background:color-mix(in srgb,var(--accent) 4%,var(--panel));padding:14px}
@@ -157,7 +160,7 @@
   .fb-shots{display:flex;flex-wrap:wrap;gap:10px;margin-top:2px}
   .fb-shot-thumb{position:relative;display:inline-block}
   .fb-shot-thumb img{max-height:64px;max-width:100px;border-radius:6px;border:1px solid var(--line);cursor:zoom-in;display:block}
-  .fb-shot-x{position:absolute;top:-7px;right:-7px;width:20px;height:20px;padding:0;line-height:1;border-radius:50%;border:1px solid var(--line-strong);background:var(--bg);color:#a11;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center}
+  .fb-shot-x{position:absolute;top:-8px;right:-8px;width:24px;height:24px;padding:0;line-height:1;border-radius:50%;border:1px solid var(--line-strong);background:var(--bg);color:#a11;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center}
   .fb-shot-x:hover{background:#a11;color:#fff;border-color:#a11}
   .fb-item-imgs{display:flex;flex-wrap:wrap;gap:6px}
   .fb-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
@@ -206,7 +209,7 @@
     (<code style="background:none;color:inherit">python3 -m http.server</code>) eller sjekk at du har nett.
   </div>
 
-  <div id="status"></div>
+  <div id="status" role="status" aria-live="polite"></div>
 
   <div id="deweyBuilder" class="dwbuild">
     <div class="dw-title">Dewey-klassifikasjon <span class="dw-tsub">· Norsk WebDewey (åpne data)</span></div>
@@ -237,8 +240,8 @@
     <div class="fb-htop"><h2 class="fb-h">Tilbakemeldinger</h2><span id="fbAdminBadge" class="fb-adminbadge" style="display:none">Admin – sletting aktiv</span></div>
     <p class="fb-intro">Har du innspill til Dewey-verktøyet? Skriv en tilbakemelding — legg gjerne ved en skjermdump.</p>
     <form id="fbForm" class="fb-form">
-      <input id="fbName" class="fb-in" type="text" placeholder="Navn: Kallenavn eller fornavn. Ikke bruk fullt navn" autocomplete="off" maxlength="80">
-      <textarea id="fbText" class="fb-in" rows="3" placeholder="Din tilbakemelding …" maxlength="4000" required></textarea>
+      <input id="fbName" class="fb-in" type="text" aria-label="Navn (kallenavn eller fornavn – ikke fullt navn)" placeholder="Navn: Kallenavn eller fornavn. Ikke bruk fullt navn" autocomplete="off" maxlength="80">
+      <textarea id="fbText" class="fb-in" rows="3" aria-label="Din tilbakemelding" placeholder="Din tilbakemelding …" maxlength="4000" required></textarea>
       <div class="fb-file">
         <button type="button" id="fbShot" class="fb-filebtn fb-shot">📷 Ta bilde nå (Dewey-feltet)</button>
         <label class="fb-filebtn" for="fbImg">📎 …eller legg ved skjermdump(er)</label>
@@ -276,10 +279,10 @@
 (function(){
   "use strict";
   var $=function(id){return document.getElementById(id);};
-  var APP_VERSION="2026-07-08 11:19";   // ← oppdater ved ny opplasting
+  var APP_VERSION="2026-07-08 11:30";   // ← oppdater ved ny opplasting
   (function(){ var e=$("appver"); if(e) e.textContent="Versjon "+APP_VERSION; })();
   function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
-  function status(msg){$("status").innerHTML=msg||"";}
+  function status(msg){$("status").textContent=msg||"";}
   var corsShown=false;
   function maybeCors(){if(!corsShown){corsShown=true;$("corsNote").style.display="block";}}
 
@@ -477,13 +480,16 @@
   }
   function fbLightbox(src){
     if(!src) return;
-    var o=document.createElement("div"); o.className="fb-lb";
+    var opener=document.activeElement;   // for å gi fokus tilbake ved lukking
+    var o=document.createElement("div"); o.className="fb-lb"; o.tabIndex=-1;
+    o.setAttribute("role","dialog"); o.setAttribute("aria-modal","true");
+    o.setAttribute("aria-label","Forstørret skjermdump. Trykk Escape eller klikk for å lukke.");
     var big=document.createElement("img"); big.src=src; big.alt="Forstørret skjermdump";
     o.appendChild(big);
-    function close(){ if(o.parentNode)o.parentNode.removeChild(o); document.removeEventListener("keydown",onKey); }
-    function onKey(e){ if(e.key==="Escape") close(); }
+    function close(){ if(o.parentNode)o.parentNode.removeChild(o); document.removeEventListener("keydown",onKey); if(opener&&opener.focus){try{opener.focus();}catch(e){}} }
+    function onKey(e){ if(e.key==="Escape"){ close(); } else if(e.key==="Tab"){ e.preventDefault(); o.focus(); } }  // hold fokus i overlegget
     o.addEventListener("click",close); document.addEventListener("keydown",onKey);
-    document.body.appendChild(o);
+    document.body.appendChild(o); o.focus();
   }
   function fbBindZoom(){
     Array.prototype.forEach.call(document.querySelectorAll(".fb-item-img"),function(im){
