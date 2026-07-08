@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dewey-bygger (test) · Norsk WebDewey</title>
+<style>
+  :root{
+    --accent:#550029; --accent-soft:#f3e7ec; --accent-ink:#fff;
+    --ink:#1c1c1e; --muted:#6b6b72; --line:#e6e3e0; --line-strong:#cfcac5;
+    --panel:#faf8f6; --bg:#fff; --ok:#1e7d43; --brass:#8a6a2a;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    /* NB Design System v.2 — tokens (fra nb-header-footer-pakken) */
+    --nb-font-serif:"ITC Clearface Std",Georgia,"Times New Roman",serif;
+    --nb-font-sans:"STK Bureau Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --nb-surface-base:#efece9; --nb-surface-elevated:#fff; --nb-surface-highlighted:#e4dfde;
+    --nb-text-default:#17181b; --nb-text-muted:#5b5c62;
+    --nb-primary-active:#550029; --nb-line:#d4d4d4; --nb-radius-hero:64px; --nb-logo-color:#40263e;
+  }
+  [data-theme="dark"]{
+    --accent:#fe91b8; --accent-soft:#3a2430; --accent-ink:#17181b;
+    --ink:#ffeaea; --muted:#95959d; --line:#3a3b40; --line-strong:#4a4b52;
+    --panel:#22232a; --bg:#28292d; --ok:#5fd08a; --brass:#d0a860;
+    --nb-surface-base:#17181b; --nb-surface-elevated:#28292d; --nb-surface-highlighted:#352834;
+    --nb-text-default:#ffeaea; --nb-text-muted:#95959d;
+    --nb-primary-active:#fe91b8; --nb-line:#3a3b40; --nb-logo-color:#ffebeb;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--nb-surface-base);color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto;padding:24px 16px 40px}
+  .pagehead h1{font-family:var(--nb-font-serif);font-weight:600;font-size:27px;margin:0 0 4px;color:var(--ink)}
+  .pagehead p{color:var(--muted);margin:0 0 4px;font-size:14px}
+  .note{background:#fff7e6;border:1px solid #f0d79a;border-radius:8px;padding:9px 12px;font-size:12.5px;color:#6a4d00;margin:12px 0}
+  .out{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:14px 0;padding:12px 14px;border:1px solid var(--line-strong);border-radius:10px;background:#fff}
+  .out .olbl{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+  .out code{font-family:var(--mono);font-size:14px;background:#22261f;color:#d8e6c9;border-radius:6px;padding:6px 10px;flex:1;min-width:180px}
+  .out button{font:inherit;font-size:13px;padding:6px 12px;border:1px solid var(--line-strong);border-radius:7px;background:var(--panel);cursor:pointer}
+  #status{font-size:12.5px;color:var(--muted);min-height:18px;margin:4px 2px}
+  .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--line-strong);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:4px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  /* --- Dewey-bygger (som i hovedverktøyet) --- */
+  .dwbuild{border:1px solid var(--line-strong);border-radius:10px;background:color-mix(in srgb,var(--accent) 4%,var(--panel));padding:14px}
+  .dw-title{display:flex;align-items:baseline;gap:8px;font-weight:600;font-size:13px;color:var(--accent);margin-bottom:10px}
+  .dw-title .dw-tsub{font-weight:400;color:var(--muted);font-size:11.5px}
+  .dw-nav{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin:8px 0 4px}
+  .dw-nav .dw-navlbl{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-left:6px}
+  .dw-navbtn{font:inherit;font-size:12px;padding:3px 9px;border:1px solid var(--line-strong);border-radius:6px;background:var(--panel);color:var(--ink);cursor:pointer}
+  .dw-navbtn:hover{border-color:var(--accent)}
+  .dw-navbtn.dw-navtbl{font-family:var(--mono);font-weight:600;color:var(--accent);border-style:dashed;padding:3px 8px}
+  .dw-navbtn.dw-navtbl:hover{background:var(--accent);color:#fff;border-style:solid}
+  .dw-work{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:8px 0 2px;padding:8px 10px;border:1px solid var(--accent);border-radius:8px;background:color-mix(in srgb,var(--accent) 6%,transparent)}
+  .dw-work .dw-wlbl{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+  .dw-buildwrap{position:relative;flex:1;min-width:150px}
+  #dwBuild{width:100%;font-family:var(--mono);font-size:15px;font-weight:600;padding:5px 9px;border:1px solid var(--line-strong);border-radius:6px;background:var(--bg);color:var(--ink)}
+  .dw-wbtn{font:inherit;font-size:12.5px;padding:5px 11px;border:1px solid var(--line-strong);border-radius:6px;background:var(--panel);color:var(--ink);cursor:pointer}
+  .dw-wbtn.primary{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+  .dw-sug{position:absolute;z-index:20;left:0;right:0;top:calc(100% + 4px);background:var(--panel);border:1px solid var(--line-strong);border-radius:8px;max-height:320px;overflow:auto;box-shadow:0 8px 24px rgba(0,0,0,.15);display:none}
+  .dw-sug.open{display:block}
+  .dw-sug .row{display:flex;gap:10px;padding:7px 11px;cursor:pointer;border-bottom:1px solid var(--line);align-items:baseline}
+  .dw-sug .row:last-child{border-bottom:none}
+  .dw-sug .row:hover,.dw-sug .row.active{background:var(--accent-soft)}
+  .dw-sug .n{font-family:var(--mono);color:var(--accent);font-weight:600;white-space:nowrap}
+  .dw-buildview{margin:6px 0 2px;font-size:13px;display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+  .dw-buildview .dw-bvlbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;margin-right:2px}
+  .dw-buildview .dw-bvkey{margin-left:8px;display:inline-flex;gap:4px}
+  .dw-buildview .dw-bvkey .dw-seg{font-size:10px;padding:0 5px}
+  .dw-seg{font-family:var(--mono);font-weight:700;font-size:15px;padding:1px 4px;border-radius:4px;color:#17181b}
+  .dw-seg.dw-base{background:transparent;color:var(--ink)}
+  .dw-seg.dw-t1{background:#ffe27a} .dw-seg.dw-t2{background:#84e59a} .dw-seg.dw-t3{background:#8fc9ff}
+  .dw-seg.dw-t4{background:#ffc078} .dw-seg.dw-t5{background:#e5a8ff} .dw-seg.dw-t6{background:#7fe3d6}
+  .dw-seg.dw-tx{background:#d9d9d9}
+  .dw-valid{font-size:12px;margin:3px 0 2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .dw-valid.ok{color:var(--ok)} .dw-valid.err{color:#a11}
+  .dw-valid .dw-fix{font:inherit;font-size:11.5px;padding:1px 8px;border:1px solid #a11;border-radius:5px;background:transparent;color:#a11;cursor:pointer}
+  .dw-valid .dw-fix:hover{background:#a11;color:#fff}
+  .dw-detail{margin-top:14px;border-top:1px solid var(--line);padding-top:13px}
+  .dw-topnav{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:9px}
+  .dw-up{font:inherit;font-size:12px;font-weight:600;color:var(--accent);background:var(--panel);border:1px solid var(--accent);border-radius:6px;padding:2px 10px;cursor:pointer;white-space:nowrap}
+  .dw-up:hover{background:var(--accent);color:#fff}
+  .dw-crumbs{font-size:12px;color:var(--muted)}
+  .dw-crumbs a{color:var(--accent);text-decoration:none;cursor:pointer}
+  .dw-crumbs a:hover{text-decoration:underline}
+  .dw-crumbs .sep{margin:0 5px;color:var(--line-strong)}
+  .dw-card{border:1px solid var(--line);border-radius:10px;padding:15px 17px;background:var(--bg);box-shadow:0 1px 3px rgba(0,0,0,.05)}
+  .dw-headnum{font-family:var(--mono);font-size:26px;color:var(--accent);font-weight:700}
+  .dw-caption{font-size:18px;font-weight:600;margin-top:2px}
+  .dw-badge{display:inline-block;font-size:10px;background:var(--nb-surface-highlighted);color:var(--muted);border:1px solid var(--line-strong);border-radius:5px;padding:1px 6px;margin-left:8px;vertical-align:middle}
+  .dw-sec{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:11px 0 3px;font-weight:600}
+  .dw-list{margin:0;padding-left:18px} .dw-list li{margin:2px 0;font-size:13px}
+  .dw-chips{display:flex;flex-wrap:wrap;gap:5px}
+  .dw-chips .dw-chip{font-size:12px;background:var(--nb-surface-highlighted);border:1px solid var(--line);border-radius:5px;padding:2px 8px}
+  .dw-mapline{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
+  .dw-map{font-size:12px;background:var(--panel);border:1px solid var(--line-strong);border-radius:5px;padding:2px 8px}
+  .dw-fold{margin-top:11px;border-top:1px solid var(--line);padding-top:7px}
+  .dw-fold>summary{cursor:pointer;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;list-style:none;display:flex;align-items:center;gap:6px;user-select:none}
+  .dw-fold>summary::-webkit-details-marker{display:none}
+  .dw-fold>summary::before{content:"\25B8";font-size:11px;transition:transform .15s ease}
+  .dw-fold[open]>summary::before{transform:rotate(90deg)}
+  .dw-fold>summary:hover{color:var(--accent)}
+  .dw-foldbody{margin-top:5px}
+  .dw-updown{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:6px 0 2px}
+  .dw-updown .dw-udlbl{font-size:11.5px;color:var(--muted)}
+  .dw-kids,.dw-tops{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:5px;margin-top:6px}
+  .dw-kid{display:flex;gap:9px;align-items:baseline;padding:7px 9px;border:1px solid var(--line);border-radius:7px;cursor:pointer;background:var(--bg);text-align:left;font:inherit;width:100%}
+  .dw-kid:hover{background:var(--accent-soft);border-color:var(--accent)}
+  .dw-kid .n{font-family:var(--mono);color:var(--accent);font-weight:600;white-space:nowrap;font-size:12px}
+  .dw-kid.dw-tbl{border-style:dashed}
+  .dw-marc{display:flex;align-items:center;gap:10px;background:#22261f;color:#d8e6c9;font-family:var(--mono);font-size:12.5px;border-radius:7px;padding:8px 11px;margin-top:4px}
+  .dw-marc code{flex:1;overflow-x:auto;white-space:nowrap}
+  .dw-use{margin-top:10px;background:var(--accent);color:var(--accent-ink);border:none;border-radius:7px;padding:8px 13px;font-weight:600;cursor:pointer}
+  .dw-add{background:transparent;border:1px solid var(--accent);color:var(--accent)}
+  .dw-add:hover{background:var(--accent);color:#fff}
+  .dw-addnote{font-size:11.5px;color:var(--muted);margin-top:5px;font-style:italic}
+  .dw-links{margin-top:10px;font-size:12px} .dw-links a{color:var(--accent);margin-right:14px}
+  .dw-notice,.dw-spin-txt{color:var(--muted);font-size:13px;padding:6px 0}
+  .dw-nearlink{color:var(--accent)}
+  .srccredit{margin-top:22px;font-size:12px;color:var(--muted);text-align:center}
+
+  /* --- NB header + footer (fra nb-header-footer-pakken) --- */
+  .nb-topbar{background:var(--nb-surface-highlighted);border:0}
+  .nb-topbar-inner{max-width:1180px;margin:0 auto;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+  .nb-logo{display:inline-flex;align-items:center;text-decoration:none;color:var(--nb-logo-color);line-height:0}
+  .nb-logo-full{height:26px;width:auto;display:block}
+  .nb-logo:hover{opacity:.85}
+  .nb-actions{display:flex;align-items:center;gap:18px}
+  .nb-icon-btn{background:none;border:none;padding:3px;color:var(--nb-text-default);cursor:pointer;display:inline-flex}
+  .nb-icon-btn:hover{color:var(--nb-primary-active)}
+  .nb-icon-btn svg{width:22px;height:22px;display:block}
+  .nb-logo:focus-visible,.nb-icon-btn:focus-visible{outline:2px solid var(--nb-primary-active);outline-offset:2px;border-radius:4px}
+  .nb-footer{background:var(--nb-surface-highlighted);border:0;margin-top:48px;border-radius:var(--nb-radius-hero) var(--nb-radius-hero) 0 0}
+  .nb-footer p{max-width:760px;margin:0 auto;padding:44px 24px 40px;text-align:center;font-family:var(--nb-font-sans);font-size:15px;color:var(--nb-text-default);line-height:1.6}
+  .nb-footer a{color:var(--nb-primary-active);font-family:var(--nb-font-sans);text-decoration:underline}
+  @media(max-width:520px){.nb-logo-full{height:22px}.nb-topbar-inner{padding:14px 16px}}
+
+  /* --- Tilbakemeldinger --- */
+  .fb{margin-top:26px;border-top:1px solid var(--line);padding-top:18px}
+  .fb-htop{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+  .fb-h{font-family:var(--nb-font-serif);font-size:20px;font-weight:600;margin:0 0 4px}
+  .fb-refresh{font:inherit;font-size:12.5px;padding:4px 11px;border:1px solid var(--line-strong);border-radius:7px;background:var(--panel);color:var(--accent);cursor:pointer}
+  .fb-refresh:hover{border-color:var(--accent)}
+  .fb-intro{color:var(--muted);font-size:13.5px;margin:0 0 12px}
+  .fb-form{display:flex;flex-direction:column;gap:9px;background:var(--panel);border:1px solid var(--line-strong);border-radius:10px;padding:14px}
+  .fb-in{font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line-strong);border-radius:7px;background:var(--bg);color:var(--ink);width:100%}
+  textarea.fb-in{resize:vertical;min-height:66px}
+  .fb-file{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .fb-filebtn{font-size:13px;padding:6px 11px;border:1px dashed var(--line-strong);border-radius:7px;background:var(--bg);cursor:pointer;color:var(--accent)}
+  .fb-filebtn:hover{border-color:var(--accent)}
+  .fb-imgname{font-size:12px;color:var(--muted)}
+  .fb-preview{max-height:70px;border-radius:6px;border:1px solid var(--line)}
+  .fb-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .fb-send{font:inherit;font-weight:600;font-size:14px;padding:8px 16px;border:none;border-radius:7px;background:var(--accent);color:var(--accent-ink);cursor:pointer}
+  .fb-send:disabled{opacity:.5;cursor:default}
+  .fb-status{font-size:12.5px;color:var(--muted)}
+  .fb-note{font-size:12px;color:var(--brass);margin:8px 2px 0}
+  .fb-list{margin-top:16px;display:flex;flex-direction:column;gap:12px}
+  .fb-item{border:1px solid var(--line);border-radius:9px;padding:11px 13px;background:var(--bg)}
+  .fb-item-head{display:flex;align-items:baseline;gap:8px;margin-bottom:3px;flex-wrap:wrap}
+  .fb-item-name{font-weight:600;font-size:14px}
+  .fb-item-time{font-size:11.5px;color:var(--muted)}
+  .fb-item-text{font-size:13.5px;white-space:pre-wrap;line-height:1.5}
+  .fb-item-img{margin-top:8px;max-width:100%;max-height:320px;border-radius:7px;border:1px solid var(--line);cursor:zoom-in;display:block}
+  .fb-votes{display:flex;gap:8px;margin-top:9px}
+  .fb-vote{font:inherit;font-size:13px;display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border:1px solid var(--line-strong);border-radius:16px;background:var(--bg);color:var(--muted);cursor:pointer}
+  .fb-vote:hover{border-color:var(--accent);color:var(--ink)}
+  .fb-vote.on{border-color:var(--accent);color:var(--accent);font-weight:600;background:var(--accent-soft)}
+  .fb-vote .fb-vc{font-variant-numeric:tabular-nums;min-width:10px;text-align:center}
+  .fb-empty{color:var(--muted);font-size:13px;font-style:italic}
+  .fb-lb{position:fixed;inset:0;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;z-index:100;cursor:zoom-out;padding:20px}
+  .fb-lb img{max-width:100%;max-height:100%;border-radius:8px}
+</style>
+</head>
+<body>
+<header class="nb-topbar">
+  <div class="nb-topbar-inner">
+    <a class="nb-logo" href="https://www.nb.no" target="_blank" rel="noopener" aria-label="Nasjonalbiblioteket"><svg class="nb-logo-full" aria-hidden="true" viewBox="0 0 1337 182" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M30.7361 0H138.307V150.599H30.7361V0ZM61.468 43.0281C61.468 48.1204 57.3399 52.2485 52.2476 52.2485C47.1553 52.2485 43.0272 48.1204 43.0272 43.0281C43.0272 37.9358 47.1553 33.8077 52.2476 33.8077C57.3399 33.8077 61.468 37.9358 61.468 43.0281ZM95.2777 52.2485C100.37 52.2485 104.498 48.1204 104.498 43.0281C104.498 37.9358 100.37 33.8077 95.2777 33.8077C90.1854 33.8077 86.0573 37.9358 86.0573 43.0281C86.0573 48.1204 90.1854 52.2485 95.2777 52.2485ZM104.498 86.0582C104.498 91.1505 100.37 95.2786 95.2777 95.2786C90.1854 95.2786 86.0573 91.1505 86.0573 86.0582C86.0573 80.9659 90.1854 76.8378 95.2777 76.8378C100.37 76.8378 104.498 80.9659 104.498 86.0582ZM95.2777 138.305C100.37 138.305 104.498 134.177 104.498 129.084C104.498 123.992 100.37 119.864 95.2777 119.864C90.1854 119.864 86.0573 123.992 86.0573 129.084C86.0573 134.177 90.1854 138.305 95.2777 138.305Z" fill="currentColor"/><circle cx="95.2754" cy="172.114" r="9.22037" fill="currentColor"/><circle cx="9.22037" cy="43.028" r="9.22037" fill="currentColor"/><path d="M198.67 120V30.4452H217.62L259.412 97.9358V30.4452H273.948V120H255.518L213.207 51.4711V120H198.67ZM311.766 121.557C298.527 121.557 289.053 113.77 289.053 100.791C289.053 86.2547 300.344 83.2696 315.27 81.0631C328.249 78.9865 331.883 77.9482 331.883 73.4056C331.883 68.6033 328.119 63.8011 319.423 63.8011C311.506 63.8011 306.574 67.8246 306.185 74.5737H291.259C291.908 59.2585 303.459 52.2499 319.294 52.2499C335.517 52.2499 346.29 59.7777 346.29 75.8716V101.44C346.29 108.579 346.549 114.289 348.107 120H333.83L333.181 111.953C328.119 118.572 320.332 121.557 311.766 121.557ZM315.53 110.136C324.096 110.136 331.883 104.944 331.883 95.7294V86.7739C329.287 88.8505 324.485 90.1484 316.438 91.8357C308.91 93.3931 303.459 94.9506 303.459 101.051C303.459 106.891 308.781 110.136 315.53 110.136ZM387.432 121.557C369.391 121.557 358.878 113.381 358.489 98.3251H372.896C373.285 105.593 378.606 110.136 387.692 110.136C395.219 110.136 400.022 106.891 400.022 101.829C400.022 96.6379 395.479 95.0804 385.355 92.7442C371.208 89.4995 359.917 86.1249 359.917 72.497C359.917 60.2968 370.04 52.2499 386.783 52.2499C403.526 52.2499 412.741 60.816 413.26 74.1843H398.983C398.594 67.1757 394.441 63.4118 386.524 63.4118C379.385 63.4118 374.713 66.3969 374.713 71.0693C374.713 76.2609 380.034 77.6886 389.639 79.895C402.747 82.8802 414.688 86.3845 414.688 99.8826C414.688 113.251 404.305 121.557 387.432 121.557ZM415.723 143.362V131.551H418.838C425.068 131.551 427.794 129.345 427.794 123.504V53.8073H442.33V125.711C442.33 137.002 437.138 143.362 423.64 143.362H415.723ZM427.664 45.371V29.5367H442.46V45.371H427.664ZM488.424 121.557C468.436 121.557 455.587 107.67 455.587 86.6441C455.587 65.6182 468.436 52.2499 488.424 52.2499C508.281 52.2499 521.131 65.6182 521.131 86.6441C521.131 107.67 508.281 121.557 488.424 121.557ZM488.424 109.227C499.585 109.227 506.075 101.051 506.075 86.6441C506.075 72.497 499.585 64.5799 488.424 64.5799C477.132 64.5799 470.772 72.497 470.772 86.6441C470.772 101.051 477.132 109.227 488.424 109.227ZM534.388 120V53.8073H548.665V62.8926C553.338 55.6244 562.163 52.2499 570.08 52.2499C583.319 52.2499 593.053 61.2053 593.053 76.5205V120H578.517V79.3759C578.517 70.1608 573.844 64.7097 565.019 64.7097C555.804 64.7097 548.925 70.8098 548.925 81.7121V120H534.388ZM628.888 121.557C615.65 121.557 606.175 113.77 606.175 100.791C606.175 86.2547 617.467 83.2696 632.393 81.0631C645.372 78.9865 649.006 77.9482 649.006 73.4056C649.006 68.6033 645.242 63.8011 636.546 63.8011C628.629 63.8011 623.697 67.8246 623.307 74.5737H608.382C609.031 59.2585 620.582 52.2499 636.416 52.2499C652.64 52.2499 663.412 59.7777 663.412 75.8716V101.44C663.412 108.579 663.672 114.289 665.229 120H650.953L650.304 111.953C645.242 118.572 637.454 121.557 628.888 121.557ZM632.652 110.136C641.218 110.136 649.006 104.944 649.006 95.7294V86.7739C646.41 88.8505 641.608 90.1484 633.561 91.8357C626.033 93.3931 620.582 94.9506 620.582 101.051C620.582 106.891 625.903 110.136 632.652 110.136ZM679.895 120V30.4452H694.431V120H679.895ZM746.495 121.557C737.799 121.557 730.661 118.053 726.118 111.953V120H711.581V30.4452H726.118V61.9841C730.79 55.6244 737.799 52.2499 746.625 52.2499C763.368 52.2499 775.308 64.8394 775.308 86.5143C775.308 108.579 763.108 121.557 746.495 121.557ZM743.12 109.357C753.633 109.357 760.123 101.44 760.123 86.5143C760.123 72.1077 753.763 64.4501 743.25 64.4501C732.607 64.4501 725.988 72.2374 725.988 86.9037C725.988 101.57 732.607 109.357 743.12 109.357ZM788.771 120V53.8073H803.307V120H788.771ZM788.641 45.371V29.5367H803.437V45.371H788.641ZM855.371 121.557C846.675 121.557 839.537 118.053 834.994 111.953V120H820.458V30.4452H834.994V61.9841C839.667 55.6244 846.675 52.2499 855.501 52.2499C872.244 52.2499 884.184 64.8394 884.184 86.5143C884.184 108.579 871.984 121.557 855.371 121.557ZM851.997 109.357C862.509 109.357 868.999 101.44 868.999 86.5143C868.999 72.1077 862.639 64.4501 852.126 64.4501C841.484 64.4501 834.864 72.2374 834.864 86.9037C834.864 101.57 841.484 109.357 851.997 109.357ZM897.647 120V30.4452H912.183V120H897.647ZM929.334 120V53.8073H943.87V120H929.334ZM929.204 45.371V29.5367H944V45.371H929.204ZM989.964 121.557C969.976 121.557 957.127 107.67 957.127 86.6441C957.127 65.6182 969.976 52.2499 989.964 52.2499C1009.82 52.2499 1022.67 65.6182 1022.67 86.6441C1022.67 107.67 1009.82 121.557 989.964 121.557ZM989.964 109.227C1001.13 109.227 1007.62 101.051 1007.62 86.6441C1007.62 72.497 1001.13 64.5799 989.964 64.5799C978.672 64.5799 972.312 72.497 972.312 86.6441C972.312 101.051 978.672 109.227 989.964 109.227ZM1057.63 120C1045.95 120 1040.63 113.77 1040.63 103.517V65.3586H1028.04V53.8073H1040.63V35.1176H1055.16V53.8073H1068.4V65.3586H1055.16V100.532C1055.16 105.853 1057.76 107.93 1063.47 107.93H1068.92V120H1057.63ZM1108.45 121.557C1088.86 121.557 1076.4 108.449 1076.4 86.7739C1076.4 65.3586 1090.15 52.2499 1109.23 52.2499C1128.57 52.2499 1139.47 65.2288 1139.47 86.2547V90.1484H1091.45C1092.49 102.608 1098.98 109.487 1109.1 109.487C1116.76 109.487 1122.21 105.204 1123.64 98.7145H1138.7C1136.49 112.732 1124.03 121.557 1108.45 121.557ZM1091.97 79.7652H1124.55C1124.16 70.2906 1118.45 64.1905 1109.23 64.1905C1100.15 64.1905 1093.79 69.7714 1091.97 79.7652ZM1152.79 120V30.4452H1167.33V81.4525L1193.02 53.8073H1211.58L1186.41 79.895L1212.49 120H1195.1L1176.41 90.1484L1167.33 99.623V120H1152.79ZM1246.1 121.557C1226.5 121.557 1214.04 108.449 1214.04 86.7739C1214.04 65.3586 1227.8 52.2499 1246.88 52.2499C1266.22 52.2499 1277.12 65.2288 1277.12 86.2547V90.1484H1229.1C1230.14 102.608 1236.63 109.487 1246.75 109.487C1254.41 109.487 1259.86 105.204 1261.29 98.7145H1276.34C1274.14 112.732 1261.68 121.557 1246.1 121.557ZM1229.62 79.7652H1262.2C1261.81 70.2906 1256.1 64.1905 1246.88 64.1905C1237.8 64.1905 1231.44 69.7714 1229.62 79.7652ZM1312.26 120C1300.58 120 1295.26 113.77 1295.26 103.517V65.3586H1282.67V53.8073H1295.26V35.1176H1309.8V53.8073H1323.04V65.3586H1309.8V100.532C1309.8 105.853 1312.39 107.93 1318.1 107.93H1323.56V120H1312.26Z" fill="currentColor"/></svg></a>
+    <div class="nb-actions">
+      <button class="nb-icon-btn" id="nbThemeToggle" type="button" title="Bytt lyst / mørkt" aria-label="Bytt lyst eller mørkt tema"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.6 6.6 0 0 0 9.8 9.8z"/></svg></button>
+    </div>
+  </div>
+</header>
+<div class="wrap">
+  <header class="pagehead">
+    <h1>Dewey-bygger</h1>
+    <p>Utforsk og bygg Dewey-nummer mot Norsk WebDewey (åpne data fra Universitetsbiblioteket i Oslo). Frittstående — ingen innlogging.</p>
+  </header>
+
+  <div class="note" id="corsNote" style="display:none">
+    Klarte ikke å hente data fra UiO. Hvis nettleseren blokkerer det (CORS), prøv å åpne siden via en enkel lokal server
+    (<code style="background:none;color:inherit">python3 -m http.server</code>) eller sjekk at du har nett.
+  </div>
+
+  <div class="out">
+    <span class="olbl">Valgt 082</span>
+    <code id="out082">— velg et nummer —</code>
+    <button id="copy082" type="button">Kopier</button>
+  </div>
+  <div id="status"></div>
+
+  <div id="deweyBuilder" class="dwbuild">
+    <div class="dw-title">Dewey-klassifikasjon <span class="dw-tsub">· Norsk WebDewey (åpne data)</span></div>
+    <div id="dwNav" class="dw-nav"></div>
+    <div class="dw-work">
+      <span class="dw-wlbl">Byggenummer / søk</span>
+      <div class="dw-searchbox dw-buildwrap">
+        <input id="dwBuild" type="text" autocomplete="off" spellcheck="false" aria-label="Byggenummer eller søk" placeholder="nummer (641.5) eller emneord (matlaging)">
+        <div id="dwsug" class="dw-sug" role="listbox"></div>
+      </div>
+      <button class="dw-wbtn primary" id="dwUseBuild" type="button">✓ Bruk</button>
+      <button class="dw-wbtn" id="dwUndoBuild" type="button">↶ Angre</button>
+      <button class="dw-wbtn" id="dwClrBuild" type="button">Tøm</button>
+    </div>
+    <div id="dwBuildView" class="dw-buildview" style="display:none"></div>
+    <div id="dwValid" class="dw-valid" style="display:none"></div>
+    <div id="dwdetail" class="dw-detail"></div>
+  </div>
+
+  <section id="feedback" class="fb">
+    <div class="fb-htop"><h2 class="fb-h">Tilbakemeldinger</h2><button id="fbRefresh" type="button" class="fb-refresh">↻ Oppdater</button></div>
+    <p class="fb-intro">Har du innspill til Dewey-verktøyet? Skriv en tilbakemelding — legg gjerne ved en skjermdump.</p>
+    <form id="fbForm" class="fb-form">
+      <input id="fbName" class="fb-in" type="text" placeholder="Navn" autocomplete="name" maxlength="80">
+      <textarea id="fbText" class="fb-in" rows="3" placeholder="Din tilbakemelding …" maxlength="4000" required></textarea>
+      <div class="fb-file">
+        <label class="fb-filebtn" for="fbImg">📎 Legg ved skjermdump</label>
+        <input id="fbImg" type="file" accept="image/*" hidden>
+        <span id="fbImgName" class="fb-imgname"></span>
+        <img id="fbPreview" class="fb-preview" alt="Forhåndsvisning av vedlegg" style="display:none">
+      </div>
+      <div class="fb-row">
+        <button type="submit" class="fb-send">Send tilbakemelding</button>
+        <span id="fbStatus" class="fb-status" role="status" aria-live="polite"></span>
+      </div>
+    </form>
+    <div id="fbNote" class="fb-note" style="display:none"></div>
+    <div id="fbList" class="fb-list"></div>
+  </section>
+
+  <div class="srccredit">Kilde: Norsk WebDewey via UiO Skosmos (CC BY-NC-ND). Deweysystemet eies av OCLC. · Testverktøy fra Nasjonalbiblioteket.</div>
+</div>
+
+<footer class="nb-footer">
+  <p>Dette er en eksperimentell tjeneste utviklet gjennom vibe-koding på Nasjonalbiblioteket.<br>Support: <a href="mailto:tm@nb.no">tm@nb.no</a></p>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var $=function(id){return document.getElementById(id);};
+  function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
+  function status(msg){$("status").innerHTML=msg||"";}
+  var corsShown=false;
+  function maybeCors(){if(!corsShown){corsShown=true;$("corsNote").style.display="block";}}
+
+  /* =====================================================================
+     TILBAKEMELDING (Google Sheet via Apps Script — ingen proxy)
+     Lim inn /exec-URL fra Apps Script-distribusjonen din mellom anførselstegnene.
+     Tom streng = tilbakemeldinger lagres bare lokalt i din egen nettleser.
+     ===================================================================== */
+  var FEEDBACK_URL = "https://script.google.com/macros/s/AKfycby7ZClkvJmMBvAFRTgbZj-RgYB-4senxGNPh8u0bRbh7UZHWLsrTuqhyOGp_dTbz6Fyeg/exec";
+
+  /* ---------- Tema-veksling (måne-knapp), huskes i localStorage ---------- */
+  (function(){
+    var KEY="nb-theme", root=document.documentElement;
+    try{ if(localStorage.getItem(KEY)==="dark") root.setAttribute("data-theme","dark"); }catch(e){}
+    function set(dark){
+      if(dark) root.setAttribute("data-theme","dark"); else root.removeAttribute("data-theme");
+      try{ localStorage.setItem(KEY, dark?"dark":"light"); }catch(e){}
+      var b=$("nbThemeToggle"); if(b) b.setAttribute("aria-pressed", dark?"true":"false");
+    }
+    function wire(){
+      var b=$("nbThemeToggle"); if(!b) return;
+      b.setAttribute("aria-pressed", root.getAttribute("data-theme")==="dark"?"true":"false");
+      b.addEventListener("click", function(){ set(root.getAttribute("data-theme")!=="dark"); });
+    }
+    if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",wire); else wire();
+  })();
+
+  /* ---------- Tilbakemeldinger ---------- */
+  var fbImage="";                 // nedskalert dataURL av valgt skjermdump
+  var FB_LS="deweyTestFeedback";  // lokal fallback
+  function fbStatus(m){var e=$("fbStatus"); if(e) e.textContent=m||"";}
+  function fbTime(v){var d=new Date(v); if(isNaN(d.getTime())) return String(v||""); return d.toLocaleString("no-NO",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});}
+  function fbLocalGet(){try{return JSON.parse(localStorage.getItem(FB_LS)||"[]");}catch(e){return [];}}
+  function fbLocalAdd(entry){
+    var a=fbLocalGet();
+    a.push({ts:entry.ts,name:entry.name,text:entry.text,image:entry.image,
+      id:entry.id||("loc"+Date.now()+Math.random().toString(36).slice(2)),up:0,down:0});
+    try{ localStorage.setItem(FB_LS,JSON.stringify(a)); }
+    catch(e){ a.forEach(function(x){x.image="";}); try{localStorage.setItem(FB_LS,JSON.stringify(a));}catch(_){}}
+  }
+  function fbShrink(file, cb){
+    var r=new FileReader();
+    r.onload=function(){
+      var img=new Image();
+      img.onload=function(){
+        var max=1200, w=img.width, h=img.height;
+        if(w>max||h>max){var s=Math.min(max/w,max/h); w=Math.round(w*s); h=Math.round(h*s);}
+        var c=document.createElement("canvas"); c.width=w; c.height=h;
+        try{ c.getContext("2d").drawImage(img,0,0,w,h); cb(c.toDataURL("image/jpeg",0.72)); }catch(e){ cb(""); }
+      };
+      img.onerror=function(){cb("");}; img.src=r.result;
+    };
+    r.onerror=function(){cb("");}; r.readAsDataURL(file);
+  }
+  function fbImgUrl(v){
+    if(!v) return ""; v=String(v);
+    if(/^https?:|^data:/.test(v)) return v;                       // full URL eller innebygd bilde
+    return "https://drive.google.com/thumbnail?id="+encodeURIComponent(v)+"&sz=w1000";  // Google Drive fil-id
+  }
+  function fbCard(it){
+    var img=fbImgUrl(it.img||it.image);
+    var id=String(it.id||""), mine=fbVotes()[id]||null;
+    var votes = id ? ('<div class="fb-votes" data-id="'+esc(id)+'">'+
+      '<button type="button" class="fb-vote fb-up'+(mine==="up"?" on":"")+'" data-dir="up" aria-label="Tommel opp" aria-pressed="'+(mine==="up")+'">👍 <span class="fb-vc">'+(Number(it.up)||0)+'</span></button>'+
+      '<button type="button" class="fb-vote fb-down'+(mine==="down"?" on":"")+'" data-dir="down" aria-label="Tommel ned" aria-pressed="'+(mine==="down")+'">👎 <span class="fb-vc">'+(Number(it.down)||0)+'</span></button>'+
+      '</div>') : '';
+    return '<div class="fb-item"><div class="fb-item-head">'+
+      '<span class="fb-item-name">'+esc(it.name||"Anonym")+'</span>'+
+      '<span class="fb-item-time">'+esc(it.ts?fbTime(it.ts):"")+'</span></div>'+
+      '<div class="fb-item-text">'+esc(it.text||"")+'</div>'+
+      (img?'<img class="fb-item-img" src="'+esc(img)+'" alt="Skjermdump fra '+esc(it.name||"tester")+'" loading="lazy">':'')+
+      votes+'</div>';
+  }
+  /* ---------- Stemmer (👍/👎), delt via samme Google Sheet ---------- */
+  var FB_VOTES="deweyTestVotes";  // hva DENNE nettleseren har stemt (hindrer dobbeltstemming)
+  function fbVotes(){ try{return JSON.parse(localStorage.getItem(FB_VOTES)||"{}");}catch(e){return {};} }
+  function fbSaveVotes(v){ try{localStorage.setItem(FB_VOTES,JSON.stringify(v));}catch(e){} }
+  function fbApplyVoteUI(id,dUp,dDown,next){
+    var wrap=document.querySelector('.fb-votes[data-id="'+id+'"]'); if(!wrap) return;
+    var uc=wrap.querySelector(".fb-up .fb-vc"), dc=wrap.querySelector(".fb-down .fb-vc");
+    if(uc) uc.textContent=Math.max(0,(parseInt(uc.textContent,10)||0)+dUp);
+    if(dc) dc.textContent=Math.max(0,(parseInt(dc.textContent,10)||0)+dDown);
+    var ub=wrap.querySelector(".fb-up"), db=wrap.querySelector(".fb-down");
+    if(ub){ ub.classList.toggle("on",next==="up"); ub.setAttribute("aria-pressed",next==="up"); }
+    if(db){ db.classList.toggle("on",next==="down"); db.setAttribute("aria-pressed",next==="down"); }
+  }
+  function fbVote(id,dir){
+    if(!id) return;
+    var v=fbVotes(), prev=v[id]||null, dUp=0,dDown=0,next;
+    if(prev===dir){ if(dir==="up")dUp=-1; else dDown=-1; next=null; }          // klikk igjen = angre
+    else if(prev===null){ if(dir==="up")dUp=1; else dDown=1; next=dir; }        // ny stemme
+    else { if(dir==="up"){dUp=1;dDown=-1;}else{dDown=1;dUp=-1;} next=dir; }      // bytt side
+    if(next===null) delete v[id]; else v[id]=next; fbSaveVotes(v);
+    fbApplyVoteUI(id,dUp,dDown,next);
+    if(FEEDBACK_URL){
+      fetch(FEEDBACK_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},
+        body:JSON.stringify({action:"vote",id:id,up:dUp,down:dDown})}).then(function(){ setTimeout(fbLoad,1600); }).catch(function(){});
+    } else {
+      var a=fbLocalGet(); a.forEach(function(x){ if(String(x.id)===String(id)){
+        x.up=Math.max(0,(Number(x.up)||0)+dUp); x.down=Math.max(0,(Number(x.down)||0)+dDown); }});
+      try{localStorage.setItem(FB_LS,JSON.stringify(a));}catch(e){}
+    }
+  }
+  function fbBindZoom(){
+    Array.prototype.forEach.call(document.querySelectorAll(".fb-item-img"),function(im){
+      im.addEventListener("click",function(){
+        var o=document.createElement("div"); o.className="fb-lb";
+        var big=document.createElement("img"); big.src=im.src.replace("&sz=w1000","&sz=w1600"); big.alt="";
+        o.appendChild(big);
+        o.addEventListener("click",function(){if(o.parentNode)o.parentNode.removeChild(o);});
+        document.body.appendChild(o);
+      });
+    });
+  }
+  function fbRenderItems(items){
+    var box=$("fbList"); if(!box) return;
+    items=(items||[]).slice().reverse();   // nyeste øverst
+    box.innerHTML = items.length ? items.map(fbCard).join("")
+      : '<div class="fb-empty">Ingen tilbakemeldinger ennå — bli den første.</div>';
+    fbBindZoom();
+  }
+  function fbRenderLocal(){ fbRenderItems(fbLocalGet()); }
+  function fbPost(entry){
+    // no-cors: Apps Script svarer ugjennomsiktig, så vi kan ikke lese svaret — antar suksess.
+    return fetch(FEEDBACK_URL,{method:"POST",mode:"no-cors",
+      headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(entry)}).then(function(){return true;});
+  }
+  function fbLoad(retry){
+    if(!FEEDBACK_URL){ fbRenderLocal(); return; }
+    var box=$("fbList"); if(box && !box.querySelector(".fb-item")) box.innerHTML='<div class="fb-empty">Henter tilbakemeldinger …</div>';
+    var cb="fbCb"+Date.now(), s=document.createElement("script"), done=false;
+    // Apps Script kan ha treg kaldstart → romslig tidsgrense + ett nytt forsøk (varmt kall er raskere).
+    var to=setTimeout(function(){ if(done)return; cleanup(); retry?fbLoadFailed():fbLoad(true); },30000);  // Apps Script kaldstart kan ta ~30 s
+    function cleanup(){ done=true; try{delete window[cb];}catch(e){window[cb]=undefined;} if(s.parentNode)s.parentNode.removeChild(s); clearTimeout(to); }
+    window[cb]=function(d){ cleanup(); fbRenderItems((d&&d.items)||[]); };
+    s.onerror=function(){ if(done)return; cleanup(); retry?fbLoadFailed():fbLoad(true); };
+    s.src=FEEDBACK_URL+(FEEDBACK_URL.indexOf("?")>=0?"&":"?")+"callback="+cb+"&t="+Date.now();
+    document.body.appendChild(s);
+  }
+  function fbLoadFailed(){
+    var local=fbLocalGet();
+    if(local.length){ fbRenderItems(local); return; }
+    var box=$("fbList"); if(box) box.innerHTML='<div class="fb-empty">Kunne ikke hente tilbakemeldinger fra Google Sheet akkurat nå. '+
+      'Klikk «↻ Oppdater», eller sjekk at nettapp-distribusjonen har tilgang «Alle».</div>';
+  }
+  function fbReset(){ $("fbText").value=""; $("fbImg").value=""; fbImage=""; $("fbImgName").textContent=""; var p=$("fbPreview"); if(p){p.style.display="none"; p.removeAttribute("src");} }
+  function fbInit(){
+    var form=$("fbForm"); if(!form) return;
+    if(!FEEDBACK_URL){ var n=$("fbNote"); if(n){ n.style.display=""; n.textContent="Google Sheet er ikke satt opp ennå — tilbakemeldinger lagres bare i din egen nettleser. (Sett FEEDBACK_URL i fila for å dele dem.)"; } }
+    // Delegert klikk på 👍/👎 (elementene bygges på nytt ved hver render).
+    $("fbList").addEventListener("click",function(e){
+      var btn=e.target && e.target.closest ? e.target.closest(".fb-vote") : null; if(!btn) return;
+      var wrap=btn.closest(".fb-votes"); var id=wrap&&wrap.getAttribute("data-id");
+      if(id) fbVote(id,btn.getAttribute("data-dir"));
+    });
+    var rf=$("fbRefresh"); if(rf) rf.addEventListener("click",function(){ fbLoad(); });
+    $("fbImg").addEventListener("change",function(){
+      var f=this.files&&this.files[0];
+      if(!f){ fbImage=""; $("fbImgName").textContent=""; var p0=$("fbPreview"); if(p0){p0.style.display="none";} return; }
+      $("fbImgName").textContent=f.name; fbStatus("Behandler bilde …");
+      fbShrink(f,function(d){ fbImage=d; fbStatus(""); var p=$("fbPreview"); if(d&&p){p.src=d; p.style.display="";} });
+    });
+    form.addEventListener("submit",function(e){
+      e.preventDefault();
+      var name=$("fbName").value.trim(), text=$("fbText").value.trim();
+      if(!text){ fbStatus("Skriv en tilbakemelding først."); return; }
+      var entry={name:name||"Anonym", text:text, image:fbImage, ts:new Date().toISOString()};
+      var btn=form.querySelector(".fb-send"); btn.disabled=true; fbStatus("Sender …");
+      if(FEEDBACK_URL){
+        fbPost(entry).then(function(){
+          fbStatus("Takk! Tilbakemeldingen er sendt."); fbReset(); btn.disabled=false;
+          setTimeout(fbLoad,1400);
+        }).catch(function(){
+          fbLocalAdd(entry); fbStatus("Nettfeil — lagret lokalt i stedet."); fbReset(); btn.disabled=false; fbRenderLocal();
+        });
+      } else {
+        fbLocalAdd(entry); fbStatus("Lagret lokalt."); fbReset(); btn.disabled=false; fbRenderLocal();
+      }
+    });
+    fbLoad();
+  }
+
+  /* ---------- DDC-datalag (henter DIREKTE fra UiO Skosmos, ingen proxy) ---------- */
+  var API="https://data.ub.uio.no/skosmos/rest/v1/ddc/";
+  var NOTE={classHere:"Klassifiseres her",including:"Herunder",note:"Note",scopeNote:"Omfangsnote",variantName:"Variantnavn",historyNote:"Historikk"};
+  var MAIN=[["000","Informatikk, informasjon og generelle verker"],["100","Filosofi og psykologi"],["200","Religion"],["300","Samfunnsvitenskap"],["400","Språk"],["500","Naturvitenskap"],["600","Teknologi"],["700","Kunst og fritid"],["800","Litteratur"],["900","Historie og geografi"]];
+  function getUrl(u){return fetch(u,{headers:{"Accept":"application/json"}}).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json();});}
+  function json(qs){return getUrl(API+qs);}
+  function label(v){if(!v)return "";if(typeof v==="string")return v;if(Array.isArray(v)){var nb=v.filter(function(x){return x.lang==="nb";})[0]||v[0];return nb?(nb.value||""):"";}return v.value||"";}
+  function arr(v){return v==null?[]:(Array.isArray(v)?v:[v]);}
+  function dwUri(n){return "http://dewey.info/class/"+n.replace(/^T/i,"")+"/e23/";}
+  function notKey(n){var t=/^T/i.test(n);var s=n.replace(/^T/i,"").split("-")[0];return (t?"zz":"")+s.replace(/\./g,"").padEnd(18,"0")+n;}
+  function dwUriToNotation(u){var m=String(u||"").match(/\/class\/([^\/]+)\/e23/);if(!m)return "";var x=m[1];return /--/.test(x)?("T"+x):x;}
+  function dwSearch(q){return json("search?lang=nb&query="+encodeURIComponent(q)).then(function(j){return (j.results||[]).filter(function(x){return x.notation;});}).catch(function(){maybeCors();return [];});}
+  function dwData(u){
+    return json("data?lang=nb&format=application/json&uri="+encodeURIComponent(u)).then(function(j){
+      var g=j.graph||[],self=g.filter(function(x){return x.uri===u;})[0];if(!self)throw new Error("not-found");
+      var by={};g.forEach(function(x){by[x.uri]=x;});
+      var narrower=arr(self.narrower).map(function(x){var c=by[x.uri]||{};return {uri:x.uri,notation:c["skos:notation"]||"",label:label(c.prefLabel)};})
+        .filter(function(k){return k.notation;}).sort(function(a,b){return notKey(a.notation)<notKey(b.notation)?-1:1;});
+      var notes={};Object.keys(self).forEach(function(k){var m=k.match(/webdewey-terms#(.+)$/);if(m)notes[m[1]]=arr(self[k]).map(label).filter(Boolean);});
+      var mapUris=[];arr(self.exactMatch).forEach(function(x){var uu=x.uri||x;var m=String(uu).match(/\/(humord|realfagstermer)\/[^\/]+$/);if(m)mapUris.push({uri:uu,vocab:m[1]});});
+      return {uri:u,notation:self["skos:notation"]||"",label:label(self.prefLabel),
+        alt:arr(self.altLabel).map(label).filter(Boolean),narrower:narrower,notes:notes,
+        broaderUri:(arr(self.broader)[0]||{}).uri||null,mapUris:mapUris.slice(0,10)};
+    });
+  }
+  function dwHier(u){
+    return json("hierarchy?lang=nb&format=application/json&uri="+encodeURIComponent(u)).then(function(j){
+      var bt=j.broaderTransitive||{},chain=[],cur=bt[u],guard=0;
+      while(cur&&guard++<30){var b=arr(cur.broader)[0];if(!b)break;var pu=b.uri||b;var pp=bt[pu];if(!pp)break;chain.unshift({notation:pp.notation||pp["skos:notation"]||"",label:label(pp.prefLabel)});cur=pp;}
+      return chain;
+    }).catch(function(){return [];});
+  }
+  // Direkte barn via DEDIKERT /narrower-endepunkt — garantert komplett (i motsetning
+  // til /data.narrower som bare gir eksplisitt lagrede). Notasjon utledes fra URI.
+  function dwNarrower(u){
+    return json("narrower?lang=nb&uri="+encodeURIComponent(u)).then(function(j){
+      var out=((j&&j.narrower)||[]).map(function(x){return {uri:x.uri,notation:dwUriToNotation(x.uri),label:label(x.prefLabel)};})
+        .filter(function(k){return k.notation;}).sort(function(a,b){return notKey(a.notation)<notKey(b.notation)?-1:1;});
+      return out;
+    }).catch(function(){return [];});
+  }
+  function dwMappings(mapUris){
+    if(!mapUris||!mapUris.length)return Promise.resolve([]);
+    return Promise.all(mapUris.slice(0,8).map(function(m){
+      return getUrl("https://data.ub.uio.no/skosmos/rest/v1/"+m.vocab+"/label?lang=nb&uri="+encodeURIComponent(m.uri))
+        .then(function(j){return {term:(j&&j.prefLabel)||""};}).catch(function(){return null;});
+    })).then(function(a){var seen={},out=[];a.forEach(function(x){if(x&&x.term&&!seen[x.term.toLowerCase()]){seen[x.term.toLowerCase()]=1;out.push(x);}});return out;});
+  }
+  function dwNearest(notation){
+    var s=String(notation||"").replace(/\.$/,"");if(/^T/i.test(s))return Promise.resolve(null);
+    var cands=[];s=s.slice(0,-1);
+    while(s.length>=1){if(s.slice(-1)===".")s=s.slice(0,-1);if(s.length>=1&&cands.indexOf(s)<0)cands.push(s);s=s.slice(0,-1);}
+    function tryOne(i){if(i>=cands.length)return Promise.resolve(null);
+      return dwData(dwUri(cands[i])).then(function(d){return {notation:d.notation||cands[i],label:d.label};}).catch(function(){return tryOne(i+1);});}
+    return tryOne(0);
+  }
+
+  /* ---------- Byggetilstand (base + tabell-tillegg, farger, angre) ---------- */
+  var dwState={base:"",parts:[]},dwUndoStack=[];
+  function dwSnap(){return {base:dwState.base,parts:dwState.parts.map(function(p){return {table:p.table,add:p.add};})};}
+  function dwPushUndo(){dwUndoStack.push(dwSnap());if(dwUndoStack.length>50)dwUndoStack.shift();}
+  function dwStateStr(){return dwState.base+dwState.parts.map(function(p){return p.add;}).join("");}
+  function dwSegClass(t){var b=String(t).replace(/^(T\d).*/,"$1");return {"T1":"dw-t1","T2":"dw-t2","T3":"dw-t3","T4":"dw-t4","T5":"dw-t5","T6":"dw-t6"}[b]||"dw-tx";}
+  function dwRenderView(){
+    var v=$("dwBuildView");
+    if(!dwState.base&&!dwState.parts.length){v.style.display="none";v.innerHTML="";return;}
+    var html='<span class="dw-seg dw-base">'+esc(dwState.base||"")+'</span>';
+    dwState.parts.forEach(function(p){html+='<span class="dw-seg '+dwSegClass(p.table)+'" title="fra hjelpetabell '+esc(p.table)+'">'+esc(p.add)+'</span>';});
+    var key=dwState.parts.length?(' <span class="dw-bvkey">'+dwState.parts.map(function(p){return '<span class="dw-seg '+dwSegClass(p.table)+'">'+esc(p.table)+'</span>';}).join(" ")+'</span>'):"";
+    v.innerHTML='<span class="dw-bvlbl">Sammensetning:</span> '+html+key;v.style.display="flex";
+  }
+  function dwValidate(num){
+    num=String(num||"").trim();
+    if(!num)return {ok:null,msg:""};
+    if(/^T/i.test(num))return {ok:false,msg:"Hjelpetabelltall står aldri alene som 082-nummer."};
+    if(!/^[0-9.]+$/.test(num))return {ok:false,msg:"Ugyldige tegn — bare siffer og ett desimaltegn."};
+    if((num.match(/\./g)||[]).length>1)return {ok:false,msg:"Mer enn ett desimaltegn."};
+    var digits=num.replace(/[^0-9]/g,""),intPart=num.split(".")[0];
+    if(digits.length<3)return {ok:false,msg:"For kort — grunntallet skal ha 3 siffer (000–999)."};
+    if(intPart.length!==3){var fixed=digits.slice(0,3)+(digits.length>3?("."+digits.slice(3)):"");
+      return {ok:false,msg:"Desimaltegn skal stå etter 3. siffer.",fixed:fixed};}
+    if(/\.$/.test(num))return {ok:false,msg:"Desimaltegn uten desimaler."};
+    return {ok:true,msg:"Gyldig Dewey-format"};
+  }
+  function dwShowValid(){
+    var el=$("dwValid"),num=dwStateStr().trim(),v=dwValidate(num);
+    if(!num||v.ok===null){el.style.display="none";el.innerHTML="";return;}
+    el.style.display="flex";
+    if(v.ok){el.className="dw-valid ok";el.innerHTML="✓ "+esc(v.msg);}
+    else{el.className="dw-valid err";
+      el.innerHTML="⚠ "+esc(v.msg)+(v.fixed?(' <button type="button" class="dw-fix" data-fix="'+esc(v.fixed)+'">rett til '+esc(v.fixed)+'</button>'):"");
+      var b=el.querySelector(".dw-fix");if(b)b.addEventListener("click",function(){dwPushUndo();dwState={base:b.getAttribute("data-fix"),parts:[]};dwRenderBuild();});}
+  }
+  function dwRenderBuild(){$("dwBuild").value=dwStateStr();dwRenderView();dwShowValid();}
+  var DW_TBLORD={"T1":1,"T2":2,"T3":3,"T3A":3.1,"T3B":3.2,"T3C":3.3,"T4":4,"T5":5,"T6":6};
+  function dwTblKey(t){return DW_TBLORD[t]!=null?DW_TBLORD[t]:99;}
+  function dwAddPart(tbl,add){
+    dwPushUndo();
+    var i=-1;dwState.parts.forEach(function(p,k){if(i<0&&p.table===tbl)i=k;});
+    var replaced=(i>=0);if(replaced)dwState.parts[i].add=add;else dwState.parts.push({table:tbl,add:add});
+    dwState.parts.sort(function(a,b){return dwTblKey(a.table)-dwTblKey(b.table);});   // T1 → T2 → …
+    dwRenderBuild();
+    status((replaced?("Byttet ut "+tbl+"-tillegget → "):("La til «"+add+"» ("+tbl+") → "))+"byggenummer "+dwStateStr()+". Kontrollér sammenføyningen i full WebDewey.");
+  }
+
+  /* ---------- Hjelpetabeller + startvisning ---------- */
+  var DW_TABLES=[
+    ["T1--0","Standardinndelinger — form/tilnærming (–03 leksikon, –09 hist./geo. …)"],
+    ["T2--0","Geografiske områder, historiske perioder, biografier (–481 Norge …)"],
+    ["T3A--0","Litteratur — verker av/om éN forfatter"],
+    ["T3B--0","Litteratur — verker av/om FLERE forfattere"],
+    ["T3C--0","Kunst/litteratur — tilleggsnumre"],
+    ["T4--0","Underinndeling av enkeltspråk og språkgrupper"],
+    ["T5--0","Etniske og nasjonale grupper"],
+    ["T6--0","Språk (byggekloss)"]
+  ];
+  function dwBuildNav(){
+    var nav=$("dwNav");
+    var html='<button type="button" class="dw-navbtn" data-home="1">☰ Hovedklasser</button><span class="dw-navlbl">Hjelpetabeller:</span>'+
+      DW_TABLES.map(function(pr){return '<button type="button" class="dw-navbtn dw-navtbl" data-n="'+esc(pr[0])+'" title="'+esc(pr[1])+'">'+esc(pr[0].replace(/--0$/,""))+'</button>';}).join("");
+    nav.innerHTML=html;
+    nav.querySelector("[data-home]").addEventListener("click",dwStart);
+    [].forEach.call(nav.querySelectorAll(".dw-navtbl"),function(b){b.addEventListener("click",function(){dwLoad(b.getAttribute("data-n"));});});
+  }
+  function dwStart(){
+    var h='<div class="dw-sec">Hovedklasser — velg disiplin</div><div class="dw-tops">'+
+      MAIN.map(function(pr){return '<button type="button" class="dw-kid" data-n="'+pr[0]+'"><span class="n">'+pr[0]+'</span><span>'+esc(pr[1])+'</span></button>';}).join("")+'</div>'+
+      '<div class="dw-sec">Hjelpetabeller (T1–T6) — byggeklosser</div><div class="dw-tops">'+
+      DW_TABLES.map(function(pr){return '<button type="button" class="dw-kid dw-tbl" data-n="'+esc(pr[0])+'"><span class="n">'+esc(pr[0].replace(/--0$/,""))+'</span><span>'+esc(pr[1])+'</span></button>';}).join("")+'</div>';
+    $("dwdetail").innerHTML=h;dwBindKids();
+  }
+  function dwBindKids(){[].forEach.call($("dwdetail").querySelectorAll("[data-n]"),function(el){el.addEventListener("click",function(){dwLoad(el.getAttribute("data-n"));});});}
+
+  /* ---------- Last + tegn opp begrepet ---------- */
+  function dwLoad(notation){
+    var box=$("dwdetail");box.innerHTML='<div class="dw-notice"><span class="spin"></span> Henter '+esc(notation)+' …</div>';
+    var uri=dwUri(notation);
+    Promise.all([dwData(uri),dwHier(uri),dwNarrower(uri)]).then(function(a){
+      // Bruk DEDIKERT /narrower-endepunkt for barnelista (garantert komplett);
+      // fall tilbake på /data.narrower bare hvis endepunktet ga tomt (bladnode e.l.).
+      if(a[2]&&a[2].length)a[0].narrower=a[2];
+      dwRender(a[0],a[1]);
+      dwMappings(a[0].mapUris).then(function(maps){
+        var el=$("dwdetail").querySelector(".dw-maps");
+        if(el&&maps&&maps.length)el.innerHTML='<div class="dw-sec">Samsvarende emneord — sjekk at Dewey og emne stemmer</div><div class="dw-mapline">'+maps.map(function(m){return '<span class="dw-map">'+esc(m.term)+'</span>';}).join(" ")+'</div>';
+      });
+    }).catch(function(){
+      box.innerHTML='<div class="dw-notice">Fant ikke <b>'+esc(notation)+'</b> <span style="opacity:.7">– søker nærmeste gyldige …</span></div>';
+      dwNearest(notation).then(function(near){
+        if(near){box.innerHTML='<div class="dw-notice"><b>'+esc(notation)+'</b> finnes ikke som eget nummer. Nærmeste gyldige er <a href="#" class="dw-nearlink" data-n="'+esc(near.notation)+'"><b>'+esc(near.notation)+'</b> — '+esc(near.label)+'</a>. <div class="dw-addnote">Bygde/syntetiske numre er ofte ikke egne oppslag – kontrollér i full Norsk WebDewey.</div></div>';
+          var lnk=box.querySelector(".dw-nearlink");if(lnk)lnk.addEventListener("click",function(e){e.preventDefault();dwLoad(near.notation);});}
+        else box.innerHTML='<div class="dw-notice">Fant ikke <b>'+esc(notation)+'</b> i de åpne WebDewey-dataene – kontrollér i fullstendig Norsk WebDewey.</div>';
+      });
+    });
+  }
+  function dwRender(d,chain){
+    var box=$("dwdetail"),today=new Date().toISOString().slice(0,10).replace(/-/g,"");
+    var isTable=/^T/i.test(d.notation),isRange=/\d-\d/.test(d.notation);
+    var h="";
+    var upN=d.broaderUri?dwUriToNotation(d.broaderUri):"",navtop="";
+    if(upN)navtop+='<button type="button" class="dw-up" data-n="'+esc(upN)+'">↑ opp</button>';
+    if(chain&&chain.length)navtop+='<span class="dw-crumbs">'+chain.map(function(c){return '<a data-n="'+esc(c.notation)+'"><span class="n">'+esc(c.notation)+'</span> '+esc(c.label)+'</a>';}).join('<span class="sep">›</span>')+'</span>';
+    if(navtop)h+='<div class="dw-topnav">'+navtop+'</div>';
+    h+='<div class="dw-card"><span class="dw-headnum">'+esc(d.notation)+'</span>'+(isTable?'<span class="dw-badge">hjelpetabell</span>':"")+(isRange?'<span class="dw-badge">spenn</span>':"")+'<div class="dw-caption">'+esc(d.label)+'</div>';
+    var notesHtml="";
+    Object.keys(d.notes).forEach(function(k){if(!d.notes[k].length)return;notesHtml+='<div class="dw-sec">'+esc(NOTE[k]||k)+'</div><ul class="dw-list">'+d.notes[k].map(function(v){return '<li>'+esc(v)+'</li>';}).join("")+'</ul>';});
+    if(d.alt.length)notesHtml+='<div class="dw-sec">Andre innganger</div><div class="dw-chips">'+d.alt.map(function(v){return '<span class="dw-chip">'+esc(v)+'</span>';}).join("")+'</div>';
+    if(notesHtml){var refN=Object.keys(d.notes).reduce(function(s,k){return s+d.notes[k].length;},0)+d.alt.length;
+      h+='<details class="dw-fold"><summary>Noter og registerinnganger ('+refN+')</summary><div class="dw-foldbody">'+notesHtml+'</div></details>';}
+    h+='<div class="dw-maps"></div>';
+    if(!isTable&&!isRange)h+='<div class="dw-sec">MARC 082</div><div class="dw-marc"><code>082 04 $a '+esc(d.notation)+' $2 23/nor/'+today+'</code></div><button type="button" class="dw-use" data-use="'+esc(d.notation)+'">✓ Bruk '+esc(d.notation)+'</button>';
+    if(isTable&&!isRange){var addNum=d.notation.replace(/^T\d+[A-Z]?--/i,"").replace(/-/g,"");var tblId=(d.notation.match(/^T\d+[A-Z]?/i)||["?"])[0];
+      h+='<div class="dw-sec">Nummerbygging</div><button type="button" class="dw-use dw-add" data-add="'+esc(addNum)+'" data-tbl="'+esc(tblId)+'">+ Føy til «'+esc(addNum)+'» ('+esc(tblId)+') på byggenummeret</button><div class="dw-addnote">Tilleggstall fra hjelpetabell — brukes bare når en «tilføy fra tabell …»-note sier det. Nytt tillegg fra samme tabell erstatter forrige. Kontrollér i full WebDewey.</div>';}
+    h+='<div class="dw-links"><a href="https://data.ub.uio.no/skosmos/ddc/nb/page/?uri='+encodeURIComponent(d.uri)+'" target="_blank" rel="noopener">Åpne i Skosmos ↗</a></div></div>';
+    if(d.narrower.length){var upInline=upN?'<div class="dw-updown"><button type="button" class="dw-up" data-n="'+esc(upN)+'">↑ opp ett nivå</button><span class="dw-udlbl">— eller velg en underinndeling for å gå ned:</span></div>':'';
+      h+='<details class="dw-fold" open><summary>Naviger hierarkiet – underinndelinger ('+d.narrower.length+')</summary>'+upInline+'<div class="dw-kids">'+d.narrower.map(function(k){return '<button type="button" class="dw-kid" data-n="'+esc(k.notation)+'"><span class="n">'+esc(k.notation)+'</span><span>'+esc(k.label)+'</span></button>';}).join("")+'</div></details>';}
+    box.innerHTML=h;dwBindKids();
+    [].forEach.call(box.querySelectorAll("[data-use]"),function(b){b.addEventListener("click",function(){dwUse(b.getAttribute("data-use"),d.label);});});
+    [].forEach.call(box.querySelectorAll("[data-add]"),function(b){b.addEventListener("click",function(){dwAddPart(b.getAttribute("data-tbl")||"?",b.getAttribute("data-add"));});});
+  }
+  function setOut(n){$("out082").textContent=n?("082 04 $a "+n+" $2 23/nor/"+new Date().toISOString().slice(0,10).replace(/-/g,"")):"— velg et nummer —";}
+  function dwUse(notation){dwPushUndo();dwState={base:notation,parts:[]};dwRenderBuild();setOut(notation);status("Valgt: "+notation+". «+ Føy til» legger på tabelltillegg.");}
+
+  /* ---------- Autofullfør i byggenummer-feltet ---------- */
+  var dwTimer=null,dwItems=[],dwActive=-1;
+  function dwCloseSug(){$("dwsug").classList.remove("open");dwActive=-1;}
+  function dwHi(){[].forEach.call($("dwsug").children,function(el,i){el.classList.toggle("active",i===dwActive);});}
+  function dwPick(it){if(!it)return;dwCloseSug();dwPushUndo();dwState={base:it.notation,parts:[]};dwRenderBuild();dwLoad(it.notation);}
+  function dwShowSug(items){
+    dwItems=items;dwActive=-1;
+    if(!items.length){dwCloseSug();return;}
+    $("dwsug").innerHTML=items.map(function(it){return '<div class="row" role="option"><span class="n">'+esc(it.notation)+'</span><span>'+esc(it.prefLabel||it.label||"")+'</span></div>';}).join("");
+    [].forEach.call($("dwsug").children,function(el,i){el.addEventListener("click",function(){dwPick(items[i]);});});
+    $("dwsug").classList.add("open");
+  }
+  $("dwBuild").addEventListener("input",function(){
+    dwState={base:$("dwBuild").value,parts:[]};dwRenderView();
+    clearTimeout(dwTimer);var q=$("dwBuild").value.trim();
+    if(!q){dwCloseSug();return;}
+    dwTimer=setTimeout(function(){dwSearch(q).then(function(r){dwShowSug(r.slice(0,12));});},220);
+  });
+  $("dwBuild").addEventListener("keydown",function(e){
+    if(e.key==="ArrowDown"){dwActive=Math.min(dwItems.length-1,dwActive+1);dwHi();e.preventDefault();}
+    else if(e.key==="ArrowUp"){dwActive=Math.max(0,dwActive-1);dwHi();e.preventDefault();}
+    else if(e.key==="Enter"){e.preventDefault();if(dwActive>=0&&dwItems[dwActive])dwPick(dwItems[dwActive]);else if(dwItems.length)dwPick(dwItems[0]);else{var q=$("dwBuild").value.trim();if(q)dwLoad(q);}}
+    else if(e.key==="Escape")dwCloseSug();
+  });
+  document.addEventListener("click",function(e){if(!e.target.closest(".dw-searchbox"))dwCloseSug();});
+
+  $("dwUseBuild").addEventListener("click",function(){var n=$("dwBuild").value.trim();if(!n){status("Byggefeltet er tomt.");return;}
+    var v=dwValidate(n);if(v.ok===false){status("Ugyldig Dewey-format: "+v.msg+(v.fixed?(" Foreslått: "+v.fixed):"")+" — rett før bruk.");dwShowValid();return;}
+    setOut(n);status("Valgt 082: "+n);});
+  $("dwUndoBuild").addEventListener("click",function(){if(!dwUndoStack.length){status("Ingenting å angre.");return;}dwState=dwUndoStack.pop();dwRenderBuild();status("Angret → "+(dwStateStr()||"(tomt)"));});
+  $("dwClrBuild").addEventListener("click",function(){dwPushUndo();dwState={base:"",parts:[]};dwRenderBuild();});
+  $("copy082").addEventListener("click",function(){var t=$("out082").textContent;if(navigator.clipboard)navigator.clipboard.writeText(t).then(function(){status("Kopiert: "+t);},function(){status(t);});else status(t);});
+
+  /* ---------- Start ---------- */
+  dwBuildNav();dwStart();fbInit();
+})();
+</script>
+</body>
+</html>
