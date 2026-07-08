@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- dewey-test.html · versjon 2026-07-08 10:07 -->
+<!-- dewey-test.html · versjon 2026-07-08 10:11 -->
 <html lang="no">
 <head>
 <meta charset="utf-8">
@@ -151,6 +151,8 @@
   .fb-file{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   .fb-filebtn{font-size:13px;padding:6px 11px;border:1px dashed var(--line-strong);border-radius:7px;background:var(--bg);cursor:pointer;color:var(--accent)}
   .fb-filebtn:hover{border-color:var(--accent)}
+  .fb-shot{border-style:solid;border-color:var(--accent);background:var(--accent-soft);font-weight:600}
+  .fb-shot:disabled{opacity:.6;cursor:default}
   .fb-imgname{font-size:12px;color:var(--muted)}
   .fb-preview{max-height:70px;border-radius:6px;border:1px solid var(--line)}
   .fb-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
@@ -237,7 +239,8 @@
       <input id="fbName" class="fb-in" type="text" placeholder="Navn: Kallenavn eller fornavn. Ikke bruk fullt navn" autocomplete="off" maxlength="80">
       <textarea id="fbText" class="fb-in" rows="3" placeholder="Din tilbakemelding …" maxlength="4000" required></textarea>
       <div class="fb-file">
-        <label class="fb-filebtn" for="fbImg">📎 Legg ved skjermdump</label>
+        <button type="button" id="fbShot" class="fb-filebtn fb-shot">📷 Ta bilde nå (Dewey-feltet)</button>
+        <label class="fb-filebtn" for="fbImg">📎 …eller legg ved egen skjermdump</label>
         <input id="fbImg" type="file" accept="image/*" hidden>
         <span id="fbImgName" class="fb-imgname"></span>
         <img id="fbPreview" class="fb-preview" alt="Forhåndsvisning av vedlegg" style="display:none">
@@ -262,7 +265,7 @@
 (function(){
   "use strict";
   var $=function(id){return document.getElementById(id);};
-  var APP_VERSION="2026-07-08 10:07";   // ← oppdater ved ny opplasting
+  var APP_VERSION="2026-07-08 10:11";   // ← oppdater ved ny opplasting
   (function(){ var e=$("appver"); if(e) e.textContent="Versjon "+APP_VERSION; })();
   function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
   function status(msg){$("status").innerHTML=msg||"";}
@@ -319,6 +322,45 @@
       img.onerror=function(){cb("");}; img.src=r.result;
     };
     r.onerror=function(){cb("");}; r.readAsDataURL(file);
+  }
+  // Last html2canvas ved behov (fra cdnjs). cb(true/false).
+  function fbLoadShot(cb){
+    if(window.html2canvas){ cb(true); return; }
+    var s=document.createElement("script");
+    s.src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+    s.onload=function(){ cb(!!window.html2canvas); };
+    s.onerror=function(){ cb(false); };
+    document.head.appendChild(s);
+  }
+  // Fotografér Dewey-feltet (det rosa området) og legg det inn som vedlegg.
+  function fbCapture(){
+    var el=$("deweyBuilder"); if(!el){ fbStatus("Fant ikke Dewey-feltet."); return; }
+    var btn=$("fbShot"); if(btn) btn.disabled=true; fbStatus("Tar bilde av Dewey-feltet …");
+    fbLoadShot(function(ok){
+      if(!ok){ if(btn)btn.disabled=false; fbStatus("Kunne ikke laste bildeverktøyet — bruk «legg ved egen skjermdump» i stedet."); return; }
+      var bg=getComputedStyle(document.body).backgroundColor||"#efece9";
+      window.html2canvas(el,{backgroundColor:bg,scale:Math.min(2,window.devicePixelRatio||1),useCORS:true,logging:false,
+        // Bytt color-mix()-bakgrunner til faste farger i klonen, så eldre html2canvas ikke feiler.
+        onclone:function(doc){
+          var nodes=doc.querySelectorAll("#deweyBuilder, #deweyBuilder *");
+          Array.prototype.forEach.call(nodes,function(n){
+            var b=getComputedStyle(n).backgroundColor;
+            if(b && b!=="rgba(0, 0, 0, 0)" && b!=="transparent") n.style.backgroundColor=b;
+          });
+        }
+      }).then(function(canvas){
+        var max=1400,w=canvas.width,h=canvas.height,cw=w,ch=h;
+        if(w>max||h>max){ var sc=Math.min(max/w,max/h); cw=Math.round(w*sc); ch=Math.round(h*sc); }
+        var c=document.createElement("canvas"); c.width=cw; c.height=ch;
+        c.getContext("2d").drawImage(canvas,0,0,cw,ch);
+        fbImage=c.toDataURL("image/jpeg",0.82);
+        var p=$("fbPreview"); if(p){ p.src=fbImage; p.style.display=""; }
+        $("fbImgName").textContent="Bilde av Dewey-feltet";
+        if(btn) btn.disabled=false; fbStatus("Bilde lagt ved. Skriv gjerne hva som er galt, og send.");
+      }).catch(function(){
+        if(btn) btn.disabled=false; fbStatus("Kunne ikke ta bilde automatisk — bruk «legg ved egen skjermdump» i stedet.");
+      });
+    });
   }
   function fbImgUrl(v){
     if(!v) return ""; v=String(v);
@@ -438,6 +480,7 @@
       var wrap=btn.closest(".fb-votes"); var id=wrap&&wrap.getAttribute("data-id");
       if(id) fbVote(id,btn.getAttribute("data-dir"));
     });
+    var shot=$("fbShot"); if(shot) shot.addEventListener("click",fbCapture);
     var rf=$("fbRefresh"); if(rf) rf.addEventListener("click",function(){ fbLoad(); });
     var srt=$("fbSort"); if(srt){ srt.value=fbSort; srt.addEventListener("change",function(){
       fbSort=(this.value==="pop"?"pop":"new"); try{localStorage.setItem("deweyTestSort",fbSort);}catch(e){} fbDraw(); }); }
