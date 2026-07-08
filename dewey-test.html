@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- dewey-test.html · versjon 2026-07-08 10:18 -->
+<!-- dewey-test.html · versjon 2026-07-08 10:27 -->
 <html lang="no">
 <head>
 <meta charset="utf-8">
@@ -154,7 +154,7 @@
   .fb-shot{border-style:solid;border-color:var(--accent);background:var(--accent-soft);font-weight:600}
   .fb-shot:disabled{opacity:.6;cursor:default}
   .fb-imgname{font-size:12px;color:var(--muted)}
-  .fb-preview{max-height:70px;border-radius:6px;border:1px solid var(--line)}
+  .fb-preview{max-height:70px;border-radius:6px;border:1px solid var(--line);cursor:zoom-in}
   .fb-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
   .fb-send{font:inherit;font-weight:600;font-size:14px;padding:8px 16px;border:none;border-radius:7px;background:var(--accent);color:var(--accent-ink);cursor:pointer}
   .fb-send:disabled{opacity:.5;cursor:default}
@@ -166,7 +166,11 @@
   .fb-item-name{font-weight:600;font-size:14px}
   .fb-item-time{font-size:11.5px;color:var(--muted)}
   .fb-item-text{font-size:13.5px;white-space:pre-wrap;line-height:1.5}
-  .fb-item-img{margin-top:8px;max-width:100%;max-height:320px;border-radius:7px;border:1px solid var(--line);cursor:zoom-in;display:block}
+  .fb-item-spacer{flex:1}
+  .fb-del{font:inherit;font-size:13px;line-height:1;padding:3px 8px;border:1px solid var(--line-strong);border-radius:6px;background:transparent;color:#a11;cursor:pointer}
+  .fb-del:hover{background:#a11;color:#fff;border-color:#a11}
+  .fb-adminbadge{font-size:11.5px;color:#a11;border:1px solid #a11;border-radius:12px;padding:2px 9px;white-space:nowrap}
+  .fb-item-img{margin-top:8px;max-width:180px;max-height:120px;border-radius:7px;border:1px solid var(--line);cursor:zoom-in;display:block}
   .fb-votes{display:flex;gap:8px;margin-top:9px}
   .fb-vote{font:inherit;font-size:13px;display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border:1px solid var(--line-strong);border-radius:16px;background:var(--bg);color:var(--muted);cursor:pointer}
   .fb-vote:hover{border-color:var(--accent);color:var(--ink)}
@@ -223,7 +227,7 @@
   </div>
 
   <section id="feedback" class="fb">
-    <div class="fb-htop"><h2 class="fb-h">Tilbakemeldinger</h2></div>
+    <div class="fb-htop"><h2 class="fb-h">Tilbakemeldinger</h2><span id="fbAdminBadge" class="fb-adminbadge" style="display:none">Admin – sletting aktiv</span></div>
     <p class="fb-intro">Har du innspill til Dewey-verktøyet? Skriv en tilbakemelding — legg gjerne ved en skjermdump.</p>
     <form id="fbForm" class="fb-form">
       <input id="fbName" class="fb-in" type="text" placeholder="Navn: Kallenavn eller fornavn. Ikke bruk fullt navn" autocomplete="off" maxlength="80">
@@ -249,6 +253,7 @@
         </select>
       </label>
       <button id="fbRefresh" type="button" class="fb-refresh">↻ Oppdater</button>
+      <button id="fbAdminBtn" type="button" class="fb-refresh fb-adminbtn" title="Admin – for å kunne slette">🔒 Admin</button>
     </div>
     <div id="fbList" class="fb-list"></div>
   </section>
@@ -264,7 +269,7 @@
 (function(){
   "use strict";
   var $=function(id){return document.getElementById(id);};
-  var APP_VERSION="2026-07-08 10:18";   // ← oppdater ved ny opplasting
+  var APP_VERSION="2026-07-08 10:27";   // ← oppdater ved ny opplasting
   (function(){ var e=$("appver"); if(e) e.textContent="Versjon "+APP_VERSION; })();
   function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
   function status(msg){$("status").innerHTML=msg||"";}
@@ -298,6 +303,21 @@
   /* ---------- Tilbakemeldinger ---------- */
   var fbImage="";                 // nedskalert dataURL av valgt skjermdump
   var FB_LS="deweyTestFeedback";  // lokal fallback
+  // Admin-modus: skriv passord via «🔒 Admin»-knappen. Lagres kun i øktminnet
+  // (sessionStorage) og forsvinner når fanen lukkes — havner ikke i URL/historikk.
+  // Ordet sjekkes server-side mot ADMIN_TOKEN i Apps Script; ligger aldri i denne fila.
+  var FB_ADMIN_KEY="deweyTestAdmin";
+  var fbAdmin=(function(){ try{ return sessionStorage.getItem(FB_ADMIN_KEY)||""; }catch(e){ return ""; } })();
+  function fbSetAdmin(tok){
+    fbAdmin=tok||"";
+    try{ if(fbAdmin) sessionStorage.setItem(FB_ADMIN_KEY,fbAdmin); else sessionStorage.removeItem(FB_ADMIN_KEY); }catch(e){}
+    fbUpdateAdminUI(); fbDraw();
+  }
+  function fbUpdateAdminUI(){
+    var badge=$("fbAdminBadge"), btn=$("fbAdminBtn");
+    if(badge) badge.style.display=fbAdmin?"":"none";
+    if(btn) btn.textContent=fbAdmin?"🔓 Admin (logg ut)":"🔒 Admin";
+  }
   function fbStatus(m){var e=$("fbStatus"); if(e) e.textContent=m||"";}
   function fbTime(v){var d=new Date(v); if(isNaN(d.getTime())) return String(v||""); return d.toLocaleString("no-NO",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});}
   function fbLocalGet(){try{return JSON.parse(localStorage.getItem(FB_LS)||"[]");}catch(e){return [];}}
@@ -387,11 +407,13 @@
       '<button type="button" class="fb-vote fb-up'+(mine==="up"?" on":"")+'" data-dir="up" aria-label="Tommel opp" aria-pressed="'+(mine==="up")+'">👍 <span class="fb-vc">'+(Number(it.up)||0)+'</span></button>'+
       '<button type="button" class="fb-vote fb-down'+(mine==="down"?" on":"")+'" data-dir="down" aria-label="Tommel ned" aria-pressed="'+(mine==="down")+'">👎 <span class="fb-vc">'+(Number(it.down)||0)+'</span></button>'+
       '</div>') : '';
-    return '<div class="fb-item"><div class="fb-item-head">'+
+    var del=(fbAdmin&&id)?'<button type="button" class="fb-del" data-del="'+esc(id)+'" title="Slett (admin)" aria-label="Slett tilbakemelding">✕</button>':'';
+    return '<div class="fb-item"'+(id?' data-id="'+esc(id)+'"':'')+'><div class="fb-item-head">'+
       '<span class="fb-item-name">'+esc(it.name||"Anonym")+'</span>'+
-      '<span class="fb-item-time">'+esc(it.ts?fbTime(it.ts):"")+'</span></div>'+
+      '<span class="fb-item-time">'+esc(it.ts?fbTime(it.ts):"")+'</span>'+
+      (del?'<span class="fb-item-spacer"></span>'+del:'')+'</div>'+
       '<div class="fb-item-text">'+esc(it.text||"")+'</div>'+
-      (img?'<img class="fb-item-img" src="'+esc(img)+'" alt="Skjermdump fra '+esc(it.name||"tester")+'" loading="lazy">':'')+
+      (img?'<img class="fb-item-img" src="'+esc(img)+'" alt="Skjermdump fra '+esc(it.name||"tester")+'" title="Klikk for å se stort" loading="lazy">':'')+
       votes+'</div>';
   }
   /* ---------- Stemmer (👍/👎), delt via samme Google Sheet ---------- */
@@ -425,15 +447,19 @@
       fbItems=a;   // hold sorteringsdata fersk i lokal modus
     }
   }
+  function fbLightbox(src){
+    if(!src) return;
+    var o=document.createElement("div"); o.className="fb-lb";
+    var big=document.createElement("img"); big.src=src; big.alt="Forstørret skjermdump";
+    o.appendChild(big);
+    function close(){ if(o.parentNode)o.parentNode.removeChild(o); document.removeEventListener("keydown",onKey); }
+    function onKey(e){ if(e.key==="Escape") close(); }
+    o.addEventListener("click",close); document.addEventListener("keydown",onKey);
+    document.body.appendChild(o);
+  }
   function fbBindZoom(){
     Array.prototype.forEach.call(document.querySelectorAll(".fb-item-img"),function(im){
-      im.addEventListener("click",function(){
-        var o=document.createElement("div"); o.className="fb-lb";
-        var big=document.createElement("img"); big.src=im.src.replace("&sz=w1000","&sz=w1600"); big.alt="";
-        o.appendChild(big);
-        o.addEventListener("click",function(){if(o.parentNode)o.parentNode.removeChild(o);});
-        document.body.appendChild(o);
-      });
+      im.addEventListener("click",function(){ fbLightbox(im.src.replace("&sz=w1000","&sz=w1600")); });  // Drive: hent større
     });
   }
   var fbItems=[];   // sist innhentede liste (i arkrekkefølge: eldst→nyest)
@@ -452,6 +478,21 @@
     fbBindZoom();
   }
   function fbRenderLocal(){ fbRenderItems(fbLocalGet()); }
+  function fbDelete(id){
+    if(!id) return;
+    if(!window.confirm("Slette denne tilbakemeldingen? Dette kan ikke angres.")) return;
+    var card=document.querySelector('.fb-item[data-id="'+id+'"]'); if(card) card.style.opacity=".4";
+    fbStatus("Sletter …");
+    if(FEEDBACK_URL){
+      fetch(FEEDBACK_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},
+        body:JSON.stringify({action:"delete",id:id,token:fbAdmin})})
+        .then(function(){ setTimeout(function(){ fbLoad(); fbStatus("Slettet (hvis admin-ordet stemte)."); },1500); })
+        .catch(function(){ if(card)card.style.opacity=""; fbStatus("Nettfeil ved sletting."); });
+    } else {
+      var a=fbLocalGet().filter(function(x){return String(x.id)!==String(id);});
+      try{localStorage.setItem(FB_LS,JSON.stringify(a));}catch(e){} fbItems=a; fbDraw(); fbStatus("Slettet lokalt.");
+    }
+  }
   function fbPost(entry){
     // no-cors: Apps Script svarer ugjennomsiktig, så vi kan ikke lese svaret — antar suksess.
     return fetch(FEEDBACK_URL,{method:"POST",mode:"no-cors",
@@ -489,10 +530,19 @@
     if(!FEEDBACK_URL){ var n=$("fbNote"); if(n){ n.style.display=""; n.textContent="Google Sheet er ikke satt opp ennå — tilbakemeldinger lagres bare i din egen nettleser. (Sett FEEDBACK_URL i fila for å dele dem.)"; } }
     // Delegert klikk på 👍/👎 (elementene bygges på nytt ved hver render).
     $("fbList").addEventListener("click",function(e){
-      var btn=e.target && e.target.closest ? e.target.closest(".fb-vote") : null; if(!btn) return;
+      var t=e.target;
+      var del=t&&t.closest?t.closest(".fb-del"):null;
+      if(del){ fbDelete(del.getAttribute("data-del")); return; }
+      var btn=t&&t.closest?t.closest(".fb-vote"):null; if(!btn) return;
       var wrap=btn.closest(".fb-votes"); var id=wrap&&wrap.getAttribute("data-id");
       if(id) fbVote(id,btn.getAttribute("data-dir"));
     });
+    var prev=$("fbPreview"); if(prev) prev.addEventListener("click",function(){ if(fbImage) fbLightbox(fbImage); });
+    var adminBtn=$("fbAdminBtn"); if(adminBtn) adminBtn.addEventListener("click",function(){
+      if(fbAdmin){ if(window.confirm("Logg ut av admin-modus?")) { fbSetAdmin(""); fbStatus("Logget ut av admin."); } }
+      else { var t=window.prompt("Skriv admin-passord for å kunne slette tilbakemeldinger:"); if(t!=null && t.trim()!==""){ fbSetAdmin(t.trim()); fbStatus("Admin-modus på. Sletter en post feiler stille hvis passordet er feil."); } }
+    });
+    fbUpdateAdminUI();
     var shot=$("fbShot"); if(shot) shot.addEventListener("click",fbCapture);
     var rf=$("fbRefresh"); if(rf) rf.addEventListener("click",function(){ fbLoad(); });
     var srt=$("fbSort"); if(srt){ srt.value=fbSort; srt.addEventListener("change",function(){
