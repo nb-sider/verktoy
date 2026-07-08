@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- dewey-test.html · versjon 2026-07-08 10:39 -->
+<!-- dewey-test.html · versjon 2026-07-08 11:00 -->
 <html lang="no">
 <head>
 <meta charset="utf-8">
@@ -274,7 +274,7 @@
 (function(){
   "use strict";
   var $=function(id){return document.getElementById(id);};
-  var APP_VERSION="2026-07-08 10:39";   // ← oppdater ved ny opplasting
+  var APP_VERSION="2026-07-08 11:00";   // ← oppdater ved ny opplasting
   (function(){ var e=$("appver"); if(e) e.textContent="Versjon "+APP_VERSION; })();
   function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
   function status(msg){$("status").innerHTML=msg||"";}
@@ -730,7 +730,7 @@
   }
   function dwStart(){
     var h='<div class="dw-sec">Hovedklasser — velg disiplin</div><div class="dw-tops">'+
-      MAIN.map(function(pr){return '<button type="button" class="dw-kid" data-n="'+pr[0]+'"><span class="n">'+pr[0]+'</span><span>'+esc(pr[1])+'</span></button>';}).join("")+'</div>'+
+      MAIN.map(function(pr){var d=pr[0].charAt(0);return '<button type="button" class="dw-kid" data-n="'+d+'"><span class="n">'+d+'</span><span>'+esc(pr[1])+'</span></button>';}).join("")+'</div>'+
       '<div class="dw-sec">Hjelpetabeller (T1–T6) — byggeklosser</div><div class="dw-tops">'+
       DW_TABLES.map(function(pr){return '<button type="button" class="dw-kid dw-tbl" data-n="'+esc(pr[0])+'"><span class="n">'+esc(pr[0].replace(/--0$/,""))+'</span><span>'+esc(pr[1])+'</span></button>';}).join("")+'</div>';
     $("dwdetail").innerHTML=h;dwBindKids();
