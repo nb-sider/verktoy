@@ -377,15 +377,23 @@
     return fetch(FEEDBACK_URL,{method:"POST",mode:"no-cors",
       headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(entry)}).then(function(){return true;});
   }
-  function fbLoad(retry){
+  function fbLoad(){
     if(!FEEDBACK_URL){ fbRenderLocal(); return; }
     var box=$("fbList"); if(box && !box.querySelector(".fb-item")) box.innerHTML='<div class="fb-empty">Henter tilbakemeldinger …</div>';
+    // Primært: vanlig CORS-fetch (samme mekanikk som Dewey-søket, som virker selv med utvidelser på).
+    // Reserve: JSONP via <script> (som noen annonse-/personvernblokkere stopper).
+    var url=FEEDBACK_URL+(FEEDBACK_URL.indexOf("?")>=0?"&":"?")+"t="+Date.now();
+    fetch(url,{method:"GET"}).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(d){ fbRenderItems((d&&d.items)||[]); })
+      .catch(function(){ fbLoadJsonp(false); });
+  }
+  function fbLoadJsonp(retry){
     var cb="fbCb"+Date.now(), s=document.createElement("script"), done=false;
     // Apps Script kan ha treg kaldstart → romslig tidsgrense + ett nytt forsøk (varmt kall er raskere).
-    var to=setTimeout(function(){ if(done)return; cleanup(); retry?fbLoadFailed():fbLoad(true); },30000);  // Apps Script kaldstart kan ta ~30 s
+    var to=setTimeout(function(){ if(done)return; cleanup(); retry?fbLoadFailed():fbLoadJsonp(true); },30000);
     function cleanup(){ done=true; try{delete window[cb];}catch(e){window[cb]=undefined;} if(s.parentNode)s.parentNode.removeChild(s); clearTimeout(to); }
     window[cb]=function(d){ cleanup(); fbRenderItems((d&&d.items)||[]); };
-    s.onerror=function(){ if(done)return; cleanup(); retry?fbLoadFailed():fbLoad(true); };
+    s.onerror=function(){ if(done)return; cleanup(); retry?fbLoadFailed():fbLoadJsonp(true); };
     s.src=FEEDBACK_URL+(FEEDBACK_URL.indexOf("?")>=0?"&":"?")+"callback="+cb+"&t="+Date.now();
     document.body.appendChild(s);
   }
