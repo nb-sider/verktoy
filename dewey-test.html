@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- dewey-test.html · versjon 2026-07-08 11:09 -->
+<!-- dewey-test.html · versjon 2026-07-08 11:13 -->
 <html lang="no">
 <head>
 <meta charset="utf-8">
@@ -206,11 +206,6 @@
     (<code style="background:none;color:inherit">python3 -m http.server</code>) eller sjekk at du har nett.
   </div>
 
-  <div class="out">
-    <span class="olbl">Valgt 082</span>
-    <code id="out082">— velg et nummer —</code>
-    <button id="copy082" type="button">Kopier</button>
-  </div>
   <div id="status"></div>
 
   <div id="deweyBuilder" class="dwbuild">
@@ -229,6 +224,12 @@
     <div id="dwBuildView" class="dw-buildview" style="display:none"></div>
     <div id="dwValid" class="dw-valid" style="display:none"></div>
     <div id="dwdetail" class="dw-detail"></div>
+  </div>
+
+  <div class="out">
+    <span class="olbl">Resultat</span>
+    <code id="out082">— velg et nummer —</code>
+    <button id="copy082" type="button">Kopier</button>
   </div>
 
   <section id="feedback" class="fb">
@@ -274,7 +275,7 @@
 (function(){
   "use strict";
   var $=function(id){return document.getElementById(id);};
-  var APP_VERSION="2026-07-08 11:09";   // ← oppdater ved ny opplasting
+  var APP_VERSION="2026-07-08 11:13";   // ← oppdater ved ny opplasting
   (function(){ var e=$("appver"); if(e) e.textContent="Versjon "+APP_VERSION; })();
   function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
   function status(msg){$("status").innerHTML=msg||"";}
