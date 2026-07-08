@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- dewey-test.html · versjon 2026-07-08 09:56 -->
+<!-- dewey-test.html · versjon 2026-07-08 10:07 -->
 <html lang="no">
 <head>
 <meta charset="utf-8">
@@ -139,6 +139,9 @@
   .fb{margin-top:26px;border-top:1px solid var(--line);padding-top:18px}
   .fb-htop{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
   .fb-h{font-family:var(--nb-font-serif);font-size:20px;font-weight:600;margin:0 0 4px}
+  .fb-htools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .fb-sortlbl{font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:5px}
+  .fb-sort{font:inherit;font-size:12.5px;padding:4px 8px;border:1px solid var(--line-strong);border-radius:7px;background:var(--panel);color:var(--ink);cursor:pointer}
   .fb-refresh{font:inherit;font-size:12.5px;padding:4px 11px;border:1px solid var(--line-strong);border-radius:7px;background:var(--panel);color:var(--accent);cursor:pointer}
   .fb-refresh:hover{border-color:var(--accent)}
   .fb-intro{color:var(--muted);font-size:13.5px;margin:0 0 12px}
@@ -218,10 +221,20 @@
   </div>
 
   <section id="feedback" class="fb">
-    <div class="fb-htop"><h2 class="fb-h">Tilbakemeldinger</h2><button id="fbRefresh" type="button" class="fb-refresh">↻ Oppdater</button></div>
+    <div class="fb-htop"><h2 class="fb-h">Tilbakemeldinger</h2>
+      <div class="fb-htools">
+        <label class="fb-sortlbl">Sortér:
+          <select id="fbSort" class="fb-sort">
+            <option value="new">Nyeste</option>
+            <option value="pop">Mest populære</option>
+          </select>
+        </label>
+        <button id="fbRefresh" type="button" class="fb-refresh">↻ Oppdater</button>
+      </div>
+    </div>
     <p class="fb-intro">Har du innspill til Dewey-verktøyet? Skriv en tilbakemelding — legg gjerne ved en skjermdump.</p>
     <form id="fbForm" class="fb-form">
-      <input id="fbName" class="fb-in" type="text" placeholder="Navn" autocomplete="name" maxlength="80">
+      <input id="fbName" class="fb-in" type="text" placeholder="Navn: Kallenavn eller fornavn. Ikke bruk fullt navn" autocomplete="off" maxlength="80">
       <textarea id="fbText" class="fb-in" rows="3" placeholder="Din tilbakemelding …" maxlength="4000" required></textarea>
       <div class="fb-file">
         <label class="fb-filebtn" for="fbImg">📎 Legg ved skjermdump</label>
@@ -249,7 +262,7 @@
 (function(){
   "use strict";
   var $=function(id){return document.getElementById(id);};
-  var APP_VERSION="2026-07-08 09:56";   // ← oppdater ved ny opplasting
+  var APP_VERSION="2026-07-08 10:07";   // ← oppdater ved ny opplasting
   (function(){ var e=$("appver"); if(e) e.textContent="Versjon "+APP_VERSION; })();
   function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
   function status(msg){$("status").innerHTML=msg||"";}
@@ -354,6 +367,7 @@
       var a=fbLocalGet(); a.forEach(function(x){ if(String(x.id)===String(id)){
         x.up=Math.max(0,(Number(x.up)||0)+dUp); x.down=Math.max(0,(Number(x.down)||0)+dDown); }});
       try{localStorage.setItem(FB_LS,JSON.stringify(a));}catch(e){}
+      fbItems=a;   // hold sorteringsdata fersk i lokal modus
     }
   }
   function fbBindZoom(){
@@ -367,9 +381,17 @@
       });
     });
   }
-  function fbRenderItems(items){
+  var fbItems=[];   // sist innhentede liste (i arkrekkefølge: eldst→nyest)
+  var fbSort="new"; // "new" = nyeste først, "pop" = mest populære (opp−ned)
+  try{ var sv=localStorage.getItem("deweyTestSort"); if(sv==="new"||sv==="pop") fbSort=sv; }catch(e){}
+  function fbTs(x){ var t=new Date(x&&x.ts).getTime(); return isNaN(t)?0:t; }
+  function fbScore(x){ return (Number(x.up)||0)-(Number(x.down)||0); }
+  function fbRenderItems(items){ fbItems=items||[]; fbDraw(); }
+  function fbDraw(){
     var box=$("fbList"); if(!box) return;
-    items=(items||[]).slice().reverse();   // nyeste øverst
+    var items=fbItems.slice();
+    if(fbSort==="pop") items.sort(function(a,b){ var d=fbScore(b)-fbScore(a); return d!==0?d:fbTs(b)-fbTs(a); });
+    else               items.sort(function(a,b){ return fbTs(b)-fbTs(a); });   // nyeste øverst
     box.innerHTML = items.length ? items.map(fbCard).join("")
       : '<div class="fb-empty">Ingen tilbakemeldinger ennå — bli den første.</div>';
     fbBindZoom();
@@ -417,6 +439,8 @@
       if(id) fbVote(id,btn.getAttribute("data-dir"));
     });
     var rf=$("fbRefresh"); if(rf) rf.addEventListener("click",function(){ fbLoad(); });
+    var srt=$("fbSort"); if(srt){ srt.value=fbSort; srt.addEventListener("change",function(){
+      fbSort=(this.value==="pop"?"pop":"new"); try{localStorage.setItem("deweyTestSort",fbSort);}catch(e){} fbDraw(); }); }
     $("fbImg").addEventListener("change",function(){
       var f=this.files&&this.files[0];
       if(!f){ fbImage=""; $("fbImgName").textContent=""; var p0=$("fbPreview"); if(p0){p0.style.display="none";} return; }
