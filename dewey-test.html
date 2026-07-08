@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- dewey-test.html · versjon 2026-07-08 10:27 -->
+<!-- dewey-test.html · versjon 2026-07-08 10:39 -->
 <html lang="no">
 <head>
 <meta charset="utf-8">
@@ -154,7 +154,12 @@
   .fb-shot{border-style:solid;border-color:var(--accent);background:var(--accent-soft);font-weight:600}
   .fb-shot:disabled{opacity:.6;cursor:default}
   .fb-imgname{font-size:12px;color:var(--muted)}
-  .fb-preview{max-height:70px;border-radius:6px;border:1px solid var(--line);cursor:zoom-in}
+  .fb-shots{display:flex;flex-wrap:wrap;gap:10px;margin-top:2px}
+  .fb-shot-thumb{position:relative;display:inline-block}
+  .fb-shot-thumb img{max-height:64px;max-width:100px;border-radius:6px;border:1px solid var(--line);cursor:zoom-in;display:block}
+  .fb-shot-x{position:absolute;top:-7px;right:-7px;width:20px;height:20px;padding:0;line-height:1;border-radius:50%;border:1px solid var(--line-strong);background:var(--bg);color:#a11;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center}
+  .fb-shot-x:hover{background:#a11;color:#fff;border-color:#a11}
+  .fb-item-imgs{display:flex;flex-wrap:wrap;gap:6px}
   .fb-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
   .fb-send{font:inherit;font-weight:600;font-size:14px;padding:8px 16px;border:none;border-radius:7px;background:var(--accent);color:var(--accent-ink);cursor:pointer}
   .fb-send:disabled{opacity:.5;cursor:default}
@@ -193,7 +198,7 @@
 <div class="wrap">
   <header class="pagehead">
     <h1>Dewey-bygger</h1>
-    <p>Utforsk og bygg Dewey-nummer mot Norsk WebDewey (åpne data fra Universitetsbiblioteket i Oslo). Frittstående — ingen innlogging.</p>
+    <p>Utforsk og bygg Dewey-nummer mot Norsk WebDewey (åpne data fra Universitetsbiblioteket i Oslo).</p>
   </header>
 
   <div class="note" id="corsNote" style="display:none">
@@ -234,11 +239,11 @@
       <textarea id="fbText" class="fb-in" rows="3" placeholder="Din tilbakemelding …" maxlength="4000" required></textarea>
       <div class="fb-file">
         <button type="button" id="fbShot" class="fb-filebtn fb-shot">📷 Ta bilde nå (Dewey-feltet)</button>
-        <label class="fb-filebtn" for="fbImg">📎 …eller legg ved egen skjermdump</label>
-        <input id="fbImg" type="file" accept="image/*" hidden>
-        <span id="fbImgName" class="fb-imgname"></span>
-        <img id="fbPreview" class="fb-preview" alt="Forhåndsvisning av vedlegg" style="display:none">
+        <label class="fb-filebtn" for="fbImg">📎 …eller legg ved skjermdump(er)</label>
+        <input id="fbImg" type="file" accept="image/*" multiple hidden>
+        <span class="fb-imgname">Du kan legge til flere bilder.</span>
       </div>
+      <div id="fbShots" class="fb-shots"></div>
       <div class="fb-row">
         <button type="submit" class="fb-send">Send tilbakemelding</button>
         <span id="fbStatus" class="fb-status" role="status" aria-live="polite"></span>
@@ -269,7 +274,7 @@
 (function(){
   "use strict";
   var $=function(id){return document.getElementById(id);};
-  var APP_VERSION="2026-07-08 10:27";   // ← oppdater ved ny opplasting
+  var APP_VERSION="2026-07-08 10:39";   // ← oppdater ved ny opplasting
   (function(){ var e=$("appver"); if(e) e.textContent="Versjon "+APP_VERSION; })();
   function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
   function status(msg){$("status").innerHTML=msg||"";}
@@ -301,8 +306,21 @@
   })();
 
   /* ---------- Tilbakemeldinger ---------- */
-  var fbImage="";                 // nedskalert dataURL av valgt skjermdump
+  var fbImages=[];                // liste med nedskalerte dataURL-er (flere vedlegg)
+  var FB_MAX_IMG=8;               // øvre grense pr. tilbakemelding
   var FB_LS="deweyTestFeedback";  // lokal fallback
+  function fbRenderShots(){
+    var box=$("fbShots"); if(!box) return;
+    box.innerHTML=fbImages.map(function(d,i){
+      return '<div class="fb-shot-thumb"><img src="'+d+'" alt="Vedlegg '+(i+1)+'" title="Klikk for å se stort">'+
+        '<button type="button" class="fb-shot-x" data-i="'+i+'" title="Fjern bildet" aria-label="Fjern bilde '+(i+1)+'">✕</button></div>';
+    }).join("");
+  }
+  function fbAddImage(d){
+    if(!d) return;
+    if(fbImages.length>=FB_MAX_IMG){ fbStatus("Maks "+FB_MAX_IMG+" bilder per tilbakemelding."); return; }
+    fbImages.push(d); fbRenderShots();
+  }
   // Admin-modus: skriv passord via «🔒 Admin»-knappen. Lagres kun i øktminnet
   // (sessionStorage) og forsvinner når fanen lukkes — havner ikke i URL/historikk.
   // Ordet sjekkes server-side mot ADMIN_TOKEN i Apps Script; ligger aldri i denne fila.
@@ -323,10 +341,10 @@
   function fbLocalGet(){try{return JSON.parse(localStorage.getItem(FB_LS)||"[]");}catch(e){return [];}}
   function fbLocalAdd(entry){
     var a=fbLocalGet();
-    a.push({ts:entry.ts,name:entry.name,text:entry.text,image:entry.image,
+    a.push({ts:entry.ts,name:entry.name,text:entry.text,images:entry.images||[],
       id:entry.id||("loc"+Date.now()+Math.random().toString(36).slice(2)),up:0,down:0});
     try{ localStorage.setItem(FB_LS,JSON.stringify(a)); }
-    catch(e){ a.forEach(function(x){x.image="";}); try{localStorage.setItem(FB_LS,JSON.stringify(a));}catch(_){}}
+    catch(e){ a.forEach(function(x){x.images=[];}); try{localStorage.setItem(FB_LS,JSON.stringify(a));}catch(_){}}
   }
   function fbShrink(file, cb){
     var r=new FileReader();
@@ -385,10 +403,8 @@
         if(w>max||h>max){ var sc=Math.min(max/w,max/h); cw=Math.round(w*sc); ch=Math.round(h*sc); }
         var c=document.createElement("canvas"); c.width=cw; c.height=ch;
         c.getContext("2d").drawImage(canvas,0,0,cw,ch);
-        fbImage=c.toDataURL("image/jpeg",0.82);
-        var p=$("fbPreview"); if(p){ p.src=fbImage; p.style.display=""; }
-        $("fbImgName").textContent="Bilde av Dewey-feltet";
-        if(btn) btn.disabled=false; fbStatus("Bilde lagt ved. Skriv gjerne hva som er galt, og send.");
+        fbAddImage(c.toDataURL("image/jpeg",0.82));
+        if(btn) btn.disabled=false; fbStatus("Bilde av Dewey-feltet lagt ved. Ta gjerne flere, eller send.");
       }).catch(function(){
         restore();
         if(btn) btn.disabled=false; fbStatus("Kunne ikke ta bilde automatisk — bruk «legg ved egen skjermdump» i stedet.");
@@ -400,8 +416,19 @@
     if(/^https?:|^data:/.test(v)) return v;                       // full URL eller innebygd bilde
     return "https://drive.google.com/thumbnail?id="+encodeURIComponent(v)+"&sz=w1000";  // Google Drive fil-id
   }
+  // Normalisér til liste med bilde-URL-er: server=«img» (kan være komma-separerte fil-id-er),
+  // lokal=«images»-array, eldre poster=«image» (enkelt).
+  function fbImageList(it){
+    var out=[];
+    if(it.images && it.images.length){ it.images.forEach(function(v){ var u=fbImgUrl(v); if(u) out.push(u); }); }
+    else if(it.img){ String(it.img).split(",").forEach(function(v){ v=v.trim(); var u=fbImgUrl(v); if(u) out.push(u); }); }
+    else if(it.image){ var u=fbImgUrl(it.image); if(u) out.push(u); }
+    return out;
+  }
   function fbCard(it){
-    var img=fbImgUrl(it.img||it.image);
+    var imgs=fbImageList(it);
+    var imgHtml=imgs.length?('<div class="fb-item-imgs">'+imgs.map(function(u,i){
+      return '<img class="fb-item-img" src="'+esc(u)+'" alt="Skjermdump '+(i+1)+'" title="Klikk for å se stort" loading="lazy">'; }).join("")+'</div>'):'';
     var id=String(it.id||""), mine=fbVotes()[id]||null;
     var votes = id ? ('<div class="fb-votes" data-id="'+esc(id)+'">'+
       '<button type="button" class="fb-vote fb-up'+(mine==="up"?" on":"")+'" data-dir="up" aria-label="Tommel opp" aria-pressed="'+(mine==="up")+'">👍 <span class="fb-vc">'+(Number(it.up)||0)+'</span></button>'+
@@ -413,8 +440,7 @@
       '<span class="fb-item-time">'+esc(it.ts?fbTime(it.ts):"")+'</span>'+
       (del?'<span class="fb-item-spacer"></span>'+del:'')+'</div>'+
       '<div class="fb-item-text">'+esc(it.text||"")+'</div>'+
-      (img?'<img class="fb-item-img" src="'+esc(img)+'" alt="Skjermdump fra '+esc(it.name||"tester")+'" title="Klikk for å se stort" loading="lazy">':'')+
-      votes+'</div>';
+      imgHtml+votes+'</div>';
   }
   /* ---------- Stemmer (👍/👎), delt via samme Google Sheet ---------- */
   var FB_VOTES="deweyTestVotes";  // hva DENNE nettleseren har stemt (hindrer dobbeltstemming)
@@ -524,7 +550,7 @@
     var box=$("fbList"); if(box) box.innerHTML='<div class="fb-empty">Kunne ikke hente tilbakemeldinger fra Google Sheet akkurat nå. '+
       'Klikk «↻ Oppdater», eller sjekk at nettapp-distribusjonen har tilgang «Alle».</div>';
   }
-  function fbReset(){ $("fbText").value=""; $("fbImg").value=""; fbImage=""; $("fbImgName").textContent=""; var p=$("fbPreview"); if(p){p.style.display="none"; p.removeAttribute("src");} }
+  function fbReset(){ $("fbText").value=""; $("fbImg").value=""; fbImages=[]; fbRenderShots(); }
   function fbInit(){
     var form=$("fbForm"); if(!form) return;
     if(!FEEDBACK_URL){ var n=$("fbNote"); if(n){ n.style.display=""; n.textContent="Google Sheet er ikke satt opp ennå — tilbakemeldinger lagres bare i din egen nettleser. (Sett FEEDBACK_URL i fila for å dele dem.)"; } }
@@ -537,7 +563,12 @@
       var wrap=btn.closest(".fb-votes"); var id=wrap&&wrap.getAttribute("data-id");
       if(id) fbVote(id,btn.getAttribute("data-dir"));
     });
-    var prev=$("fbPreview"); if(prev) prev.addEventListener("click",function(){ if(fbImage) fbLightbox(fbImage); });
+    $("fbShots").addEventListener("click",function(e){
+      var x=e.target&&e.target.closest?e.target.closest(".fb-shot-x"):null;
+      if(x){ var i=+x.getAttribute("data-i"); if(i>=0){ fbImages.splice(i,1); fbRenderShots(); } return; }
+      var im=e.target&&e.target.closest?e.target.closest("img"):null;
+      if(im) fbLightbox(im.src);
+    });
     var adminBtn=$("fbAdminBtn"); if(adminBtn) adminBtn.addEventListener("click",function(){
       if(fbAdmin){ if(window.confirm("Logg ut av admin-modus?")) { fbSetAdmin(""); fbStatus("Logget ut av admin."); } }
       else { var t=window.prompt("Skriv admin-passord for å kunne slette tilbakemeldinger:"); if(t!=null && t.trim()!==""){ fbSetAdmin(t.trim()); fbStatus("Admin-modus på. Sletter en post feiler stille hvis passordet er feil."); } }
@@ -548,16 +579,16 @@
     var srt=$("fbSort"); if(srt){ srt.value=fbSort; srt.addEventListener("change",function(){
       fbSort=(this.value==="pop"?"pop":"new"); try{localStorage.setItem("deweyTestSort",fbSort);}catch(e){} fbDraw(); }); }
     $("fbImg").addEventListener("change",function(){
-      var f=this.files&&this.files[0];
-      if(!f){ fbImage=""; $("fbImgName").textContent=""; var p0=$("fbPreview"); if(p0){p0.style.display="none";} return; }
-      $("fbImgName").textContent=f.name; fbStatus("Behandler bilde …");
-      fbShrink(f,function(d){ fbImage=d; fbStatus(""); var p=$("fbPreview"); if(d&&p){p.src=d; p.style.display="";} });
+      var files=this.files; if(!files||!files.length) return;
+      var arr=Array.prototype.slice.call(files); this.value="";   // så samme fil kan velges igjen
+      fbStatus("Behandler bilde(r) …"); var pending=arr.length;
+      arr.forEach(function(f){ fbShrink(f,function(d){ fbAddImage(d); if(--pending===0) fbStatus(""); }); });
     });
     form.addEventListener("submit",function(e){
       e.preventDefault();
       var name=$("fbName").value.trim(), text=$("fbText").value.trim();
       if(!text){ fbStatus("Skriv en tilbakemelding først."); return; }
-      var entry={name:name||"Anonym", text:text, image:fbImage, ts:new Date().toISOString()};
+      var entry={name:name||"Anonym", text:text, images:fbImages.slice(), ts:new Date().toISOString()};
       var btn=form.querySelector(".fb-send"); btn.disabled=true; fbStatus("Sender …");
       if(FEEDBACK_URL){
         fbPost(entry).then(function(){
