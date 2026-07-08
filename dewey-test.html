@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- dewey-test.html · versjon 2026-07-08 10:11 -->
+<!-- dewey-test.html · versjon 2026-07-08 10:18 -->
 <html lang="no">
 <head>
 <meta charset="utf-8">
@@ -139,7 +139,7 @@
   .fb{margin-top:26px;border-top:1px solid var(--line);padding-top:18px}
   .fb-htop{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
   .fb-h{font-family:var(--nb-font-serif);font-size:20px;font-weight:600;margin:0 0 4px}
-  .fb-htools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .fb-htools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin:16px 0 8px;padding-bottom:8px;border-bottom:1px solid var(--line)}
   .fb-sortlbl{font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:5px}
   .fb-sort{font:inherit;font-size:12.5px;padding:4px 8px;border:1px solid var(--line-strong);border-radius:7px;background:var(--panel);color:var(--ink);cursor:pointer}
   .fb-refresh{font:inherit;font-size:12.5px;padding:4px 11px;border:1px solid var(--line-strong);border-radius:7px;background:var(--panel);color:var(--accent);cursor:pointer}
@@ -223,17 +223,7 @@
   </div>
 
   <section id="feedback" class="fb">
-    <div class="fb-htop"><h2 class="fb-h">Tilbakemeldinger</h2>
-      <div class="fb-htools">
-        <label class="fb-sortlbl">Sortér:
-          <select id="fbSort" class="fb-sort">
-            <option value="new">Nyeste</option>
-            <option value="pop">Mest populære</option>
-          </select>
-        </label>
-        <button id="fbRefresh" type="button" class="fb-refresh">↻ Oppdater</button>
-      </div>
-    </div>
+    <div class="fb-htop"><h2 class="fb-h">Tilbakemeldinger</h2></div>
     <p class="fb-intro">Har du innspill til Dewey-verktøyet? Skriv en tilbakemelding — legg gjerne ved en skjermdump.</p>
     <form id="fbForm" class="fb-form">
       <input id="fbName" class="fb-in" type="text" placeholder="Navn: Kallenavn eller fornavn. Ikke bruk fullt navn" autocomplete="off" maxlength="80">
@@ -251,10 +241,19 @@
       </div>
     </form>
     <div id="fbNote" class="fb-note" style="display:none"></div>
+    <div class="fb-htools">
+      <label class="fb-sortlbl">Sortér:
+        <select id="fbSort" class="fb-sort">
+          <option value="new">Nyeste</option>
+          <option value="pop">Mest populære</option>
+        </select>
+      </label>
+      <button id="fbRefresh" type="button" class="fb-refresh">↻ Oppdater</button>
+    </div>
     <div id="fbList" class="fb-list"></div>
   </section>
 
-  <div class="srccredit">Kilde: Norsk WebDewey via UiO Skosmos (CC BY-NC-ND). Deweysystemet eies av OCLC. · Testverktøy fra Nasjonalbiblioteket. · <span id="appver"></span></div>
+  <div class="srccredit">Kilde: Norsk WebDewey via UiO Skosmos (CC BY-NC-ND). Deweysystemet eies av OCLC.<br><span id="appver"></span></div>
 </div>
 
 <footer class="nb-footer">
@@ -265,7 +264,7 @@
 (function(){
   "use strict";
   var $=function(id){return document.getElementById(id);};
-  var APP_VERSION="2026-07-08 10:11";   // ← oppdater ved ny opplasting
+  var APP_VERSION="2026-07-08 10:18";   // ← oppdater ved ny opplasting
   (function(){ var e=$("appver"); if(e) e.textContent="Versjon "+APP_VERSION; })();
   function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
   function status(msg){$("status").innerHTML=msg||"";}
@@ -332,23 +331,36 @@
     s.onerror=function(){ cb(false); };
     document.head.appendChild(s);
   }
+  // Konverter enhver CSS-farge (også color-mix()/color(srgb …)) til rgba() via canvas.
+  var fbColCv;
+  function fbToRgb(col){
+    if(!col) return col;
+    try{
+      fbColCv=fbColCv||document.createElement("canvas"); fbColCv.width=fbColCv.height=1;
+      var cx=fbColCv.getContext("2d"); cx.clearRect(0,0,1,1); cx.fillStyle="#000"; cx.fillStyle=col; cx.fillRect(0,0,1,1);
+      var d=cx.getImageData(0,0,1,1).data;
+      return "rgba("+d[0]+","+d[1]+","+d[2]+","+(d[3]/255)+")";
+    }catch(e){ return col; }
+  }
   // Fotografér Dewey-feltet (det rosa området) og legg det inn som vedlegg.
   function fbCapture(){
     var el=$("deweyBuilder"); if(!el){ fbStatus("Fant ikke Dewey-feltet."); return; }
     var btn=$("fbShot"); if(btn) btn.disabled=true; fbStatus("Tar bilde av Dewey-feltet …");
     fbLoadShot(function(ok){
       if(!ok){ if(btn)btn.disabled=false; fbStatus("Kunne ikke laste bildeverktøyet — bruk «legg ved egen skjermdump» i stedet."); return; }
-      var bg=getComputedStyle(document.body).backgroundColor||"#efece9";
-      window.html2canvas(el,{backgroundColor:bg,scale:Math.min(2,window.devicePixelRatio||1),useCORS:true,logging:false,
-        // Bytt color-mix()-bakgrunner til faste farger i klonen, så eldre html2canvas ikke feiler.
-        onclone:function(doc){
-          var nodes=doc.querySelectorAll("#deweyBuilder, #deweyBuilder *");
-          Array.prototype.forEach.call(nodes,function(n){
-            var b=getComputedStyle(n).backgroundColor;
-            if(b && b!=="rgba(0, 0, 0, 0)" && b!=="transparent") n.style.backgroundColor=b;
-          });
-        }
-      }).then(function(canvas){
+      // Eldre html2canvas forstår ikke color-mix()/color(srgb …). Bytt alle farger i treet til rgba()
+      // rett før bildet tas, og still tilbake etterpå (samme farge → ingen synlig endring).
+      var nodes=[el].concat(Array.prototype.slice.call(el.querySelectorAll("*")));
+      var saved=nodes.map(function(n){ return {n:n,bg:n.style.backgroundColor,c:n.style.color,bc:n.style.borderColor}; });
+      nodes.forEach(function(n){ var cs=getComputedStyle(n);
+        n.style.backgroundColor=fbToRgb(cs.backgroundColor);
+        n.style.color=fbToRgb(cs.color);
+        if(cs.borderColor) n.style.borderColor=fbToRgb(cs.borderColor);
+      });
+      var restore=function(){ saved.forEach(function(s){ s.n.style.backgroundColor=s.bg; s.n.style.color=s.c; s.n.style.borderColor=s.bc; }); };
+      window.html2canvas(el,{backgroundColor:fbToRgb(getComputedStyle(document.body).backgroundColor),
+        scale:Math.min(2,window.devicePixelRatio||1),useCORS:true,logging:false}).then(function(canvas){
+        restore();
         var max=1400,w=canvas.width,h=canvas.height,cw=w,ch=h;
         if(w>max||h>max){ var sc=Math.min(max/w,max/h); cw=Math.round(w*sc); ch=Math.round(h*sc); }
         var c=document.createElement("canvas"); c.width=cw; c.height=ch;
@@ -358,6 +370,7 @@
         $("fbImgName").textContent="Bilde av Dewey-feltet";
         if(btn) btn.disabled=false; fbStatus("Bilde lagt ved. Skriv gjerne hva som er galt, og send.");
       }).catch(function(){
+        restore();
         if(btn) btn.disabled=false; fbStatus("Kunne ikke ta bilde automatisk — bruk «legg ved egen skjermdump» i stedet.");
       });
     });
