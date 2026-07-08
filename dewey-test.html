@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- dewey-test.html · versjon 2026-07-08 11:05 -->
+<!-- dewey-test.html · versjon 2026-07-08 11:09 -->
 <html lang="no">
 <head>
 <meta charset="utf-8">
@@ -104,7 +104,7 @@
   .dw-updown{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:6px 0 2px}
   .dw-updown .dw-udlbl{font-size:11.5px;color:var(--muted)}
   .dw-kids,.dw-tops{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:5px;margin-top:6px}
-  .dw-kid{display:flex;gap:9px;align-items:baseline;padding:7px 9px;border:1px solid var(--line);border-radius:7px;cursor:pointer;background:var(--bg);text-align:left;font:inherit;width:100%}
+  .dw-kid{display:flex;gap:9px;align-items:baseline;padding:7px 9px;border:1px solid var(--line);border-radius:7px;cursor:pointer;background:var(--bg);text-align:left;font:inherit;font-size:14px;width:100%}
   .dw-kid:hover{background:var(--accent-soft);border-color:var(--accent)}
   .dw-kid .n{font-family:var(--mono);color:var(--accent);font-weight:600;white-space:nowrap;font-size:inherit}
   .dw-kid.dw-tbl{border-style:dashed}
@@ -274,7 +274,7 @@
 (function(){
   "use strict";
   var $=function(id){return document.getElementById(id);};
-  var APP_VERSION="2026-07-08 11:05";   // ← oppdater ved ny opplasting
+  var APP_VERSION="2026-07-08 11:09";   // ← oppdater ved ny opplasting
   (function(){ var e=$("appver"); if(e) e.textContent="Versjon "+APP_VERSION; })();
   function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
   function status(msg){$("status").innerHTML=msg||"";}
