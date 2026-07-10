@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- dewey-test.html · versjon 2026-07-08 11:30 -->
+<!-- dewey-test.html · versjon 2026-07-09 11:04 -->
 <html lang="no">
 <head>
 <meta charset="utf-8">
@@ -120,6 +120,28 @@
   .dw-standing{margin:8px 0 2px;font-size:12px;color:var(--brass);border:1px solid color-mix(in srgb,var(--brass) 40%,var(--line));background:color-mix(in srgb,var(--brass) 10%,var(--bg));border-radius:6px;padding:5px 9px}
   .dw-ssnote{color:var(--muted);font-size:11.5px}
   .dw-rules{margin:6px 0 4px}
+  .dw-badge.dw-built{background:color-mix(in srgb,var(--accent) 12%,var(--bg));color:var(--accent);border-color:var(--accent)}
+  .dw-reuse{margin:7px 0 2px;font-size:12.5px;color:var(--ok);font-weight:600}
+  .dw-built-line{margin:5px 0 2px;font-size:12px;display:flex;flex-wrap:wrap;align-items:center;gap:5px}
+  .dw-blbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+  .dw-comp{font:inherit;font-size:12px;padding:2px 8px;border:1px solid var(--line-strong);border-radius:6px;background:var(--panel);color:var(--ink);cursor:pointer}
+  .dw-comp:hover{border-color:var(--accent)}
+  .dw-comp .n{font-family:var(--mono);color:var(--accent);font-weight:600;margin-right:3px}
+  .dw-plus{color:var(--muted)}
+  .dw-kbuilt{font-size:11px}
+  .dw-builtunder{margin-top:4px}
+  .dw-builtunder .dw-sec{color:var(--accent)}
+  .dw-parts{margin:6px 0 2px;padding:7px 10px;border:1px dashed var(--line-strong);border-radius:8px;background:color-mix(in srgb,var(--accent) 3%,transparent);display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .dw-plabel{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+  .dw-part{display:inline-flex;align-items:center;gap:6px;padding:2px 4px 2px 6px;border:1px solid var(--line);border-radius:7px;background:var(--bg)}
+  .dw-ptag{font-size:10px;color:var(--muted);font-family:var(--mono)}
+  .dw-pctl{display:inline-flex;gap:2px}
+  .dw-pmove,.dw-prem{font:inherit;font-size:11px;line-height:1;padding:2px 5px;border:1px solid var(--line-strong);border-radius:5px;background:var(--panel);color:var(--ink);cursor:pointer}
+  .dw-pmove:disabled{opacity:.35;cursor:default}
+  .dw-prem{color:#a11} .dw-prem:hover{background:#a11;color:#fff;border-color:#a11}
+  .dw-pnone{font-size:12px;color:var(--muted);font-style:italic}
+  .dw-padd{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}
+  #dwSkAdd{font-family:var(--mono);font-size:13px;padding:4px 8px;border:1px solid var(--line-strong);border-radius:6px;background:var(--bg);color:var(--ink);width:150px}
   .dw-links{margin-top:10px;font-size:12px} .dw-links a{color:var(--accent);margin-right:14px}
   .dw-notice,.dw-spin-txt{color:var(--muted);font-size:13px;padding:6px 0}
   .dw-nearlink{color:var(--accent)}
@@ -217,6 +239,14 @@
   <div id="deweyBuilder" class="dwbuild">
     <div class="dw-title">Dewey-klassifikasjon <span class="dw-tsub">· Norsk WebDewey (åpne data)</span></div>
     <div id="dwNav" class="dw-nav"></div>
+    <details class="dw-fold dw-rules"><summary>Byggeregler (DDC) — når får du bygge?</summary><div class="dw-foldbody"><ul class="dw-list">
+      <li><b>Bygg bare på instruks:</b> et nummer bygges videre bare der skjemaet har en «tilføy»-note. Standardinndelinger (Tabell 1) kan legges på de fleste steder.</li>
+      <li><b>Hele emnet:</b> bygging/standardinndeling er bare lov når verket dekker HELE emnet — overskriften eller «Klassifiseres her»-noter. «Herunder» (including)-emner har <b>ståplass</b>: ikke bygg, og ingen standardinndeling.</li>
+      <li><b>Null-regel:</b> som regel én 0 foran standardinndelingen, men to 0 der tallet alt bruker 0 til andre underinndelinger. Aldri to standardinndelinger stablet.</li>
+      <li><b>Geografi:</b> –09 (Tabell 1) + områdetall (Tabell 2), f.eks. 362.7 + 09 + 48 → 362.70948.</li>
+      <li><b>Forrang:</b> flere fasetter → følg sitatorden i noten; ellers velg tallet som kommer først i skjemaet.</li>
+      <li>Bygde numre er ofte ikke egne oppslag — <b>verifisér i full Norsk WebDewey</b>.</li>
+    </ul></div></details>
     <div class="dw-work">
       <span class="dw-wlbl">Byggenummer / søk</span>
       <div class="dw-searchbox dw-buildwrap">
@@ -229,6 +259,7 @@
       <button class="dw-wbtn" id="dwCopyBuild" type="button">⧉ Kopier</button>
     </div>
     <div id="dwBuildView" class="dw-buildview" style="display:none"></div>
+    <div id="dwParts" class="dw-parts" style="display:none"></div>
     <div id="dwValid" class="dw-valid" style="display:none"></div>
     <div id="dwdetail" class="dw-detail"></div>
   </div>
@@ -282,7 +313,7 @@
 (function(){
   "use strict";
   var $=function(id){return document.getElementById(id);};
-  var APP_VERSION="2026-07-08 11:30";   // ← oppdater ved ny opplasting
+  var APP_VERSION="2026-07-09 11:04";   // ← oppdater ved ny opplasting
   (function(){ var e=$("appver"); if(e) e.textContent="Versjon "+APP_VERSION; })();
   function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
   function status(msg){$("status").textContent=msg||"";}
@@ -635,8 +666,22 @@
         .filter(function(k){return k.notation;}).sort(function(a,b){return notKey(a.notation)<notKey(b.notation)?-1:1;});
       var notes={};Object.keys(self).forEach(function(k){var m=k.match(/webdewey-terms#(.+)$/);if(m)notes[m[1]]=arr(self[k]).map(label).filter(Boolean);});
       var mapUris=[];arr(self.exactMatch).forEach(function(x){var uu=x.uri||x;var m=String(uu).match(/\/(humord|realfagstermer)\/[^\/]+$/);if(m)mapUris.push({uri:uu,vocab:m[1]});});
+      // Bygd/lagret nummer (nasjonalt sammensatt): mads:componentList gir byggeklossene.
+      var built=false,components=[];
+      var clr=self["http://www.loc.gov/mads/rdf/v1#componentList"];
+      if(clr){
+        built=true;
+        var RF="http://www.w3.org/1999/02/22-rdf-syntax-ns#first",RR="http://www.w3.org/1999/02/22-rdf-syntax-ns#rest",NIL="http://www.w3.org/1999/02/22-rdf-syntax-ns#nil";
+        var cur=clr.uri||clr,guard=0;
+        while(cur&&cur!==NIL&&guard++<20){
+          var nd=by[cur];if(!nd)break;
+          var f=nd[RF],fu=f&&(f.uri||f);
+          if(fu){var cn=by[fu]||{};components.push({notation:dwUriToNotation(fu),label:label(cn.prefLabel)});}
+          var r=nd[RR];cur=r&&(r.uri||r);
+        }
+      }
       return {uri:u,notation:self["skos:notation"]||"",label:label(self.prefLabel),
-        alt:arr(self.altLabel).map(label).filter(Boolean),narrower:narrower,notes:notes,
+        alt:arr(self.altLabel).map(label).filter(Boolean),narrower:narrower,notes:notes,built:built,components:components,
         broaderUri:(arr(self.broader)[0]||{}).uri||null,mapUris:mapUris.slice(0,10)};
     });
   }
@@ -676,7 +721,9 @@
   var dwState={base:"",parts:[]},dwUndoStack=[];
   function dwSnap(){return {base:dwState.base,parts:dwState.parts.map(function(p){return {table:p.table,add:p.add};})};}
   function dwPushUndo(){dwUndoStack.push(dwSnap());if(dwUndoStack.length>50)dwUndoStack.shift();}
-  function dwStateStr(){return dwState.base+dwState.parts.map(function(p){return p.add;}).join("");}
+  function dwStateStr(){var raw=dwState.base+dwState.parts.map(function(p){return p.add;}).join("");
+    if(/-/.test(dwState.base)||/^T/i.test(dwState.base))return raw;   // spenn/tabell: ikke reformater
+    var digits=raw.replace(/[^0-9]/g,"");return digits.length<=3?digits:(digits.slice(0,3)+"."+digits.slice(3));}
   function dwSegClass(t){var b=String(t).replace(/^(T\d).*/,"$1");return {"T1":"dw-t1","T2":"dw-t2","T3":"dw-t3","T4":"dw-t4","T5":"dw-t5","T6":"dw-t6"}[b]||"dw-tx";}
   function dwRenderView(){
     var v=$("dwBuildView");
@@ -707,17 +754,47 @@
     else{el.className="dw-valid err";
       el.innerHTML="⚠ "+esc(v.msg)+(v.fixed?(' <button type="button" class="dw-fix" data-fix="'+esc(v.fixed)+'">rett til '+esc(v.fixed)+'</button>'):"");
       var b=el.querySelector(".dw-fix");if(b)b.addEventListener("click",function(){dwPushUndo();dwState={base:b.getAttribute("data-fix"),parts:[]};dwRenderBuild();});}
+    if(dwState.parts.some(function(p){return /^T1/.test(p.table);}))
+      el.insertAdjacentHTML("beforeend",' <span class="dw-ssnote">· Standardinndeling: sjekk null-regel (én/to 0) og at verket dekker HELE emnet.</span>');
   }
-  function dwRenderBuild(){$("dwBuild").value=dwStateStr();dwRenderView();dwShowValid();}
+  function dwRenderBuild(){$("dwBuild").value=dwStateStr();dwRenderView();dwRenderParts();dwShowValid();}
+  // Ledd-editor: flytt (↑/↓), fjern (✕) og legg til skjema-ledd (siffer fra et skjemanummer, f.eks. 044).
+  function dwMovePart(i,dir){var j=i+dir;if(j<0||j>=dwState.parts.length)return;dwPushUndo();var t=dwState.parts[i];dwState.parts[i]=dwState.parts[j];dwState.parts[j]=t;dwRenderBuild();}
+  function dwRemovePart(i){if(i<0||i>=dwState.parts.length)return;dwPushUndo();dwState.parts.splice(i,1);dwRenderBuild();}
+  function dwAddSchedulePart(v){v=String(v||"").replace(/[^0-9]/g,"");if(!v)return;dwPushUndo();dwState.parts.push({table:"SK",add:v});dwRenderBuild();}
+  function dwRenderParts(){
+    var box=$("dwParts"); if(!box)return;
+    if(!dwState.base){box.style.display="none";box.innerHTML="";return;}
+    box.style.display="";
+    var rows=dwState.parts.map(function(p,i){
+      var tag=(p.table==="SK")?"skjema":esc(p.table);
+      return '<span class="dw-part" data-i="'+i+'"><span class="dw-seg '+dwSegClass(p.table)+'">'+esc(p.add)+'</span>'+
+        '<span class="dw-ptag">'+tag+'</span><span class="dw-pctl">'+
+        '<button type="button" class="dw-pmove" data-dir="-1" aria-label="Flytt venstre"'+(i===0?' disabled':'')+'>↑</button>'+
+        '<button type="button" class="dw-pmove" data-dir="1" aria-label="Flytt høyre"'+(i===dwState.parts.length-1?' disabled':'')+'>↓</button>'+
+        '<button type="button" class="dw-prem" aria-label="Fjern ledd">✕</button></span></span>';
+    }).join("");
+    box.innerHTML='<span class="dw-plabel">Ledd:</span>'+(rows||'<span class="dw-pnone">ingen tabell-/skjema-ledd ennå</span>')+
+      '<span class="dw-padd"><input id="dwSkAdd" type="text" inputmode="numeric" placeholder="skjema-ledd, f.eks. 044" aria-label="Legg til skjema-ledd (siffer)"><button type="button" id="dwSkBtn" class="dw-wbtn">+ skjema-ledd</button></span>';
+    [].forEach.call(box.querySelectorAll(".dw-part"),function(row){
+      var i=+row.getAttribute("data-i");
+      [].forEach.call(row.querySelectorAll(".dw-pmove"),function(b){b.addEventListener("click",function(){dwMovePart(i,+b.getAttribute("data-dir"));});});
+      var rm=row.querySelector(".dw-prem"); if(rm)rm.addEventListener("click",function(){dwRemovePart(i);});
+    });
+    var sk=$("dwSkBtn"),inp=$("dwSkAdd");
+    if(sk)sk.addEventListener("click",function(){dwAddSchedulePart(inp?inp.value:"");});
+    if(inp)inp.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();dwAddSchedulePart(inp.value);}});
+  }
   var DW_TBLORD={"T1":1,"T2":2,"T3":3,"T3A":3.1,"T3B":3.2,"T3C":3.3,"T4":4,"T5":5,"T6":6};
   function dwTblKey(t){return DW_TBLORD[t]!=null?DW_TBLORD[t]:99;}
   function dwAddPart(tbl,add){
     dwPushUndo();
     var i=-1;dwState.parts.forEach(function(p,k){if(i<0&&p.table===tbl)i=k;});
     var replaced=(i>=0);if(replaced)dwState.parts[i].add=add;else dwState.parts.push({table:tbl,add:add});
-    dwState.parts.sort(function(a,b){return dwTblKey(a.table)-dwTblKey(b.table);});   // T1 → T2 → …
+    // Behold rekkefølgen du legger til i: DDC-syntesen kan ha ulik rekkefølge (f.eks. skjema→T2→skjema→T1),
+    // bestemt av «tilføy»-notene — ikke en fast T1-før-T2. Angre/legg til på nytt for å endre rekkefølge.
     dwRenderBuild();
-    status((replaced?("Byttet ut "+tbl+"-tillegget → "):("La til «"+add+"» ("+tbl+") → "))+"byggenummer "+dwStateStr()+". Kontrollér sammenføyningen i full WebDewey.");
+    status((replaced?("Byttet ut "+tbl+"-tillegget → "):("La til «"+add+"» ("+tbl+") → "))+"byggenummer "+dwStateStr()+". Rekkefølgen følger tilføy-notene — kontrollér sammenføyningen i full WebDewey.");
   }
 
   /* ---------- Hjelpetabeller + startvisning ---------- */
@@ -761,6 +838,7 @@
         var el=$("dwdetail").querySelector(".dw-maps");
         if(el&&maps&&maps.length)el.innerHTML='<div class="dw-sec">Samsvarende emneord — sjekk at Dewey og emne stemmer</div><div class="dw-mapline">'+maps.map(function(m){return '<span class="dw-map">'+esc(m.term)+'</span>';}).join(" ")+'</div>';
       });
+      dwBuiltUnder(a[0].notation);
     }).catch(function(){
       box.innerHTML='<div class="dw-notice">Fant ikke <b>'+esc(notation)+'</b> <span style="opacity:.7">– søker nærmeste gyldige …</span></div>';
       dwNearest(notation).then(function(near){
@@ -770,6 +848,34 @@
       });
     });
   }
+  // MARC 085 (komponentnedbryting) utledet fra mads:componentList — forslag, kontrollér i WebDewey.
+  function dw085(d){
+    if(!d.built||!d.components||d.components.length<2)return "";
+    var base=String(d.components[0].notation).replace(/[^0-9]/g,""); if(!base)return "";
+    var subs="$b "+base;
+    for(var i=1;i<d.components.length;i++){
+      var not=String(d.components[i].notation), t=not.match(/^T(\d+[A-Z]?)--(.+)$/);
+      if(t){ subs+=" $z "+t[1]+" $s "+t[2].replace(/[^0-9]/g,""); }
+      else { var dig=not.replace(/[^0-9]/g,""); if(dig.indexOf(base)===0)dig=dig.slice(base.length); if(dig)subs+=" $s "+dig; }
+    }
+    return "085 ## "+subs;
+  }
+  // Steg 3: foreslå eksisterende LAGREDE bygde numre under gjeldende nummer (async-injeksjon).
+  function dwBuiltUnder(notation){
+    var det=$("dwdetail"); if(!det)return;
+    var host=det.querySelector(".dw-builtunder"); if(!host)return;
+    if(!notation||/^T/i.test(notation)||/\d-\d/.test(notation)){host.innerHTML="";return;}
+    dwSearch(notation+"*").then(function(res){
+      var seen={},out=[];
+      (res||[]).forEach(function(r){var n=String(r.notation||""),lab=r.prefLabel||r.label||"";
+        if(n&&n!==notation&&n.indexOf(notation)===0&&/--/.test(lab)&&!seen[n]){seen[n]=1;out.push({n:n,label:lab});}});
+      out.sort(function(a,b){return a.n<b.n?-1:1;}); out=out.slice(0,15);
+      if(!out.length){host.innerHTML="";return;}
+      host.innerHTML='<div class="dw-sec">🧩 Lagrede bygde numre under '+esc(notation)+' ('+out.length+') — kan gjenbrukes</div>'+
+        '<div class="dw-kids">'+out.map(function(o){return '<button type="button" class="dw-kid" data-n="'+esc(o.n)+'"><span class="n">'+esc(o.n)+'</span><span>'+esc(o.label)+'</span> <span class="dw-kbuilt">🧩</span></button>';}).join("")+'</div>';
+      [].forEach.call(host.querySelectorAll("[data-n]"),function(b){b.addEventListener("click",function(){dwLoad(b.getAttribute("data-n"));});});
+    }).catch(function(){});
+  }
   function dwRender(d,chain){
     var box=$("dwdetail"),today=new Date().toISOString().slice(0,10).replace(/-/g,"");
     var isTable=/^T/i.test(d.notation),isRange=/\d-\d/.test(d.notation);
@@ -778,19 +884,28 @@
     if(upN)navtop+='<button type="button" class="dw-up" data-n="'+esc(upN)+'">↑ opp</button>';
     if(chain&&chain.length)navtop+='<span class="dw-crumbs">'+chain.map(function(c){return '<a data-n="'+esc(c.notation)+'"><span class="n">'+esc(c.notation)+'</span> '+esc(c.label)+'</a>';}).join('<span class="sep">›</span>')+'</span>';
     if(navtop)h+='<div class="dw-topnav">'+navtop+'</div>';
-    h+='<div class="dw-card"><span class="dw-headnum">'+esc(d.notation)+'</span>'+(isTable?'<span class="dw-badge">hjelpetabell</span>':"")+(isRange?'<span class="dw-badge">spenn</span>':"")+'<div class="dw-caption">'+esc(d.label)+'</div>';
+    h+='<div class="dw-card"><span class="dw-headnum">'+esc(d.notation)+'</span>'+(isTable?'<span class="dw-badge">hjelpetabell</span>':"")+(isRange?'<span class="dw-badge">spenn</span>':"")+(d.built?'<span class="dw-badge dw-built">🧩 lagret</span>':"")+'<div class="dw-caption">'+esc(d.label)+'</div>';
+    if(d.notes&&d.notes.including&&d.notes.including.length)h+='<div class="dw-standing">⚠ «Herunder»-emner har ståplass: klassifisér dem her, men bygg ikke egne numre og legg ikke på standardinndeling for dem.</div>';
+    if(d.built){
+      h+='<div class="dw-reuse">✓ Lagret bygd nummer i Norsk WebDewey — kan gjenbrukes direkte.</div>';
+      if(d.components&&d.components.length)
+        h+='<div class="dw-built-line"><span class="dw-blbl">Bygd av:</span> '+d.components.map(function(c){return '<button type="button" class="dw-comp" data-n="'+esc(c.notation)+'"><span class="n">'+esc(c.notation)+'</span>'+(c.label?" "+esc(c.label):"")+'</button>';}).join('<span class="dw-plus">+</span>')+'</div>';
+    }
     var notesHtml="";
     Object.keys(d.notes).forEach(function(k){if(!d.notes[k].length)return;notesHtml+='<div class="dw-sec">'+esc(NOTE[k]||k)+'</div><ul class="dw-list">'+d.notes[k].map(function(v){return '<li>'+esc(v)+'</li>';}).join("")+'</ul>';});
     if(d.alt.length)notesHtml+='<div class="dw-sec">Andre innganger</div><div class="dw-chips">'+d.alt.map(function(v){return '<span class="dw-chip">'+esc(v)+'</span>';}).join("")+'</div>';
     if(notesHtml){var refN=Object.keys(d.notes).reduce(function(s,k){return s+d.notes[k].length;},0)+d.alt.length;
       h+='<details class="dw-fold"><summary>Noter og registerinnganger ('+refN+')</summary><div class="dw-foldbody">'+notesHtml+'</div></details>';}
     h+='<div class="dw-maps"></div>';
-    if(!isTable&&!isRange)h+='<div class="dw-sec">MARC 082</div><div class="dw-marc"><code>082 04 $a '+esc(d.notation)+' $2 23/nor/'+today+'</code></div><button type="button" class="dw-use" data-use="'+esc(d.notation)+'">✓ Bruk '+esc(d.notation)+'</button>';
-    if(isTable&&!isRange){var addNum=d.notation.replace(/^T\d+[A-Z]?--/i,"").replace(/-/g,"");var tblId=(d.notation.match(/^T\d+[A-Z]?/i)||["?"])[0];
+    if(!isTable&&!isRange){h+='<div class="dw-sec">MARC 082</div><div class="dw-marc"><code>082 04 $a '+esc(d.notation)+' $2 23/nor/'+today+'</code></div>';
+      var f085=d.built?dw085(d):""; if(f085)h+='<div class="dw-sec">MARC 085 — komponentnedbryting (forslag – kontrollér i WebDewey)</div><div class="dw-marc"><code>'+esc(f085)+'</code></div>';
+      h+='<button type="button" class="dw-use" data-use="'+esc(d.notation)+'">✓ Bruk '+esc(d.notation)+'</button>';}
+    if(isTable&&!isRange){var addNum=d.notation.replace(/^T\d+[A-Z]?--/i,"").replace(/[-.]/g,"");var tblId=(d.notation.match(/^T\d+[A-Z]?/i)||["?"])[0];
       h+='<div class="dw-sec">Nummerbygging</div><button type="button" class="dw-use dw-add" data-add="'+esc(addNum)+'" data-tbl="'+esc(tblId)+'">+ Føy til «'+esc(addNum)+'» ('+esc(tblId)+') på byggenummeret</button><div class="dw-addnote">Tilleggstall fra hjelpetabell — brukes bare når en «tilføy fra tabell …»-note sier det. Nytt tillegg fra samme tabell erstatter forrige. Kontrollér i full WebDewey.</div>';}
     h+='<div class="dw-links"><a href="https://data.ub.uio.no/skosmos/ddc/nb/page/?uri='+encodeURIComponent(d.uri)+'" target="_blank" rel="noopener">Åpne i Skosmos ↗</a></div></div>';
+    h+='<div class="dw-builtunder"></div>';
     if(d.narrower.length){var upInline=upN?'<div class="dw-updown"><button type="button" class="dw-up" data-n="'+esc(upN)+'">↑ opp ett nivå</button><span class="dw-udlbl">— eller velg en underinndeling for å gå ned:</span></div>':'';
-      h+='<details class="dw-fold" open><summary>Naviger hierarkiet – underinndelinger ('+d.narrower.length+')</summary>'+upInline+'<div class="dw-kids">'+d.narrower.map(function(k){return '<button type="button" class="dw-kid" data-n="'+esc(k.notation)+'"><span class="n">'+esc(k.notation)+'</span><span>'+esc(k.label)+'</span></button>';}).join("")+'</div></details>';}
+      h+='<details class="dw-fold" open><summary>Naviger hierarkiet – underinndelinger ('+d.narrower.length+')</summary>'+upInline+'<div class="dw-kids">'+d.narrower.map(function(k){return '<button type="button" class="dw-kid" data-n="'+esc(k.notation)+'"><span class="n">'+esc(k.notation)+'</span><span>'+esc(k.label)+'</span>'+(/--/.test(k.label)?' <span class="dw-kbuilt" title="Sammensatt/lagret nummer">🧩</span>':"")+'</button>';}).join("")+'</div></details>';}
     box.innerHTML=h;dwBindKids();
     [].forEach.call(box.querySelectorAll("[data-use]"),function(b){b.addEventListener("click",function(){dwUse(b.getAttribute("data-use"),d.label);});});
     [].forEach.call(box.querySelectorAll("[data-add]"),function(b){b.addEventListener("click",function(){dwAddPart(b.getAttribute("data-tbl")||"?",b.getAttribute("data-add"));});});
@@ -811,7 +926,7 @@
     $("dwsug").classList.add("open");
   }
   $("dwBuild").addEventListener("input",function(){
-    dwState={base:$("dwBuild").value,parts:[]};dwRenderView();
+    dwState={base:$("dwBuild").value,parts:[]};dwRenderView();dwRenderParts();
     clearTimeout(dwTimer);var q=$("dwBuild").value.trim();
     if(!q){dwCloseSug();return;}
     dwTimer=setTimeout(function(){dwSearch(q).then(function(r){dwShowSug(r.slice(0,12));});},220);
